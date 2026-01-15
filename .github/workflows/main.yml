@@ -91,5 +91,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Preview deployment ready!\n\n**Preview URL:** ${{ steps.deploy-preview.outputs.url }}\n\nChanges will be automatically deployed when this PR is merged.`
+              body: `🚀 Preview deployment ready!\n\n**Preview URL:** ${{ steps.deploy-preview.outputs.url }} \n\nChanges will be automatically deployed when this PR is merged.`
             })
