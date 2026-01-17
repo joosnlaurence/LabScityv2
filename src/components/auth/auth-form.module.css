@@ -52,7 +52,7 @@
   font-size: 1.5rem; /* 48px → 24px (50%) */
   font-family: var(--mantine-font-family);
   color: var(--mantine-color-navy-8); /* primary text */
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.5;
 }
 
