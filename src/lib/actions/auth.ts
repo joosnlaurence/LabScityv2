@@ -15,11 +15,14 @@ export async function loginAction(formData: FormData) {
     password: password,
   });
 
+  console.log("made it after the auth signin", data);
+
   if (error) {
     console.error("Error signing up: ", error);
     return { success: false, error };
   }
 
+  console.log("makes it past the try catch:", data);
   return { success: true, data };
 }
 
@@ -41,5 +44,6 @@ export async function signupAction(formData: FormData) {
     return { success: false, error };
   }
 
+  console.log("makes it past the try catch:", data);
   return { success: true, data };
 }
