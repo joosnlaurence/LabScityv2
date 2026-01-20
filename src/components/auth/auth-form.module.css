@@ -78,10 +78,6 @@
 
 /* Logo Container */
 .logoBox {
-  width: 11.5rem; /* 368px → 184px (50%) */
-  height: 11.5rem; /* 368px → 184px (50%) */
-  border-radius: 50%; /* circular */
-  background-color: var(--mantine-color-navy-7); /* primary navy */
   display: flex;
   align-items: center;
   justify-content: center;

@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
 import classes from "./auth-form.module.css";
 
@@ -41,9 +42,13 @@ export function LoginForm() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Stack gap="md" align="center">
         <Box className={classes.logoBox}>
-          <Text c="navy.0" size="xl" fw={600}>
-            LS
-          </Text>
+          <Image 
+            src="/logo.png" 
+            alt="LabScity Logo" 
+            width={200} 
+            height={200}
+            priority
+          />
         </Box>
         {serverError && (
           <Alert color="red" title="Error">
