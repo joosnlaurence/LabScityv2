@@ -18,7 +18,7 @@
 .formContainer {
   width: 100%;
   max-width: 29.3125rem; /* 938px → 469px (50% of card width) */
-  min-height: 46.375rem; /* 1484px → 742px (50% of card height) */
+  /* min-height: 46.375rem; 1484px → 742px (50% of card height) */
   background-color: var(--mantine-color-navy-0); /* card background */
   border-radius: 0.625rem; /* 20px → 10px (50%) */
   padding: 2rem;
@@ -81,6 +81,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100px;
 }
 
 /* Form Field Container */

@@ -47,7 +47,7 @@ export function SignupForm() {
             <Image 
               src="/logo.png" 
               alt="LabScity Logo" 
-              width={200} 
+              width={200}
               height={200}
               priority
             />
