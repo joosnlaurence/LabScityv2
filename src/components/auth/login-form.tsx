@@ -4,6 +4,7 @@ import { Paper, Stack, Box, Text, TextInput, PasswordInput, Anchor, Button, Aler
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
@@ -17,6 +18,7 @@ export function LoginForm({
 }: { 
   loginAction: LoginAction 
 }) {
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<LoginValues>({
@@ -31,17 +33,16 @@ export function LoginForm({
   const onSubmit = async (data: LoginValues) => {
     setServerError(null); // Clear previous errors
 
-    // Placeholder for server action - will be implemented later
-    // Expected format: { success: boolean, error?: string }
     try {
       const formData = new FormData();
       formData.append("email", data.email);
       formData.append("password", data.password);
       const result = await loginAction(formData);
-      if (!result.success && result.error) {
+      if (result.success) {
+        router.push("/dashboard");
+      } else if (result.error) {
         setServerError(result.error);
       }
-      console.log("Form submitted:", data); // delete this later
     } catch (error) {
       setServerError("An unexpected error occurred. Please try again.");
     }
