@@ -18,8 +18,11 @@ export async function loginAction(formData: FormData) {
   console.log("made it after the auth signin", data);
 
   if (error) {
-    console.error("Error signing up: ", error);
-    return { success: false, error };
+    console.error("Error signing in: ", error);
+    return {
+      success: false,
+      error: error.message ?? "Invalid email or password",
+    };
   }
 
   console.log("makes it past the try catch:", data);
@@ -41,7 +44,10 @@ export async function signupAction(formData: FormData) {
 
   if (error) {
     console.error("Error signing up: ", error);
-    return { success: false, error };
+    return {
+      success: false,
+      error: error.message ?? "Failed to create account",
+    };
   }
 
   console.log("makes it past the try catch:", data);
