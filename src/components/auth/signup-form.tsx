@@ -1,13 +1,22 @@
 "use client";
 
-import { Paper, Stack, Box, Text, TextInput, PasswordInput, Button, Alert } from "@mantine/core";
+import { Paper, Stack, Box, Text, TextInput, PasswordInput, Anchor, Button, Alert } from "@mantine/core";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { signupSchema, type SignupValues } from "@/lib/validations/auth";
 import classes from "./auth-form.module.css";
+import type { signupAction } from "@/lib/actions/auth";
 
-export function SignupForm() {
+type SignupAction = typeof signupAction;
+
+export function SignupForm({ 
+  signupAction 
+}: { 
+  signupAction: SignupAction 
+}) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<SignupValues>({
@@ -25,14 +34,18 @@ export function SignupForm() {
   const onSubmit = async (data: SignupValues) => {
     setServerError(null); // Clear previous errors
 
-    // Placeholder for server action - will be implemented later
-    // Expected format: { success: boolean, error?: string }
     try {
-      // const result = await signupAction(data);
-      // if (!result.success && result.error) {
-      //   setServerError(result.error);
-      // }
-      console.log("Form submitted:", data); // delete this later
+      const formData = new FormData();
+      formData.append("email", data.email);
+      formData.append("password", data.password);
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("confirmPassword", data.confirmPassword);
+      
+      const result = await signupAction(formData);
+      if (!result.success && result.error) {
+        setServerError(result.error);
+      }
     } catch (error) {
       setServerError("An unexpected error occurred. Please try again.");
     }
@@ -43,9 +56,13 @@ export function SignupForm() {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Stack gap="md" align="center">
           <Box className={classes.logoBox}>
-            <Text c="navy.0" size="xl" fw={600}>
-              LS
-            </Text>
+            <Image 
+              src="/logo.png" 
+              alt="LabScity Logo" 
+              width={200}
+              height={200}
+              priority
+            />
           </Box>
           {serverError && (
             <Alert color="red" title="Error">
@@ -134,6 +151,12 @@ export function SignupForm() {
           >
             Create Account
           </Button>
+          <Text>
+            Already have an account?{" "}
+            <Anchor component={Link} href="/login">
+              Sign In
+            </Anchor>
+          </Text>
         </Stack>
       </form>
     </Paper>
