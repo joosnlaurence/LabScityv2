@@ -84,6 +84,12 @@
   height: 100px;
 }
 
+.logoBox img {
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
 /* Form Field Container */
 .fieldContainer {
   width: 100%;
