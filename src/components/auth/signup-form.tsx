@@ -7,8 +7,15 @@ import { useState } from "react";
 import Image from "next/image";
 import { signupSchema, type SignupValues } from "@/lib/validations/auth";
 import classes from "./auth-form.module.css";
+import type { signupAction } from "@/lib/actions/auth";
 
-export function SignupForm() {
+type SignupAction = typeof signupAction;
+
+export function SignupForm({ 
+  signupAction 
+}: { 
+  signupAction: SignupAction 
+}) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<SignupValues>({
@@ -26,14 +33,18 @@ export function SignupForm() {
   const onSubmit = async (data: SignupValues) => {
     setServerError(null); // Clear previous errors
 
-    // Placeholder for server action - will be implemented later
-    // Expected format: { success: boolean, error?: string }
     try {
-      // const result = await signupAction(data);
-      // if (!result.success && result.error) {
-      //   setServerError(result.error);
-      // }
-      console.log("Form submitted:", data); // delete this later
+      const formData = new FormData();
+      formData.append("email", data.email);
+      formData.append("password", data.password);
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("confirmPassword", data.confirmPassword);
+      
+      const result = await signupAction(formData);
+      if (!result.success && result.error) {
+        setServerError(result.error);
+      }
     } catch (error) {
       setServerError("An unexpected error occurred. Please try again.");
     }

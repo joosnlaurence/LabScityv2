@@ -8,11 +8,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
 import classes from "./auth-form.module.css";
+import type { loginAction } from "@/lib/actions/auth";
 
-import { loginAction } from "@/lib/actions/auth";
+type LoginAction = typeof loginAction;
 
-
-export function LoginForm() {
+export function LoginForm({ 
+  loginAction 
+}: { 
+  loginAction: LoginAction 
+}) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<LoginValues>({
