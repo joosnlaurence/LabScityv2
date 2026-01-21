@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
 import classes from "./auth-form.module.css";
 
@@ -46,47 +47,63 @@ export function LoginForm() {
     <Paper className={classes.formContainer}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Stack gap="md" align="center">
-          <Box className={classes.logoBox}>
-            <Text c="navy.0" size="xl" fw={600}>
-              LS
-            </Text>
-          </Box>
-          {serverError && (
-            <Alert color="red" title="Error">
-              {serverError}
-            </Alert>
-          )}
-          <div className={classes.fieldContainer}>
-            <Text className={classes.label}>Email</Text>
-            <Controller
-              name="email"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <TextInput
-                  {...field}
-                  placeholder="Email"
-                  classNames={{ input: classes.input, root: classes.inputRoot }}
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
-          </div>
-          <div className={classes.fieldContainer}>
-            <Text className={classes.label}>Password</Text>
-            <Controller
-              name="password"
-              control={form.control}
-              render={({ field }) => (
-                <PasswordInput
-                  {...field}
-                  placeholder="Password"
-                  classNames={{ input: classes.input, root: classes.inputRoot }}
-                />
-              )}
-            />
-          </div>
-          <Anchor component={Link} href="/forgot-password">
-            Forgot Password?
+        <Box className={classes.logoBox}>
+          <Image 
+            src="/logo.png" 
+            alt="LabScity Logo" 
+            width={200}
+            height={200}
+            priority
+          />
+        </Box>
+        {serverError && (
+          <Alert color="red" title="Error">
+            {serverError}
+          </Alert>
+        )}
+        <div className={classes.fieldContainer}>
+          <Text className={classes.label}>Email</Text>
+          <Controller
+            name="email"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <TextInput
+                {...field}
+                placeholder="Email"
+                classNames={{ input: classes.input, root: classes.inputRoot }}
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+        </div>
+        <div className={classes.fieldContainer}>
+          <Text className={classes.label}>Password</Text>
+          <Controller
+            name="password"
+            control={form.control}
+            render={({ field }) => (
+              <PasswordInput
+                {...field}
+                placeholder="Password"
+                classNames={{ input: classes.input, root: classes.inputRoot }}
+              />
+            )}
+          />
+        </div>
+        <Anchor component={Link} href="/forgot-password">
+          Forgot Password?
+        </Anchor>
+        <Button
+          type="submit"
+          className={classes.button}
+          loading={form.formState.isSubmitting}
+        >
+          Sign In
+        </Button>
+        <Text>
+          Don't have an account?{" "}
+          <Anchor component={Link} href="/signup">
+            Sign Up
           </Anchor>
           <Button
             type="submit"
