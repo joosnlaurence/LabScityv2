@@ -1,171 +1,339 @@
-import { Avatar, Badge, Box, Button, Card, Center, Group, Text, Image, ActionIcon } from "@mantine/core";
-import { IconDots, IconHeart, IconMessageCircle, IconShare, IconPointFilled } from "@tabler/icons-react"
+import {
+  ActionIcon,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Center,
+  Group,
+  Image,
+  Text,
+} from "@mantine/core";
+import {
+  IconDots,
+  IconHeart,
+  IconMessageCircle,
+  IconPencil,
+  IconShare,
+} from "@tabler/icons-react";
 
-const MyProfileWidget = () => {
+interface ProfileWidgetProps {
+  profileName: string,
+  profileInstitution: string,
+  profileRole: string,
+  profileResearchInterest: string,
+  profileAbout?: string,
+  profileSkills?: string[],
+  profileHeaderImageURL?: string,
+  profilePicURL?: string
+}
+
+const ProfileWidget = ({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: ProfileWidgetProps) => {
   return (
     <Card shadow="sm" padding="none" radius="md" m={4} withBorder>
-      <Image bg="gray" w="100%" h={100} mb={-64} src="https://ih1.redbubble.net/image.5595885630.8128/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg" />
+      <Image
+        bg="gray"
+        w="100%"
+        h={100}
+        mb={-64}
+        src={profileHeaderImageURL}
+      />
       <Box p="lg">
-        <Box style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }} mb={12}>
-          <Avatar src="https://pbs.twimg.com/media/DUzbwUdX4AE5RGO.jpg" radius="xl" size="xl" />
+        <Box
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 12,
+          }}
+          mb={12}
+        >
+          <Avatar
+            src={profilePicURL}
+            radius="xl"
+            size="xl"
+          />
           <Box>
-            <Text size="xl" fw={600} mb={-4}>
-              Rafael Niebles
+            <Text c="navy.8" size="xl" fw={600} mb={-4}>
+              {profileName}
             </Text>
 
+            <Text c="navy.8">{profileResearchInterest}</Text>
+
             <Box>
-              <Text span>University of Central Florida</Text>
-              <Text span ml={6} c="gray">
-                Student
-              </Text>
+              <Text span c="navy.6">{profileRole}, {profileInstitution}</Text>
             </Box>
 
-            <Text>Computer Science</Text>
+
           </Box>
         </Box>
         <Box mb={12}>
-          <Box mb={12}>
-            <Text fw={600}>About</Text>
-            <Text>Hello this is my beautiful account</Text>
-          </Box>
-          <Box mb={12}>
-            <Text fw={600} mb={8}>
-              Skills
-            </Text>
-            <Group gap={8}>
-              <Badge color="blue" variant="light">
-                JavaScript
-              </Badge>
-              <Badge color="blue" variant="light">
-                JavaScript
-              </Badge>
-              <Badge color="blue" variant="light">
-                More JavaScript
-              </Badge>
-              <Badge color="blue" variant="light">
-                More More JavaScript More
-              </Badge>
-              <Badge color="blue" variant="light">
-                Ooh Yeah JavaScript!
-              </Badge>
-            </Group>
-          </Box>
-          <Box mt={24} mb={12} w="100%" style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button variant="default">Edit Profile</Button>
+          {profileAbout &&
+            <Box mb={12}>
+              <Text c="navy.8" fw={600}>About</Text>
+              <Text c="navy.8">{profileAbout}</Text>
+            </Box>
+          }
+          {(profileSkills && profileSkills.length > 0) &&
+            <Box mb={12}>
+              <Text c="navy.8" fw={600} mb={8}>
+                Skills
+              </Text>
+              <Group gap={8}>
+                {(profileSkills.map((skill, i) => {
+                  return (
+                    <Badge key={i} color="navy.6" variant="light">
+                      {skill}
+                    </Badge>
+                  )
+                }))}
+              </Group>
+            </Box>
+          }
+          <Box
+            mt={24}
+            mb={12}
+            w="100%"
+            style={{ display: "flex", justifyContent: "flex-end" }}
+          >
+            <Button radius="xl" variant="filled" color="navy.6"><IconPencil size={18} /></Button>
           </Box>
         </Box>
       </Box>
     </Card>
+  );
+};
 
-  )
+interface PostProps {
+  posterName: string;
+  posterResearchInterest: string;
+  posterProfilePicURL: string;
+  attachmentPreviewURL: string;
+  timestamp: Date,
+  postText: string
 }
 
-const APost = () => {
+const Post = ({
+  posterName,
+  posterResearchInterest,
+  posterProfilePicURL: posterProfilePic,
+  attachmentPreviewURL,
+  timestamp,
+  postText
+}: PostProps) => {
   return (
     <Card shadow="sm" padding="lg" radius="md" m={4} withBorder>
       <Box>
         <Box style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Avatar radius="xl" />
+          <Avatar radius="xl" src={posterProfilePic} />
           <Box style={{ flex: 1 }}>
             <Group mb={2}>
-              <Text size="lg" fw={600} span>
-                Rafael Niebles
+              <Text c="navy.8" size="lg" fw={600} span>
+                {posterName}
               </Text>
-              <Box style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <Box
+                style={{
+                  marginLeft: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
                 <ActionIcon variant="transparent" size="sm">
-                  <IconDots size={18} />
+                  <IconDots size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
                 </ActionIcon>
               </Box>
             </Group>
-            <Text mt={-4} size="sm" c="gray">Computer Science</Text>
+            <Text c="navy.8" mt={-4} size="sm">
+              {posterResearchInterest}
+            </Text>
           </Box>
         </Box>
-        <Text size="sm" my={12} style={{ lineHeight: 1.2 }}>I think that JavaScript is a crime against humanity and it should be explodonated</Text>
-        <Image
-          radius="md"
-          w="100%"
-          src="https://www.reachabovemedia.com/wp-content/uploads/2017/11/why-js-sucks.jpg"
-        />
-        <Text size="sm" c="gray" ml={2} my={12}>2:30PM • January 21, 2025</Text>
-        <Box style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-          <Button variant="transparent" leftSection={<IconHeart size={18} />} size="compact-sm" style={{ alignItems: "center", textAlign: "center" }}>
+        <Text c="navy.8" size="sm" my={12} style={{ lineHeight: 1.2 }}>
+          {postText}
+        </Text>
+        <Image radius="md" w="100%" src={attachmentPreviewURL} />
+        <Text size="sm" c="navy.5" ml={2} my={12}>
+          {timestamp.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })}{" "}
+          •{" "}
+          {timestamp.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </Text>
+        <Box
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <Button
+            c="navy.6"
+            variant="transparent"
+            leftSection={<IconHeart size={18} />}
+            size="compact-sm"
+            style={{ alignItems: "center", textAlign: "center" }}
+          >
             Like
           </Button>
-          <Button variant="transparent" leftSection={<IconMessageCircle size={18} />} size="compact-sm" style={{ alignItems: "center", textAlign: "center" }}>
+          <Button
+            c="navy.6"
+            variant="transparent"
+            leftSection={<IconMessageCircle size={18} />}
+            size="compact-sm"
+            style={{ alignItems: "center", textAlign: "center" }}
+          >
             Comment
           </Button>
-          <Button variant="transparent" leftSection={<IconShare size={18} />} size="compact-sm" style={{ alignItems: "center", textAlign: "center" }}>
+          <Button
+            c="navy.6"
+            variant="transparent"
+            leftSection={<IconShare size={18} />}
+            size="compact-sm"
+            style={{ alignItems: "center", textAlign: "center" }}
+          >
             Share
           </Button>
         </Box>
       </Box>
     </Card>
-  )
+  );
+};
+
+interface OtherProfileProps {
+  key: number,
+  posterName: string,
+  posterResearchInterest: string,
+  posterProfilePicURL?: string,
 }
 
-const OtherProfile = () => {
+const OtherProfile = ({ posterName, posterResearchInterest, posterProfilePicURL }: OtherProfileProps) => {
   return (
     <Box style={{ display: "flex", alignItems: "center", gap: 12 }} mb={12}>
-      <Avatar radius="xl" />
+      <Avatar src={posterProfilePicURL} radius="xl" />
       <Box>
-        <Text size="md" fw={600}>
-          Julia Brown
+        <Text c="navy.8" size="md" fw={600}>
+          {posterName}
         </Text>
-        <Text size="sm" mt={-4}>Microbiology</Text>
+        <Text c="navy.8" size="sm" mt={-4}>
+          {posterResearchInterest}
+        </Text>
       </Box>
     </Box>
-  )
+  );
+};
+
+interface ProfileListWidgetProps {
+  widgetTitle: string,
+  profiles?: OtherProfileProps[]
 }
 
-const FriendsWidget = () => {
+const ProfileListWidget = ({ widgetTitle, profiles }: ProfileListWidgetProps) => {
   return (
-    <Card shadow="sm" padding="lg" radius="md" m={4} withBorder >
+    <Card shadow="sm" padding="lg" radius="md" m={4} withBorder>
       <Center mb={8}>
-        <Text fw={600} size="xl">
-          Friends
+        <Text c="navy.8" fw={600} size="xl">
+          {widgetTitle}
         </Text>
       </Center>
       <Box>
-        <OtherProfile />
-        <OtherProfile />
+        {
+          // We must pass profiles and there must be something in the list
+          // Otherwise, the list shouldn't be displayed
+          profiles && profiles.length > 0 ?
+            /*
+               FIXME: The key should come from the loop and not manually?
+                      consult backend people!
+            */
+            profiles.map((otherProfile) => {
+              return <OtherProfile
+                key={otherProfile.key}
+                posterName={otherProfile.posterName}
+                posterResearchInterest={otherProfile.posterResearchInterest}
+                posterProfilePicURL={otherProfile.posterProfilePicURL} />
+            }) : <Center><Text size="sm" c="navy.6">Nothing to see here!</Text></Center>
+        }
       </Box>
       <Center>
         <Button variant="transparent">
-          <IconDots />
+          <IconDots style={{ color: "var(--mantine-color-navy-6)" }} />
         </Button>
       </Center>
     </Card>
-  )
-}
+  );
+};
 
-const FollowingWidget = () => {
+const ViewSelector = () => {
+  // TODO: Finish this!!!
   return (
-    <Card shadow="sm" padding="lg" radius="md" m={4} withBorder >
-      <Center mb={8}>
-        <Text fw={600} size="xl">
-          Following
-        </Text>
-      </Center>
-      <Box>
-        <OtherProfile />
-        <OtherProfile />
-      </Box>
-      <Center>
-        <Button variant="transparent">
-          <IconDots />
-        </Button>
-      </Center>
-    </Card>
+    <Box
+      my={14}
+      px={14}
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        width: "100%",
+      }}
+    >
+      <Button variant="transparent" c="navy.8" size="md">Posts</Button>
+      <Button variant="transparent" c="navy.6" size="md">Publications</Button>
+      <Button variant="transparent" c="navy.6" size="md">Projects</Button>
+    </Box>
   )
 }
 
 export default function ProfilePage() {
   return (
     <div>
-      <MyProfileWidget />
-      <APost />
-      <FriendsWidget />
-      <FollowingWidget />
-    </div>
+      <ProfileWidget
+        profileName="Rafael Niebles"
+        profileInstitution="Univ. of Central Florida"
+        profileRole="Student"
+        profileResearchInterest="Machine Learning"
+        profileAbout="Hello this is my beautiful account"
+        profileSkills={["JavaScript", "More JavaScript", "Even MORE JavaScript!", "More More JAVASCRIPT More!!!", "php...!?"]}
+        profilePicURL="https://ih1.redbubble.net/image.5595885630.8128/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg"
+        profileHeaderImageURL="https://external-preview.redd.it/r6g38aXSaQWtd1KxwJbQ-Fs5jtSVDxX3wtLHJEdqixw.jpg?width=1080&crop=smart&auto=webp&s=87a2c94cb3e1561e2b6abd467ea68d81b9901720"
+      />
+
+      <Post
+        posterName="Rafael Niebles"
+        posterResearchInterest="JavaScript Hater"
+        posterProfilePicURL="https://pbs.twimg.com/media/DUzbwUdX4AE5RGO.jpg"
+        attachmentPreviewURL="https://s3-eu-west-1.amazonaws.com/images.linnlive.com/d4cf250f63918acf8e5d11b6bfddb6ba/9250355b-75cf-42d8-957b-6d28c6aa930f.jpg"
+        timestamp={new Date()}
+        postText="I think JavaScript is a crime against humanity and it should be explodonated"
+      />
+
+      <ViewSelector />
+
+      <ProfileListWidget
+        widgetTitle="Following"
+      />
+      <ProfileListWidget
+        widgetTitle="Friends"
+        profiles={[
+          {
+            key: 0,
+            posterName: "Beethoven",
+            posterResearchInterest: "European Music",
+            posterProfilePicURL: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsxuN8XD4da9_EVO8m6ZP4aECjlYM8mBkbTg&s"
+          },
+          {
+            key: 1,
+            posterName: "2Pac Shakur",
+            posterResearchInterest: "Rap",
+            posterProfilePicURL: "https://npr.brightspotcdn.com/dims4/default/3ef5a7e/2147483647/strip/true/crop/2814x2110+0+0/resize/880x660!/quality/90/?url=https%3A%2F%2Fmedia.npr.org%2Fassets%2Fimg%2F2013%2F07%2F18%2Frexusa_829701b1-31184c163596e9c44d777e61951e2324e3e49487.jpg"
+          }
+        ]}
+      />
+    </div >
   );
 }

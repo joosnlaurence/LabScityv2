@@ -16,14 +16,14 @@ export function AppNavbar() {
   return (
     <Box
       h={60}
+      bg="gray.7"
       style={{
         borderTop: "1px solid lightgray",
-        backgroundColor: "white",
         position: "fixed",
         bottom: 0,
         left: 0,
         right: 0,
-        zIndex: 1000
+        zIndex: 1001
       }}
     >
       <Group h="100%" justify="space-around" align="center">
@@ -36,7 +36,7 @@ export function AppNavbar() {
               href={item.href}
               variant="transparent"
               size="lg"
-              c={isActive ? "black" : "gray"}
+              c={isActive ? "gray.0" : "gray.5"}
               style={{ transition: "color 0.2s" }}
             >
               <item.icon size={24} />
