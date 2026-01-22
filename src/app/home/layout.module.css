@@ -1,0 +1,21 @@
+.container {
+	min-height: 100vh;
+	background-color: #D8E0E8; /* gray.2 */
+}
+
+.grid {
+	margin: 0;
+	padding: 1rem;
+}
+
+.leftSidebar {
+	padding: 1rem;
+}
+
+.center {
+	padding: 1rem;
+}
+
+.rightSidebar {
+	padding: 1rem;
+}
