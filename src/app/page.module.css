@@ -1,141 +1,138 @@
 .page {
-  --background: #fafafa;
-  --foreground: #fff;
+  --lab-blue: #073869;
+  --lab-bg: #EFF4F6;
+  --lab-card: #D8E0E8;
+  --lab-white: #EFF4F6;
 
-  --text-primary: #000;
-  --text-secondary: #666;
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
-  display: flex;
   min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
+  background-color: var(--lab-bg);
+  font-family: var(--mantine-font-family);
 }
 
-.main {
+.navbar {
   display: flex;
-  min-height: 100vh;
-  width: 100%;
-  max-width: 800px;
-  flex-direction: column;
-  align-items: flex-start;
   justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
+  align-items: center;
+  padding: 24px 48px;
 }
 
-.intro {
+.logoContainer {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  height: 100px; 
 }
 
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
+.logo {
+  height: auto; 
+  width: auto;  
+  object-fit: contain;
 }
 
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
-}
-
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
+.navActions {
   display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
   gap: 16px;
-  font-size: 14px;
 }
 
-.ctas a {
+.signIn {
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--lab-blue);
+  color: var(--lab-blue);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.joinNow {
+  padding: 8px 20px;
+  border-radius: 999px;
+  background-color: var(--lab-blue);
+  color: var(--lab-white);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.hero {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
+  padding: 120px 24px;
+  text-align: center;
+}
+
+.heroTitle {
+  font-size: 64px;
+  font-weight: 800;
+  color: var(--lab-blue);
+  line-height: 1.2;
+}
+
+.heroTitle span {
+  display: block;
+  margin-top: 16px;
+}
+
+.exploreSection {
+  background-color: var(--lab-card);
+  padding: 64px 48px;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+}
+
+.exploreGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.exploreTitle {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--lab-blue);
+}
+
+.exploreDescription {
+  margin-top: 12px;
+  font-size: 18px;
+  color: var(--lab-blue);
+}
+
+
+.categoryGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-end;
+}
+
+.category {
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--lab-blue);
+  color: var(--lab-blue);
+  text-decoration: none;
   font-weight: 500;
+  background: transparent;
+  transition: background 0.2s ease;
 }
 
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
+.category:hover {
+  background-color: #073869;
 }
 
-a.secondary {
-  border-color: var(--button-secondary-border);
-}
-
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
+@media (max-width: 900px) {
+  .heroTitle {
+    font-size: 48px;
   }
 
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
-  }
-}
-
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
+  .exploreGrid {
+    grid-template-columns: 1fr;
   }
 
-  .intro {
-    gap: 16px;
-  }
-
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
-  }
-
-  .page {
-    --background: #000;
-    --foreground: #000;
-
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
+  .pillGroup {
+    justify-content: flex-start;
   }
 }
