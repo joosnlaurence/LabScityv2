@@ -1,4 +1,4 @@
-import { Box, Grid } from "@mantine/core";
+import { Box } from "@mantine/core";
 import { Header } from "@/components/layout/header";
 import classes from "./layout.module.css";
 
@@ -8,19 +8,19 @@ export default function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<Box className={classes.container}>
+		<Box className={classes.container} bg="navy.2">
 			<Header />
-			<Grid gutter={0} className={classes.grid}>
-				<Grid.Col span={{ base: 12, sm: 2 }} className={classes.leftSidebar}>
+			<Box className={classes.grid}>
+				<Box className={classes.leftSidebar}>
 					{/* Left sidebar (~15%) - User widget will go here */}
-				</Grid.Col>
-				<Grid.Col span={{ base: 12, sm: 8 }} className={classes.center}>
+				</Box>
+				<Box className={classes.center}>
 					{children}
-				</Grid.Col>
-				<Grid.Col span={{ base: 12, sm: 2 }} className={classes.rightSidebar}>
+				</Box>
+				<Box className={classes.rightSidebar}>
 					{/* Right sidebar (~20%) - Trending and User profile will go here */}
-				</Grid.Col>
-			</Grid>
+				</Box>
+			</Box>
 		</Box>
 	);
 }

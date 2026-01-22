@@ -1,11 +1,19 @@
 .container {
 	min-height: 100vh;
-	background-color: #D8E0E8; /* gray.2 */
 }
 
 .grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0;
 	margin: 0;
 	padding: 1rem;
+}
+
+@media (min-width: 576px) {
+	.grid {
+		grid-template-columns: 2fr 8fr 2fr;
+	}
 }
 
 .leftSidebar {
