@@ -2,7 +2,7 @@ import { Box } from "@mantine/core";
 import { Header } from "@/components/layout/header";
 import classes from "./layout.module.css";
 
-export default function DashboardLayout({
+export default function HomeLayout({
 	children,
 }: {
 	children: React.ReactNode;
