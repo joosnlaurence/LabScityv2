@@ -3,13 +3,12 @@
 import { z } from "zod";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
 import { createClient } from "@/supabase/server";
-// import { supabase } from "./SupabaseClient";
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const supabase = await createClient();
-  
+
   // Validate with Zod schema
   try {
     const parsed = loginSchema.parse({ email, password });
@@ -28,7 +27,6 @@ export async function loginAction(formData: FormData) {
       };
     }
 
-    console.log("makes it past the try catch:", data);
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
