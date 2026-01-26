@@ -1,0 +1,77 @@
+.card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.2);
+  background: var(--mantine-color-gray-2);
+}
+
+.header {
+  padding: 16px 20px 12px;
+}
+
+.name {
+  font-weight: 700;
+  color: var(--mantine-color-navy-8);
+  line-height: 1.1;
+}
+
+.field {
+  color: var(--mantine-color-navy-7);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.time {
+  color: var(--mantine-color-navy-7);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.content {
+  padding: 0 20px 16px;
+  color: var(--mantine-color-navy-7);
+  font-weight: 600;
+}
+
+.media {
+  background: var(--mantine-color-navy-7);
+  color: var(--mantine-color-navy-0);
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  overflow: hidden;
+}
+
+.mediaImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--mantine-color-gray-2);
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--mantine-color-navy-7);
+  font-weight: 600;
+}
+
+.actionIcon {
+  color: var(--mantine-color-navy-7);
+}
