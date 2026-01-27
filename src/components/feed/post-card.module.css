@@ -53,6 +53,10 @@
   display: block;
 }
 
+.mediaLabel {
+  white-space: pre-line;
+}
+
 .actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

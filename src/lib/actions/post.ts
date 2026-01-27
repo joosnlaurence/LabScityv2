@@ -7,7 +7,6 @@ import {
 	type CreatePostValues,
 	type FeedFilterValues,
 } from "@/lib/validations/post";
-import { supabase } from "./SupabaseClient";
 
 export async function createPost(input: CreatePostValues) {
 	try {

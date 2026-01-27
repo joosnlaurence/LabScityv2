@@ -53,7 +53,7 @@ export function PostCard({
         </Box>
       ) : mediaLabel ? (
         <Box className={classes.media}>
-          <Text component="span" style={{ whiteSpace: "pre-line" }}>
+          <Text component="span" className={classes.mediaLabel}>
             {mediaLabel}
           </Text>
         </Box>

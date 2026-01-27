@@ -61,3 +61,16 @@ export interface PostWithRelations extends Post {
 	like_count: number;
 	is_liked: boolean;
 }
+
+/**
+ * Local feed display type used by the home feed UI
+ */
+export interface FeedPostItem {
+	id: string;
+	userName: string;
+	scientificField: string;
+	content: string;
+	timeAgo: string;
+	mediaUrl?: string | null;
+	mediaLabel?: string | null;
+}
