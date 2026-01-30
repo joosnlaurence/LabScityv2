@@ -262,9 +262,9 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 				</Paper>
 			) : null}
 
-			<Stack gap="lg">
+			<Stack gap="lg" w="100%">
 				{posts.map((post) => (
-					<Stack key={post.id} className={classes.postStack}>
+					<Stack key={post.id} className={classes.postStack} w="100%">
 						<PostCard
 							userName={post.userName}
 							field={post.scientificField}
@@ -281,28 +281,34 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 						/>
 
 						{activeCommentPostId === post.id || post.comments.length > 0 ? (
-							<Stack className={classes.commentSection}>
+							<Stack className={classes.commentSection} w="100%" align="stretch">
 								{activeCommentPostId === post.id ? (
-									<CommentComposer
-										postId={post.id}
-										onAddComment={handleAddComment}
-									/>
+									<div className={classes.commentItem}>
+										<div className={classes.commentCard}>
+											<CommentComposer
+												postId={post.id}
+												onAddComment={handleAddComment}
+											/>
+										</div>
+									</div>
 								) : null}
 								{post.comments.map((comment) => (
 									<div key={comment.id} className={classes.commentItem}>
-										<PostCommentCard
-											comment={comment}
-											onLikeClick={(commentId) =>
-												handleToggleCommentLike(post.id, commentId)
-											}
-											onReportClick={(commentId) =>
-												setReportTarget({
-													type: "comment",
-													postId: post.id,
-													commentId,
-												})
-											}
-										/>
+										<div className={classes.commentCard}>
+											<PostCommentCard
+												comment={comment}
+												onLikeClick={(commentId) =>
+													handleToggleCommentLike(post.id, commentId)
+												}
+												onReportClick={(commentId) =>
+													setReportTarget({
+														type: "comment",
+														postId: post.id,
+														commentId,
+													})
+												}
+											/>
+										</div>
 									</div>
 								))}
 							</Stack>
