@@ -120,8 +120,92 @@
 }
 
 .category:hover {
-  background-color: #073869;
+  background-color: var(--lab-blue);
 }
+
+.audienceSection {
+  background: var(--lab-card);
+  padding: 5rem 1.5rem;
+  overflow-x: hidden;
+}
+
+.audienceGrid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.audienceTitle {
+  font-size: 2.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--lab-blue);
+}
+
+.audienceDescription {
+  font-size: 1.1rem;
+  color: #63809F;
+  margin-bottom: 2rem;
+}
+
+.audienceActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.audienceAction {
+  background: var(--lab-card);
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--lab-blue);
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audienceAction:hover {
+  background: #c5cacc;
+}
+
+.audienceImageWrapper {
+  position: relative;
+  width: 680px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+
+  justify-self: end;
+  transform: translateX(140px);
+}
+
+.audienceImage {
+  object-fit: cover;
+}
+
+.audienceText {
+  max-width: none;
+  background: var(--lab-white);
+  padding: 4rem 4.5rem;
+  border-radius: 24px;
+}
+
+.audienceText h2 {
+  color: var(--lab-blue);
+  font-size: 2.8rem;
+  font-weight: 700;
+}
+
+.audienceText p {
+  color: #63809F;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  max-width: 520px;
+}
+
 
 @media (max-width: 900px) {
   .heroTitle {
@@ -132,7 +216,17 @@
     grid-template-columns: 1fr;
   }
 
-  .pillGroup {
+  .categoryGroup {
     justify-content: flex-start;
+  }
+  
+  .audienceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .audienceImageWrapper {
+    width: 320px;
+    transform: none;
+    margin: 0 auto;
   }
 }

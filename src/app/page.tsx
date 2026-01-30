@@ -51,6 +51,39 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <section className={styles.audienceSection}>
+        <div className={styles.audienceGrid}>
+          <div className={styles.audienceLeft}>
+            <div className={styles.audienceText}>
+              <h2>Who is LabScity for?</h2>
+              <p>Anyone looking to explore, share, and grow within the scientific community.</p>
+
+              <div className={styles.audienceActions}>
+                <Link href="/discover" className={styles.audienceAction}>
+                  Find researchers →
+                </Link>
+                <Link href="/discover" className={styles.audienceAction}>
+                  Explore projects →
+                </Link>
+                <Link href="/discover" className={styles.audienceAction}>
+                  Discover new research →
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className={styles.audienceImageWrapper}>
+            <Image
+              src="/landing-page-collab.png"
+              alt="Researchers collaborating"
+              fill
+              className={styles.audienceImage}
+              priority
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
