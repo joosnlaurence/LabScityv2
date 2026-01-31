@@ -56,10 +56,24 @@ export const createCommentSchema = z.object({
 });
 
 export const createReportSchema = z.object({
+	type: z
+		.enum([
+			"Harassment/Hate",
+			"Spam/Scam",
+			"Violence/Harm",
+			"Sexual Content",
+			"Misinformation",
+			"Impersonation/Stolen Intellectual Property",
+			"Other",
+		])
+		.or(z.literal("")),
 	reason: z
 		.string()
 		.min(1, { message: "Reason is required" })
 		.max(2000, { message: "Reason must be less than 2000 characters" }),
+}).refine((values) => values.type !== "", {
+	message: "Report type is required",
+	path: ["type"],
 });
 
 export type CreatePostValues = z.infer<typeof createPostSchema>;

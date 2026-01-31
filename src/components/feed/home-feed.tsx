@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Button, FileInput, Group, Paper, Stack, Text, TextInput, Textarea } from "@mantine/core";
+import { Button, FileInput, Group, Paper, Stack, TextInput, Textarea } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
+import { ReportOverlay } from "@/components/report/report-overlay";
 import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
 import {
 	createCommentSchema,
 	createPostSchema,
-	createReportSchema,
 	type CreateCommentValues,
 	type CreatePostValues,
 	type CreateReportValues,
@@ -81,25 +81,11 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 		setIsComposerOpen(false);
 	});
 
-	const {
-		handleSubmit: handleReportSubmit,
-		register: registerReport,
-		reset: resetReport,
-		formState: { errors: reportErrors, isSubmitting: isReportSubmitting, isValid: isReportValid },
-	} = useForm<CreateReportValues>({
-		resolver: zodResolver(createReportSchema),
-		mode: "onChange",
-		defaultValues: {
-			reason: "",
-		},
-	});
-
-	const onSubmitReport = handleReportSubmit((values) => {
+	const onSubmitReport = (values: CreateReportValues) => {
 		if (!reportTarget) return;
-		// TODO: Submit report to database.
+		// TODO: Submit report to database, including report type and description.
 		setReportTarget(null);
-		resetReport({ reason: "" });
-	});
+	};
 
 	const handleAddComment = (postId: string, values: CreateCommentValues) => {
 		const newComment: FeedCommentItem = {
@@ -145,14 +131,12 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 
 	return (
 		<Stack gap="lg">
-			{reportTarget ? (
-				<div className={classes.reportOverlay}>
-					<div className={classes.reportPanel}>
-						<Text className={classes.reportHeader}>
-							{reportTarget.type === "post" ? "Report post" : "Report comment"}
-						</Text>
-						{reportTarget.type === "post" ? (
-							posts
+			<ReportOverlay
+				open={reportTarget !== null}
+				title={reportTarget?.type === "post" ? "Report post" : "Report comment"}
+				preview={
+					reportTarget?.type === "post"
+						? posts
 								.filter((post) => post.id === reportTarget.postId)
 								.map((post) => (
 									<PostCard
@@ -168,11 +152,10 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 										showActions={false}
 									/>
 								))
-						) : (
-							posts
-								.filter((post) => post.id === reportTarget.postId)
+						: posts
+								.filter((post) => post.id === reportTarget?.postId)
 								.flatMap((post) => post.comments)
-								.filter((comment) => comment.id === reportTarget.commentId)
+								.filter((comment) => comment.id === reportTarget?.commentId)
 								.map((comment) => (
 									<PostCommentCard
 										key={comment.id}
@@ -181,29 +164,10 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 										showActions={false}
 									/>
 								))
-						)}
-						<form onSubmit={onSubmitReport}>
-							<Stack gap="sm">
-								<Textarea
-									label="Reason"
-									placeholder="Describe why you are reporting this post..."
-									minRows={3}
-									error={reportErrors.reason?.message}
-									{...registerReport("reason")}
-								/>
-								<Group justify="flex-end">
-									<Button variant="default" onClick={() => setReportTarget(null)}>
-										Cancel
-									</Button>
-									<Button type="submit" disabled={!isReportValid || isReportSubmitting}>
-										Submit
-									</Button>
-								</Group>
-							</Stack>
-						</form>
-					</div>
-				</div>
-			) : null}
+				}
+				onClose={() => setReportTarget(null)}
+				onSubmit={onSubmitReport}
+			/>
 			<Button
 				className={classes.newPostButton}
 				leftSection={<IconPlus size={14} />}
@@ -222,13 +186,13 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 						<Stack gap="sm">
 							<TextInput
 								label="Name"
-								placeholder="Dr. Ada Lovelace"
+								placeholder="Need to remove this"
 								error={errors.userName?.message}
 								{...register("userName")}
 							/>
 							<TextInput
 								label="Scientific Field"
-								placeholder="Neuroscience, Astrophysics..."
+								placeholder="Need to change to a dropdown"
 								error={errors.scientificField?.message}
 								{...register("scientificField")}
 							/>
