@@ -14,7 +14,7 @@ interface ProfileWidgetProps {
 
 export default function ProfileWidget({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: ProfileWidgetProps) {
   return (
-    <Card shadow="sm" padding="none" radius="md" m={4} withBorder>
+    <Card bg="gray.2" shadow="sm" padding="none" radius="md" m={4} withBorder>
       <Image
         bg="gray"
         w="100%"
@@ -38,16 +38,15 @@ export default function ProfileWidget({ profileName, profileInstitution, profile
             size="xl"
           />
           <Box>
-            <Text c="navy.8" size="xl" fw={600} mb={-4}>
+            <Text c="navy.8" size="32px" fw={700} mb={4}>
               {profileName}
             </Text>
 
-            <Text c="navy.8">{profileResearchInterest}</Text>
-
             <Box>
-              <Text span c="navy.6">{profileRole}, {profileInstitution}</Text>
+              <Text span c="navy.7" size="18px" fw={600} mb={2}>{profileRole}, {profileInstitution}</Text>
             </Box>
 
+            <Text c="navy.7" size="16px" mb={1.5}>{profileResearchInterest}</Text>
 
           </Box>
         </Box>
@@ -55,7 +54,7 @@ export default function ProfileWidget({ profileName, profileInstitution, profile
           {profileAbout &&
             <Box mb={12}>
               <Text c="navy.8" fw={600}>About</Text>
-              <Text c="navy.8">{profileAbout}</Text>
+              <Text c="navy.7">{profileAbout}</Text>
             </Box>
           }
           {(profileSkills && profileSkills.length > 0) &&
@@ -66,7 +65,7 @@ export default function ProfileWidget({ profileName, profileInstitution, profile
               <Group gap={8}>
                 {(profileSkills.map((skill, i) => {
                   return (
-                    <Badge key={i} color="navy.6" variant="light">
+                    <Badge key={i} color="navy.7" variant="light">
                       {skill}
                     </Badge>
                   )

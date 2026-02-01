@@ -7,11 +7,11 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Box style={{ height: "100vh", position: "relative" }}>
-      <Box style={{ paddingBottom: 60, height: "100%", overflow: "auto" }}>
+    <Box style={{ minHeight: "100vh" }}>
+      <AppNavbar />
+      <Box>
         {children}
       </Box>
-      <AppNavbar />
     </Box>
   );
 }

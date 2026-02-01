@@ -19,7 +19,7 @@ export default function Post({
   postText
 }: PostProps) {
   return (
-    <Card shadow="sm" padding="lg" radius="md" m={4} withBorder>
+    <Card bg="gray.2" shadow="sm" padding="lg" radius="md" m={4} withBorder>
       <Box>
         <Box style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Avatar radius="xl" src={posterProfilePic} />
@@ -41,7 +41,7 @@ export default function Post({
                 </ActionIcon>
               </Box>
             </Group>
-            <Text c="navy.8" mt={-4} size="sm">
+            <Text c="navy.7" mt={-4} size="sm">
               {posterResearchInterest}
             </Text>
           </Box>
@@ -50,7 +50,7 @@ export default function Post({
           {postText}
         </Text>
         <Image radius="md" w="100%" src={attachmentPreviewURL} />
-        <Text size="sm" c="navy.5" ml={2} my={12}>
+        <Text size="sm" c="navy.7" ml={2} my={12}>
           {timestamp.toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
@@ -71,7 +71,7 @@ export default function Post({
           }}
         >
           <Button
-            c="navy.6"
+            c="navy.8"
             variant="transparent"
             leftSection={<IconHeart size={18} />}
             size="compact-sm"
@@ -80,7 +80,7 @@ export default function Post({
             Like
           </Button>
           <Button
-            c="navy.6"
+            c="navy.8"
             variant="transparent"
             leftSection={<IconMessageCircle size={18} />}
             size="compact-sm"
@@ -89,7 +89,7 @@ export default function Post({
             Comment
           </Button>
           <Button
-            c="navy.6"
+            c="navy.8"
             variant="transparent"
             leftSection={<IconShare size={18} />}
             size="compact-sm"

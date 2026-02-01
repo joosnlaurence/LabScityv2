@@ -9,7 +9,7 @@ export interface ProfileListWidgetProps {
 
 export default function ProfileListWidget({ widgetTitle, profiles }: ProfileListWidgetProps) {
   return (
-    <Card shadow="sm" padding="lg" radius="md" m={4} withBorder>
+    <Card bg="gray.2" shadow="sm" padding="lg" radius="md" m={4} withBorder>
       <Center mb={8}>
         <Text c="navy.8" fw={600} size="xl">
           {widgetTitle}
@@ -30,7 +30,7 @@ export default function ProfileListWidget({ widgetTitle, profiles }: ProfileList
                 posterName={otherProfile.posterName}
                 posterResearchInterest={otherProfile.posterResearchInterest}
                 posterProfilePicURL={otherProfile.posterProfilePicURL} />
-            }) : <Center><Text size="sm" c="navy.6">Nothing to see here!</Text></Center>
+            }) : <Center><Text size="sm" c="navy.7">Nothing to see here!</Text></Center>
         }
       </Box>
       <Center>
