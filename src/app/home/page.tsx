@@ -5,7 +5,14 @@ import {
 } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { HomeFeed } from "@/components/feed/home-feed";
-import { getFeed } from "@/lib/actions/post";
+import {
+	createComment,
+	createPost,
+	createReport,
+	getFeed,
+	likeComment,
+	likePost,
+} from "@/lib/actions/post";
 import { feedKeys } from "@/lib/query-keys";
 import { feedFilterSchema } from "@/lib/validations/post";
 
@@ -34,7 +41,13 @@ export default async function HomePage() {
 
 	return (
 		<HydrationBoundary state={dehydratedState}>
-			<HomeFeed />
+			<HomeFeed
+				createPostAction={createPost}
+				createCommentAction={createComment}
+				createReportAction={createReport}
+				likePostAction={likePost}
+				likeCommentAction={likeComment}
+			/>
 		</HydrationBoundary>
 	);
 }

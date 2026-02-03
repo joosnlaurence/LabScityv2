@@ -18,7 +18,21 @@ import {
 	likeComment,
 	likePost,
 } from "@/lib/actions/post";
-import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
+import type { FeedPostItem } from "@/lib/types/feed";
+
+type CreatePostAction = typeof createPost;
+type CreateCommentAction = typeof createComment;
+type CreateReportAction = typeof createReport;
+type LikePostAction = typeof likePost;
+type LikeCommentAction = typeof likeComment;
+
+interface HomeFeedProps {
+	createPostAction: CreatePostAction;
+	createCommentAction: CreateCommentAction;
+	createReportAction: CreateReportAction;
+	likePostAction: LikePostAction;
+	likeCommentAction: LikeCommentAction;
+}
 import { feedKeys } from "@/lib/query-keys";
 import {
 	createCommentSchema,
@@ -32,7 +46,13 @@ import classes from "./home-feed.module.css";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 
-export function HomeFeed() {
+export function HomeFeed({
+	createPostAction,
+	createCommentAction,
+	createReportAction,
+	likePostAction,
+	likeCommentAction,
+}: HomeFeedProps) {
 	const queryClient = useQueryClient();
 	const [isComposerOpen, setIsComposerOpen] = useState(false);
 	const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
@@ -88,7 +108,7 @@ export function HomeFeed() {
 				mediaUrl: values.mediaUrl ?? "",
 				link: values.link ?? "",
 			};
-			const result = await createPost(payload);
+			const result = await createPostAction(payload);
 			if (!result.success) {
 				throw new Error(result.error ?? "Failed to create post");
 			}
@@ -124,7 +144,7 @@ export function HomeFeed() {
 			postId: string;
 			values: CreateCommentValues;
 		}) => {
-			const result = await createComment(postId, values);
+			const result = await createCommentAction(postId, values);
 			if (!result.success) {
 				throw new Error(result.error ?? "Failed to create comment");
 			}
@@ -153,7 +173,7 @@ export function HomeFeed() {
 			commentId: string | null;
 			values: CreateReportValues;
 		}) => {
-			const result = await createReport(postId, commentId, values);
+			const result = await createReportAction(postId, commentId, values);
 			if (!result.success) {
 				throw new Error(result.error ?? "Failed to submit report");
 			}
@@ -178,7 +198,7 @@ export function HomeFeed() {
 
 	const likePostMutation = useMutation({
 		mutationFn: async (postId: string) => {
-			const result = await likePost(postId);
+			const result = await likePostAction(postId);
 			if (!result.success) {
 				throw new Error(result.error ?? "Failed to update like");
 			}
@@ -198,7 +218,7 @@ export function HomeFeed() {
 
 	const likeCommentMutation = useMutation({
 		mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
-			const result = await likeComment(postId, commentId);
+			const result = await likeCommentAction(postId, commentId);
 			if (!result.success) {
 				throw new Error(result.error ?? "Failed to update like");
 			}
