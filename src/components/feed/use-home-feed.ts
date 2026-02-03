@@ -19,20 +19,7 @@ import {
 	type CreatePostValues,
 	type CreateReportValues,
 } from "@/lib/validations/post";
-
-export type CreatePostAction = typeof createPost;
-export type CreateCommentAction = typeof createComment;
-export type CreateReportAction = typeof createReport;
-export type LikePostAction = typeof likePost;
-export type LikeCommentAction = typeof likeComment;
-
-export interface HomeFeedProps {
-	createPostAction: CreatePostAction;
-	createCommentAction: CreateCommentAction;
-	createReportAction: CreateReportAction;
-	likePostAction: LikePostAction;
-	likeCommentAction: LikeCommentAction;
-}
+import type { HomeFeedProps } from "./home-feed.types";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 

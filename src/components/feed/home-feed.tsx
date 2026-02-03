@@ -7,7 +7,8 @@ import { PostCard } from "@/components/feed/post-card";
 import { PostComposer } from "@/components/feed/post-composer";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
-import { useHomeFeed, type HomeFeedProps } from "@/components/feed/use-home-feed";
+import { useHomeFeed } from "@/components/feed/use-home-feed";
+import type { HomeFeedProps } from "@/components/feed/home-feed.types";
 import classes from "./home-feed.module.css";
 
 export function HomeFeed(props: HomeFeedProps) {
