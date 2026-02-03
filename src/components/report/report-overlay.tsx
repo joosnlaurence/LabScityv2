@@ -65,7 +65,7 @@ export function ReportOverlay({ open, title, preview, onClose, onSubmit }: Repor
               placeholder="Select a report type"
               value={reportType || ""}
               onChange={(value) =>
-                setValue("type", value ?? "", {
+                setValue("type", (value ?? "") as CreateReportValues["type"], {
                   shouldValidate: true,
                 })
               }
@@ -83,7 +83,7 @@ export function ReportOverlay({ open, title, preview, onClose, onSubmit }: Repor
               <Button variant="default" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={!isValid || isSubmitting} loading={isSubmitting}>
                 Submit
               </Button>
             </Group>

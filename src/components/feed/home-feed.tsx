@@ -10,7 +10,7 @@ import { useState } from "react";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
-import { createPost, getFeed } from "@/lib/actions/post";
+import { createComment, createPost, createReport, getFeed } from "@/lib/actions/post";
 import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
 import { feedKeys } from "@/lib/query-keys";
 import {
@@ -109,21 +109,83 @@ export function HomeFeed() {
 		},
 	});
 
+	const createCommentMutation = useMutation({
+		mutationFn: async ({
+			postId,
+			values,
+		}: {
+			postId: string;
+			values: CreateCommentValues;
+		}) => {
+			const result = await createComment(postId, values);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to create comment");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+			setActiveCommentPostId(null);
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not add comment",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const createReportMutation = useMutation({
+		mutationFn: async ({
+			postId,
+			commentId,
+			values,
+		}: {
+			postId: string;
+			commentId: string | null;
+			values: CreateReportValues;
+		}) => {
+			const result = await createReport(postId, commentId, values);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to submit report");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			setReportTarget(null);
+			notifications.show({
+				title: "Report submitted",
+				message: "Thank you. We will review this report.",
+				color: "green",
+			});
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not submit report",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
 	const posts: FeedPostItem[] = feedData?.posts ?? [];
 
 	const onSubmit = handleSubmit((values) => {
 		createPostMutation.mutate(values);
 	});
 
-	const onSubmitReport = (values: CreateReportValues) => {
+	const onSubmitReport = async (values: CreateReportValues) => {
 		if (!reportTarget) return;
-		// TODO: Submit report to database, including report type and description.
-		setReportTarget(null);
+		await createReportMutation.mutateAsync({
+			postId: reportTarget.type === "post" ? reportTarget.postId : reportTarget.postId,
+			commentId: reportTarget.type === "comment" ? reportTarget.commentId : null,
+			values,
+		});
 	};
 
-	const handleAddComment = (_postId: string, _values: CreateCommentValues) => {
-		// TODO (step 6): call createComment mutation and invalidate feed
-		setActiveCommentPostId(null);
+	const handleAddComment = async (postId: string, values: CreateCommentValues) => {
+		await createCommentMutation.mutateAsync({ postId, values });
 	};
 
 	const handleTogglePostLike = (_postId: string) => {
@@ -274,6 +336,7 @@ export function HomeFeed() {
 											<CommentComposer
 												postId={post.id}
 												onAddComment={handleAddComment}
+												isSubmitting={createCommentMutation.isPending}
 											/>
 										</div>
 									</div>
@@ -309,10 +372,11 @@ export function HomeFeed() {
 
 interface CommentComposerProps {
 	postId: string;
-	onAddComment: (postId: string, values: CreateCommentValues) => void;
+	onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
+	isSubmitting?: boolean;
 }
 
-function CommentComposer({ postId, onAddComment }: CommentComposerProps) {
+function CommentComposer({ postId, onAddComment, isSubmitting: isMutationPending = false }: CommentComposerProps) {
 	const {
 		handleSubmit,
 		register,
@@ -327,8 +391,8 @@ function CommentComposer({ postId, onAddComment }: CommentComposerProps) {
 		},
 	});
 
-	const onCommentSubmit = handleSubmit((values) => {
-		onAddComment(postId, values);
+	const onCommentSubmit = handleSubmit(async (values) => {
+		await onAddComment(postId, values);
 		reset({
 			userName: "",
 			content: "",
@@ -353,7 +417,11 @@ function CommentComposer({ postId, onAddComment }: CommentComposerProps) {
 						{...register("content")}
 					/>
 					<Group className={classes.formActions}>
-						<Button type="submit" disabled={!isValid || isSubmitting} loading={isSubmitting}>
+						<Button
+							type="submit"
+							disabled={!isValid || isSubmitting || isMutationPending}
+							loading={isMutationPending}
+						>
 							Comment
 						</Button>
 					</Group>
