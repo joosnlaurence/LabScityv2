@@ -1,5 +1,7 @@
-import "@mantine/core/styles.css"; 
+import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import { theme } from "@/lib/constants/theme";
 import { QueryProvider } from "@/components/providers/query-provider"; 
 
@@ -21,6 +23,7 @@ export default function RootLayout({
       <body>
         <QueryProvider>
           <MantineProvider theme={theme} defaultColorScheme="light">
+            <Notifications />
             {children}
           </MantineProvider>
         </QueryProvider>
