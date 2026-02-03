@@ -1,30 +1,60 @@
 "use client";
 
-import { useState } from "react";
-import { Button, FileInput, Group, Paper, Stack, TextInput, Textarea } from "@mantine/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, FileInput, Group, Paper, Stack, Text, TextInput, Textarea } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { IconPlus } from "@tabler/icons-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
-import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
+import {
+	createComment,
+	createPost,
+	createReport,
+	getFeed,
+	likeComment,
+	likePost,
+} from "@/lib/actions/post";
+import type { FeedPostItem } from "@/lib/types/feed";
+
+type CreatePostAction = typeof createPost;
+type CreateCommentAction = typeof createComment;
+type CreateReportAction = typeof createReport;
+type LikePostAction = typeof likePost;
+type LikeCommentAction = typeof likeComment;
+
+interface HomeFeedProps {
+	createPostAction: CreatePostAction;
+	createCommentAction: CreateCommentAction;
+	createReportAction: CreateReportAction;
+	likePostAction: LikePostAction;
+	likeCommentAction: LikeCommentAction;
+}
+import { feedKeys } from "@/lib/query-keys";
 import {
 	createCommentSchema,
 	createPostSchema,
+	feedFilterSchema,
 	type CreateCommentValues,
 	type CreatePostValues,
 	type CreateReportValues,
 } from "@/lib/validations/post";
 import classes from "./home-feed.module.css";
 
-interface HomeFeedProps {
-	initialPosts: FeedPostItem[];
-}
+const defaultFeedFilter = feedFilterSchema.parse({});
 
-export function HomeFeed({ initialPosts }: HomeFeedProps) {
+export function HomeFeed({
+	createPostAction,
+	createCommentAction,
+	createReportAction,
+	likePostAction,
+	likeCommentAction,
+}: HomeFeedProps) {
+	const queryClient = useQueryClient();
 	const [isComposerOpen, setIsComposerOpen] = useState(false);
-	const [posts, setPosts] = useState<FeedPostItem[]>(initialPosts);
 	const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
 	const [reportTarget, setReportTarget] = useState<
 		| { type: "post"; postId: string }
@@ -33,11 +63,27 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 	>(null);
 
 	const {
+		data: feedData,
+		isLoading: isFeedLoading,
+		isError: isFeedError,
+		error: feedError,
+	} = useQuery({
+		queryKey: feedKeys.list(defaultFeedFilter),
+		queryFn: async () => {
+			const result = await getFeed(defaultFeedFilter);
+			if (!result.success || !result.data) {
+				throw new Error(result.error ?? "Failed to fetch feed");
+			}
+			return result.data;
+		},
+	});
+
+	const {
 		control,
 		handleSubmit,
-		register,
 		reset,
 		formState: { errors, isSubmitting, isValid },
+		register,
 	} = useForm<CreatePostValues>({
 		resolver: zodResolver(createPostSchema),
 		mode: "onChange",
@@ -52,81 +98,169 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 		},
 	});
 
-	const onSubmit = handleSubmit((values) => {
-		const mediaFile = values.mediaFile as File | undefined;
-		const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
-
-		const newPost: FeedPostItem = {
-			id: crypto.randomUUID(),
-			userName: values.userName.trim(),
-			scientificField: values.scientificField.trim(),
-			content: values.content.trim(),
-			timeAgo: "Just now",
-			mediaUrl,
-			comments: [],
-			isLiked: false,
-			audienceLabel: null,
-		};
-
-		setPosts((current) => [newPost, ...current]);
-		reset({
-			userName: "",
-			scientificField: "",
-			content: "",
-			category: "general",
-			mediaFile: undefined,
-			mediaUrl: "",
-			link: "",
-		});
-		setIsComposerOpen(false);
+	const createPostMutation = useMutation({
+		mutationFn: async (values: CreatePostValues) => {
+			const payload = {
+				userName: values.userName,
+				scientificField: values.scientificField,
+				content: values.content,
+				category: values.category,
+				mediaUrl: values.mediaUrl ?? "",
+				link: values.link ?? "",
+			};
+			const result = await createPostAction(payload);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to create post");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+			reset({
+				userName: "",
+				scientificField: "",
+				content: "",
+				category: "general",
+				mediaFile: undefined,
+				mediaUrl: "",
+				link: "",
+			});
+			setIsComposerOpen(false);
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not create post",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
 	});
 
-	const onSubmitReport = (values: CreateReportValues) => {
+	const createCommentMutation = useMutation({
+		mutationFn: async ({
+			postId,
+			values,
+		}: {
+			postId: string;
+			values: CreateCommentValues;
+		}) => {
+			const result = await createCommentAction(postId, values);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to create comment");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+			setActiveCommentPostId(null);
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not add comment",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const createReportMutation = useMutation({
+		mutationFn: async ({
+			postId,
+			commentId,
+			values,
+		}: {
+			postId: string;
+			commentId: string | null;
+			values: CreateReportValues;
+		}) => {
+			const result = await createReportAction(postId, commentId, values);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to submit report");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			setReportTarget(null);
+			notifications.show({
+				title: "Report submitted",
+				message: "Thank you. We will review this report.",
+				color: "green",
+			});
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not submit report",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const likePostMutation = useMutation({
+		mutationFn: async (postId: string) => {
+			const result = await likePostAction(postId);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to update like");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not update like",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const likeCommentMutation = useMutation({
+		mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+			const result = await likeCommentAction(postId, commentId);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to update like");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not update like",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const posts: FeedPostItem[] = feedData?.posts ?? [];
+
+	const onSubmit = handleSubmit((values) => {
+		createPostMutation.mutate(values);
+	});
+
+	const onSubmitReport = async (values: CreateReportValues) => {
 		if (!reportTarget) return;
-		// TODO: Submit report to database, including report type and description.
-		setReportTarget(null);
+		await createReportMutation.mutateAsync({
+			postId: reportTarget.type === "post" ? reportTarget.postId : reportTarget.postId,
+			commentId: reportTarget.type === "comment" ? reportTarget.commentId : null,
+			values,
+		});
 	};
 
-	const handleAddComment = (postId: string, values: CreateCommentValues) => {
-		const newComment: FeedCommentItem = {
-			id: crypto.randomUUID(),
-			userName: values.userName.trim(),
-			content: values.content.trim(),
-			timeAgo: "Just now",
-			isLiked: false,
-		};
-
-		setPosts((current) =>
-			current.map((post) =>
-				post.id === postId ? { ...post, comments: [newComment, ...post.comments] } : post,
-			),
-		);
-		setActiveCommentPostId(null);
+	const handleAddComment = async (postId: string, values: CreateCommentValues) => {
+		await createCommentMutation.mutateAsync({ postId, values });
 	};
 
 	const handleTogglePostLike = (postId: string) => {
-		setPosts((current) =>
-			current.map((post) =>
-				post.id === postId ? { ...post, isLiked: !post.isLiked } : post,
-			),
-		);
+		likePostMutation.mutate(postId);
 	};
 
 	const handleToggleCommentLike = (postId: string, commentId: string) => {
-		setPosts((current) =>
-			current.map((post) =>
-				post.id === postId
-					? {
-							...post,
-							comments: post.comments.map((comment) =>
-								comment.id === commentId
-									? { ...comment, isLiked: !comment.isLiked }
-									: comment,
-							),
-						}
-					: post,
-			),
-		);
+		likeCommentMutation.mutate({ postId, commentId });
 	};
 
 	return (
@@ -218,13 +352,27 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 								)}
 							/>
 							<Group className={classes.formActions}>
-								<Button type="submit" disabled={!isValid || isSubmitting} loading={isSubmitting}>
+								<Button
+									type="submit"
+									disabled={!isValid || isSubmitting || createPostMutation.isPending}
+									loading={createPostMutation.isPending}
+								>
 									Post
 								</Button>
 							</Group>
 						</Stack>
 					</form>
 				</Paper>
+			) : null}
+
+			{isFeedLoading ? (
+				<Text size="sm" c="dimmed">
+					Loading feed...
+				</Text>
+			) : isFeedError ? (
+				<Text size="sm" c="red">
+					{feedError instanceof Error ? feedError.message : "Failed to load feed"}
+				</Text>
 			) : null}
 
 			<Stack gap="lg" w="100%">
@@ -255,6 +403,7 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 											<CommentComposer
 												postId={post.id}
 												onAddComment={handleAddComment}
+												isSubmitting={createCommentMutation.isPending}
 											/>
 										</div>
 									</div>
@@ -290,10 +439,11 @@ export function HomeFeed({ initialPosts }: HomeFeedProps) {
 
 interface CommentComposerProps {
 	postId: string;
-	onAddComment: (postId: string, values: CreateCommentValues) => void;
+	onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
+	isSubmitting?: boolean;
 }
 
-function CommentComposer({ postId, onAddComment }: CommentComposerProps) {
+function CommentComposer({ postId, onAddComment, isSubmitting: isMutationPending = false }: CommentComposerProps) {
 	const {
 		handleSubmit,
 		register,
@@ -308,8 +458,8 @@ function CommentComposer({ postId, onAddComment }: CommentComposerProps) {
 		},
 	});
 
-	const onCommentSubmit = handleSubmit((values) => {
-		onAddComment(postId, values);
+	const onCommentSubmit = handleSubmit(async (values) => {
+		await onAddComment(postId, values);
 		reset({
 			userName: "",
 			content: "",
@@ -334,7 +484,11 @@ function CommentComposer({ postId, onAddComment }: CommentComposerProps) {
 						{...register("content")}
 					/>
 					<Group className={classes.formActions}>
-						<Button type="submit" disabled={!isValid || isSubmitting} loading={isSubmitting}>
+						<Button
+							type="submit"
+							disabled={!isValid || isSubmitting || isMutationPending}
+							loading={isMutationPending}
+						>
 							Comment
 						</Button>
 					</Group>

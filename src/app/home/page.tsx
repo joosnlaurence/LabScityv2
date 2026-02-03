@@ -1,36 +1,53 @@
+import {
+	QueryClient,
+	dehydrate,
+	HydrationBoundary,
+} from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { HomeFeed } from "@/components/feed/home-feed";
-import type { FeedPostItem } from "@/lib/types/feed";
+import {
+	createComment,
+	createPost,
+	createReport,
+	getFeed,
+	likeComment,
+	likePost,
+} from "@/lib/actions/post";
+import { feedKeys } from "@/lib/query-keys";
+import { feedFilterSchema } from "@/lib/validations/post";
 
 export const metadata: Metadata = {
 	title: "Home | LabScity",
 	description: "Discover research updates from the LabScity community.",
 };
 
-export default async function HomePage() {
-	// TODO: Replace with server action + TanStack Query hydration.
-	const initialPosts: FeedPostItem[] = [
-		{
-			id: "temp-following",
-			userName: "Name",
-			scientificField: "Research Interests / Subject of Post",
-			content: "Lorem ipsum...",
-			timeAgo: "1 HOUR AGO",
-			comments: [],
-			isLiked: false,
-			audienceLabel: "Following",
-		},
-		{
-			id: "temp-for-you",
-			userName: "Name",
-			scientificField: "Research Interests",
-			content: "Another update from the community...",
-			timeAgo: "2 HOURS AGO",
-			comments: [],
-			isLiked: false,
-			audienceLabel: "For you",
-		},
-	];
+const defaultFeedFilter = feedFilterSchema.parse({});
 
-	return <HomeFeed initialPosts={initialPosts} />;
+export default async function HomePage() {
+	const queryClient = new QueryClient();
+
+	await queryClient.prefetchQuery({
+		queryKey: feedKeys.list(defaultFeedFilter),
+		queryFn: async () => {
+			const result = await getFeed(defaultFeedFilter);
+			if (!result.success || !result.data) {
+				throw new Error(result.error ?? "Failed to fetch feed");
+			}
+			return result.data;
+		},
+	});
+
+	const dehydratedState = dehydrate(queryClient);
+
+	return (
+		<HydrationBoundary state={dehydratedState}>
+			<HomeFeed
+				createPostAction={createPost}
+				createCommentAction={createComment}
+				createReportAction={createReport}
+				likePostAction={likePost}
+				likeCommentAction={likeComment}
+			/>
+		</HydrationBoundary>
+	);
 }
