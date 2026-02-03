@@ -1,6 +1,7 @@
 import "@mantine/core/styles.css"; 
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
-import { theme } from "@/lib/constants/theme"; 
+import { theme } from "@/lib/constants/theme";
+import { QueryProvider } from "@/components/providers/query-provider"; 
 
 export const metadata = {
   title: "LabScity",
@@ -18,9 +19,11 @@ export default function RootLayout({
         <ColorSchemeScript defaultColorScheme="light" />
       </head>
       <body>
-        <MantineProvider theme={theme} defaultColorScheme="light">
-          {children}
-        </MantineProvider>
+        <QueryProvider>
+          <MantineProvider theme={theme} defaultColorScheme="light">
+            {children}
+          </MantineProvider>
+        </QueryProvider>
       </body>
     </html>
   );
