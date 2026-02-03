@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import type { GetFeedResult } from "@/lib/types/feed";
 import {
 	createPostSchema,
 	feedFilterSchema,
@@ -42,14 +43,12 @@ export async function getFeed(input: FeedFilterValues) {
 
 		// TODO: Query posts with cursor-based pagination
 
-		// Stub return
-		return {
-			success: true,
-			data: {
-				posts: [],
-				nextCursor: null,
-			},
+		// Stub return; TODO: replace with DB query and map rows to FeedPostItem[]
+		const data: GetFeedResult = {
+			posts: [],
+			nextCursor: null,
 		};
+		return { success: true, data };
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return {

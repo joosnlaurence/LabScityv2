@@ -85,3 +85,12 @@ export interface FeedCommentItem {
 	timeAgo: string;
 	isLiked?: boolean;
 }
+
+/**
+ * Shape returned by getFeed server action on success.
+ * Used for TanStack Query so the client expects posts as FeedPostItem[].
+ */
+export interface GetFeedResult {
+	posts: FeedPostItem[];
+	nextCursor: string | null;
+}
