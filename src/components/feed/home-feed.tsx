@@ -7,6 +7,7 @@ import { IconPlus } from "@tabler/icons-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { CommentComposer } from "@/components/feed/comment-composer";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
@@ -35,7 +36,6 @@ interface HomeFeedProps {
 }
 import { feedKeys } from "@/lib/query-keys";
 import {
-	createCommentSchema,
 	createPostSchema,
 	feedFilterSchema,
 	type CreateCommentValues,
@@ -434,66 +434,5 @@ export function HomeFeed({
 				))}
 			</Stack>
 		</Stack>
-	);
-}
-
-interface CommentComposerProps {
-	postId: string;
-	onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
-	isSubmitting?: boolean;
-}
-
-function CommentComposer({ postId, onAddComment, isSubmitting: isMutationPending = false }: CommentComposerProps) {
-	const {
-		handleSubmit,
-		register,
-		reset,
-		formState: { errors, isSubmitting, isValid },
-	} = useForm<CreateCommentValues>({
-		resolver: zodResolver(createCommentSchema),
-		mode: "onChange",
-		defaultValues: {
-			userName: "",
-			content: "",
-		},
-	});
-
-	const onCommentSubmit = handleSubmit(async (values) => {
-		await onAddComment(postId, values);
-		reset({
-			userName: "",
-			content: "",
-		});
-	});
-
-	return (
-		<Paper className={classes.commentComposer}>
-			<form onSubmit={onCommentSubmit}>
-				<Stack gap="sm">
-					<TextInput
-						label="Name"
-						placeholder="Dr. Ada Lovelace"
-						error={errors.userName?.message}
-						{...register("userName")}
-					/>
-					<Textarea
-						label="Comment"
-						placeholder="Share a thought..."
-						minRows={2}
-						error={errors.content?.message}
-						{...register("content")}
-					/>
-					<Group className={classes.formActions}>
-						<Button
-							type="submit"
-							disabled={!isValid || isSubmitting || isMutationPending}
-							loading={isMutationPending}
-						>
-							Comment
-						</Button>
-					</Group>
-				</Stack>
-			</form>
-		</Paper>
 	);
 }
