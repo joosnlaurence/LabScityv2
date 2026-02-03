@@ -10,7 +10,14 @@ import { useState } from "react";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
-import { createComment, createPost, createReport, getFeed } from "@/lib/actions/post";
+import {
+	createComment,
+	createPost,
+	createReport,
+	getFeed,
+	likeComment,
+	likePost,
+} from "@/lib/actions/post";
 import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
 import { feedKeys } from "@/lib/query-keys";
 import {
@@ -169,6 +176,46 @@ export function HomeFeed() {
 		},
 	});
 
+	const likePostMutation = useMutation({
+		mutationFn: async (postId: string) => {
+			const result = await likePost(postId);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to update like");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not update like",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const likeCommentMutation = useMutation({
+		mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+			const result = await likeComment(postId, commentId);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to update like");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not update like",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
 	const posts: FeedPostItem[] = feedData?.posts ?? [];
 
 	const onSubmit = handleSubmit((values) => {
@@ -188,12 +235,12 @@ export function HomeFeed() {
 		await createCommentMutation.mutateAsync({ postId, values });
 	};
 
-	const handleTogglePostLike = (_postId: string) => {
-		// TODO (step 7): call likePost mutation and invalidate feed
+	const handleTogglePostLike = (postId: string) => {
+		likePostMutation.mutate(postId);
 	};
 
-	const handleToggleCommentLike = (_postId: string, _commentId: string) => {
-		// TODO (step 7): call likeComment mutation and invalidate feed
+	const handleToggleCommentLike = (postId: string, commentId: string) => {
+		likeCommentMutation.mutate({ postId, commentId });
 	};
 
 	return (
