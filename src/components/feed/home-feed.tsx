@@ -19,10 +19,10 @@ import {
 import classes from "./home-feed.module.css";
 
 interface HomeFeedProps {
-	initialPosts: FeedPostItem[];
+	initialPosts?: FeedPostItem[];
 }
 
-export function HomeFeed({ initialPosts }: HomeFeedProps) {
+export function HomeFeed({ initialPosts = [] }: HomeFeedProps) {
 	const [isComposerOpen, setIsComposerOpen] = useState(false);
 	const [posts, setPosts] = useState<FeedPostItem[]>(initialPosts);
 	const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
