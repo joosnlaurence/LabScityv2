@@ -1,14 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, FileInput, Group, Paper, Stack, Text, TextInput, Textarea } from "@mantine/core";
+import { Button, Group, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconPlus } from "@tabler/icons-react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { PostCard } from "@/components/feed/post-card";
+import { PostComposer } from "@/components/feed/post-composer";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import {
@@ -36,7 +35,6 @@ interface HomeFeedProps {
 }
 import { feedKeys } from "@/lib/query-keys";
 import {
-	createPostSchema,
 	feedFilterSchema,
 	type CreateCommentValues,
 	type CreatePostValues,
@@ -78,26 +76,6 @@ export function HomeFeed({
 		},
 	});
 
-	const {
-		control,
-		handleSubmit,
-		reset,
-		formState: { errors, isSubmitting, isValid },
-		register,
-	} = useForm<CreatePostValues>({
-		resolver: zodResolver(createPostSchema),
-		mode: "onChange",
-		defaultValues: {
-			userName: "",
-			scientificField: "",
-			content: "",
-			category: "general",
-			mediaFile: undefined,
-			mediaUrl: "",
-			link: "",
-		},
-	});
-
 	const createPostMutation = useMutation({
 		mutationFn: async (values: CreatePostValues) => {
 			const payload = {
@@ -116,15 +94,6 @@ export function HomeFeed({
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: feedKeys.all });
-			reset({
-				userName: "",
-				scientificField: "",
-				content: "",
-				category: "general",
-				mediaFile: undefined,
-				mediaUrl: "",
-				link: "",
-			});
 			setIsComposerOpen(false);
 		},
 		onError: (error) => {
@@ -238,9 +207,9 @@ export function HomeFeed({
 
 	const posts: FeedPostItem[] = feedData?.posts ?? [];
 
-	const onSubmit = handleSubmit((values) => {
+	const handleSubmitPost = (values: CreatePostValues) => {
 		createPostMutation.mutate(values);
-	});
+	};
 
 	const onSubmitReport = async (values: CreateReportValues) => {
 		if (!reportTarget) return;
@@ -315,54 +284,11 @@ export function HomeFeed({
 			</Button>
 
 			{isComposerOpen ? (
-				<Paper className={classes.newPostCard}>
-					<form onSubmit={onSubmit}>
-						<Stack gap="sm">
-							<TextInput
-								label="Name"
-								placeholder="Need to remove this"
-								error={errors.userName?.message}
-								{...register("userName")}
-							/>
-							<TextInput
-								label="Scientific Field"
-								placeholder="Need to change to a dropdown"
-								error={errors.scientificField?.message}
-								{...register("scientificField")}
-							/>
-							<Textarea
-								label="Post"
-								placeholder="Share an update with the community..."
-								minRows={3}
-								error={errors.content?.message}
-								{...register("content")}
-							/>
-							<Controller
-								control={control}
-								name="mediaFile"
-								render={({ field }) => (
-									<FileInput
-										label="Picture (optional)"
-										placeholder="Upload an image"
-										accept="image/*"
-										value={field.value ? (field.value as File) : null}
-										onChange={field.onChange}
-										error={errors.mediaFile?.message as string | undefined}
-									/>
-								)}
-							/>
-							<Group className={classes.formActions}>
-								<Button
-									type="submit"
-									disabled={!isValid || isSubmitting || createPostMutation.isPending}
-									loading={createPostMutation.isPending}
-								>
-									Post
-								</Button>
-							</Group>
-						</Stack>
-					</form>
-				</Paper>
+				<PostComposer
+					key="open"
+					onSubmit={handleSubmitPost}
+					isPending={createPostMutation.isPending}
+				/>
 			) : null}
 
 			{isFeedLoading ? (
