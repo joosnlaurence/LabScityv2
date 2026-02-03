@@ -1,36 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import { Button, FileInput, Group, Paper, Stack, TextInput, Textarea } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
+import { Button, FileInput, Group, Paper, Stack, Text, TextInput, Textarea } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
+import { getFeed } from "@/lib/actions/post";
 import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
+import { feedKeys } from "@/lib/query-keys";
 import {
 	createCommentSchema,
 	createPostSchema,
+	feedFilterSchema,
 	type CreateCommentValues,
 	type CreatePostValues,
 	type CreateReportValues,
 } from "@/lib/validations/post";
 import classes from "./home-feed.module.css";
 
-interface HomeFeedProps {
-	initialPosts?: FeedPostItem[];
-}
+const defaultFeedFilter = feedFilterSchema.parse({});
 
-export function HomeFeed({ initialPosts = [] }: HomeFeedProps) {
+export function HomeFeed() {
 	const [isComposerOpen, setIsComposerOpen] = useState(false);
-	const [posts, setPosts] = useState<FeedPostItem[]>(initialPosts);
 	const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
 	const [reportTarget, setReportTarget] = useState<
 		| { type: "post"; postId: string }
 		| { type: "comment"; postId: string; commentId: string }
 		| null
 	>(null);
+
+	const {
+		data: feedData,
+		isLoading: isFeedLoading,
+		isError: isFeedError,
+		error: feedError,
+	} = useQuery({
+		queryKey: feedKeys.list(defaultFeedFilter),
+		queryFn: async () => {
+			const result = await getFeed(defaultFeedFilter);
+			if (!result.success || !result.data) {
+				throw new Error(result.error ?? "Failed to fetch feed");
+			}
+			return result.data;
+		},
+	});
+
+	const posts: FeedPostItem[] = feedData?.posts ?? [];
 
 	const {
 		control,
@@ -52,23 +71,8 @@ export function HomeFeed({ initialPosts = [] }: HomeFeedProps) {
 		},
 	});
 
-	const onSubmit = handleSubmit((values) => {
-		const mediaFile = values.mediaFile as File | undefined;
-		const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : null;
-
-		const newPost: FeedPostItem = {
-			id: crypto.randomUUID(),
-			userName: values.userName.trim(),
-			scientificField: values.scientificField.trim(),
-			content: values.content.trim(),
-			timeAgo: "Just now",
-			mediaUrl,
-			comments: [],
-			isLiked: false,
-			audienceLabel: null,
-		};
-
-		setPosts((current) => [newPost, ...current]);
+	const onSubmit = handleSubmit(() => {
+		// TODO (step 5): call createPost mutation and invalidate feed
 		reset({
 			userName: "",
 			scientificField: "",
@@ -87,46 +91,17 @@ export function HomeFeed({ initialPosts = [] }: HomeFeedProps) {
 		setReportTarget(null);
 	};
 
-	const handleAddComment = (postId: string, values: CreateCommentValues) => {
-		const newComment: FeedCommentItem = {
-			id: crypto.randomUUID(),
-			userName: values.userName.trim(),
-			content: values.content.trim(),
-			timeAgo: "Just now",
-			isLiked: false,
-		};
-
-		setPosts((current) =>
-			current.map((post) =>
-				post.id === postId ? { ...post, comments: [newComment, ...post.comments] } : post,
-			),
-		);
+	const handleAddComment = (_postId: string, _values: CreateCommentValues) => {
+		// TODO (step 6): call createComment mutation and invalidate feed
 		setActiveCommentPostId(null);
 	};
 
-	const handleTogglePostLike = (postId: string) => {
-		setPosts((current) =>
-			current.map((post) =>
-				post.id === postId ? { ...post, isLiked: !post.isLiked } : post,
-			),
-		);
+	const handleTogglePostLike = (_postId: string) => {
+		// TODO (step 7): call likePost mutation and invalidate feed
 	};
 
-	const handleToggleCommentLike = (postId: string, commentId: string) => {
-		setPosts((current) =>
-			current.map((post) =>
-				post.id === postId
-					? {
-							...post,
-							comments: post.comments.map((comment) =>
-								comment.id === commentId
-									? { ...comment, isLiked: !comment.isLiked }
-									: comment,
-							),
-						}
-					: post,
-			),
-		);
+	const handleToggleCommentLike = (_postId: string, _commentId: string) => {
+		// TODO (step 7): call likeComment mutation and invalidate feed
 	};
 
 	return (
@@ -225,6 +200,16 @@ export function HomeFeed({ initialPosts = [] }: HomeFeedProps) {
 						</Stack>
 					</form>
 				</Paper>
+			) : null}
+
+			{isFeedLoading ? (
+				<Text size="sm" c="dimmed">
+					Loading feed...
+				</Text>
+			) : isFeedError ? (
+				<Text size="sm" c="red">
+					{feedError instanceof Error ? feedError.message : "Failed to load feed"}
+				</Text>
 			) : null}
 
 			<Stack gap="lg" w="100%">
