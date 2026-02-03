@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, FileInput, Group, Paper, Stack, Text, TextInput, Textarea } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { IconPlus } from "@tabler/icons-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +10,7 @@ import { useState } from "react";
 import { PostCard } from "@/components/feed/post-card";
 import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
-import { getFeed } from "@/lib/actions/post";
+import { createPost, getFeed } from "@/lib/actions/post";
 import type { FeedCommentItem, FeedPostItem } from "@/lib/types/feed";
 import { feedKeys } from "@/lib/query-keys";
 import {
@@ -25,6 +26,7 @@ import classes from "./home-feed.module.css";
 const defaultFeedFilter = feedFilterSchema.parse({});
 
 export function HomeFeed() {
+	const queryClient = useQueryClient();
 	const [isComposerOpen, setIsComposerOpen] = useState(false);
 	const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
 	const [reportTarget, setReportTarget] = useState<
@@ -49,14 +51,12 @@ export function HomeFeed() {
 		},
 	});
 
-	const posts: FeedPostItem[] = feedData?.posts ?? [];
-
 	const {
 		control,
 		handleSubmit,
-		register,
 		reset,
 		formState: { errors, isSubmitting, isValid },
+		register,
 	} = useForm<CreatePostValues>({
 		resolver: zodResolver(createPostSchema),
 		mode: "onChange",
@@ -71,18 +71,48 @@ export function HomeFeed() {
 		},
 	});
 
-	const onSubmit = handleSubmit(() => {
-		// TODO (step 5): call createPost mutation and invalidate feed
-		reset({
-			userName: "",
-			scientificField: "",
-			content: "",
-			category: "general",
-			mediaFile: undefined,
-			mediaUrl: "",
-			link: "",
-		});
-		setIsComposerOpen(false);
+	const createPostMutation = useMutation({
+		mutationFn: async (values: CreatePostValues) => {
+			const payload = {
+				userName: values.userName,
+				scientificField: values.scientificField,
+				content: values.content,
+				category: values.category,
+				mediaUrl: values.mediaUrl ?? "",
+				link: values.link ?? "",
+			};
+			const result = await createPost(payload);
+			if (!result.success) {
+				throw new Error(result.error ?? "Failed to create post");
+			}
+			return result;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: feedKeys.all });
+			reset({
+				userName: "",
+				scientificField: "",
+				content: "",
+				category: "general",
+				mediaFile: undefined,
+				mediaUrl: "",
+				link: "",
+			});
+			setIsComposerOpen(false);
+		},
+		onError: (error) => {
+			notifications.show({
+				title: "Could not create post",
+				message: error instanceof Error ? error.message : "Something went wrong",
+				color: "red",
+			});
+		},
+	});
+
+	const posts: FeedPostItem[] = feedData?.posts ?? [];
+
+	const onSubmit = handleSubmit((values) => {
+		createPostMutation.mutate(values);
 	});
 
 	const onSubmitReport = (values: CreateReportValues) => {
@@ -193,7 +223,11 @@ export function HomeFeed() {
 								)}
 							/>
 							<Group className={classes.formActions}>
-								<Button type="submit" disabled={!isValid || isSubmitting} loading={isSubmitting}>
+								<Button
+									type="submit"
+									disabled={!isValid || isSubmitting || createPostMutation.isPending}
+									loading={createPostMutation.isPending}
+								>
 									Post
 								</Button>
 							</Group>
