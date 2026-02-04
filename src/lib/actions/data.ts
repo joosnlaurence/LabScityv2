@@ -1,7 +1,9 @@
 "use server";
 
-import { z } from "zod";
+import { success, z } from "zod";
 import type {
+  Post,
+  GetPostByIdInput,
   DataResponse,
   GetUserPostsInput,
   UserPostsResponse,
@@ -13,24 +15,53 @@ import {
 } from "@/lib/validations/data";
 import { createClient } from "@/supabase/server";
 
-// NOTE: Do last as will call other funcs
-export async function getFeedPosts() {
-  // TODO: Will need to retrieve posts by some metrics
-  // TODO: Will need to sort posts (chronological probably - with a filter on followed users posts? - then other posts?)
-}
 
-export async function getPostById(postID: string) {
-  // make connection to database with supabase client
-  // search the tables for posts associated with userID
+// Async function that runs on the server, takes a post interface object as a parameter and returns a
+// Promise<DataResponse<Post>>
+// The Promise object represents the eventual completion (or failure) of an asynchronous operation and its resulting value. - mdn 2026
+// DataResponse is the interface created to unify all our responses.
+// Post is the interface created to represent a Post from our database.
+export async function getPostById(input: GetPostByIdInput):
+  Promise<DataResponse<Post>> {
 
-  const supabase = await createClient();
-  // FIXME: remove * with explicit columns before prod
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("postID", postID)
-    .single();
-  return { data, error };
+  try {
+    const supabase = await createClient();
+    const validatedInput = getPostByIdInputSchema.parse(input);
+
+    let query = supabase.from("Posts").select(`
+    postid,
+    userid,
+    created_at,
+    text,
+    like_amount,
+   `);
+
+    query = query.eq("postid", validatedInput.postID);
+
+    const { data: data, error: dbError } = await query;
+
+    if (dbError) {
+      console.error("Database error fetching post: ", dbError);
+      return {
+        success: false,
+        error: "Failed to retrieve post",
+      }
+    }
+
+    const post = postSchema.parse(data);
+
+    return {
+      success: true,
+      data: post,
+    }
+  } catch (error) {
+    console.error("Error in getPostById:", error);
+
+    return {
+      success: false,
+      error: "An unexpected error occurred while retrieving post",
+    };
+  }
 }
 
 
@@ -53,7 +84,6 @@ export async function getUserPosts(
     const supabase = await createClient();
 
     // Step 3: Build query with explicit column selection
-    // NOTE: The function signatures the lsp gives me are painful at best and downright damaging at worst, read the supabase docs.
     let query = supabase.from("Posts").select(`
         postid,
         userid,
@@ -168,4 +198,12 @@ export async function getUserPosts(
       error: "An unexpected error occurred while retrieving user posts",
     };
   }
+}
+
+// NOTE: Do last as will call other funcs
+// TODO: Dr. Sharonwski wants to have non followed user's posts to enter the feed. This is going to be difficult to test without content on the platform.
+// TODO: Dependency Injection possibility here because we have two kinds of feeds
+export async function getFeedPosts() {
+  // TODO: Will need to retrieve posts by some metrics
+  // TODO: Will need to sort posts (chronological probably - with a filter on followed users posts? - then other posts?)
 }

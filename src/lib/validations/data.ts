@@ -99,6 +99,9 @@ export const postSchema = z.object({
  * Validates feed response structure with posts and pagination metadata
  * Ensures consistent pagination information for client-side state management
  */
+
+
+// TODO: Dr. Sharonwski wants to have non followed user's posts to enter the feed. This is going to be difficult to test without content on the platform.
 export const feedResponseSchema = z.object({
   posts: z.array(postSchema),
   pagination: z.object({

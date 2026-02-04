@@ -1,4 +1,5 @@
 // Core post type - aligned with current database schema
+
 export interface Post {
   postID: string;
   userID: string;
