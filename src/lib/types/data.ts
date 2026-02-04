@@ -1,11 +1,11 @@
 // Core post type - aligned with current database schema
 
 export interface Post {
-  postID: string;
-  userID: string;
-  text: string;
+  post_id: number;
+  user_id: string;
+  text?: string;
   created_at: string;
-  category: string;
+  category?: string;
   like_amount: number;
 }
 
@@ -28,7 +28,7 @@ export interface DataResponse<T> {
 
 // Input types for our actions
 export interface GetPostByIdInput {
-  postID: string;
+  post_id: number;
 }
 
 export interface FeedResponse {

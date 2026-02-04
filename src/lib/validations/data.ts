@@ -12,7 +12,7 @@ import { z } from "zod";
  * Used when client requests a specific post
  */
 export const getPostByIdInputSchema = z.object({
-  postID: z.string().min(1, "Post ID is required"),
+  post_id: z.number().min(1, "Post ID is required"),
 });
 
 /**
@@ -58,7 +58,7 @@ export const searchFeedInputSchema = z.object({
 export const getUserPostsInputSchema = z.object({
   userID: z.string(),
   limit: z.number().min(1).max(100).default(10),
-  cursor: z.iso.datetime(), // ISO datetime string for cursor position
+  cursor: z.iso.datetime().optional(), // ISO datetime string for cursor position
   category: z.string().optional(),
   sortBy: z.enum(["created_at", "like_amount"]).default("created_at"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
@@ -75,17 +75,15 @@ export const getUserPostsInputSchema = z.object({
  * Used both for validating post data from database and post input from client
  */
 export const postSchema = z.object({
-  postID: z.string(),
-  userID: z.string(),
+  post_id: z.number(),
+  user_id: z.string(),
   text: z
     .string()
     .min(1, "Post text is required")
-    .max(5000, "Post text too long"),
+    .max(5000, "Post text too long")
+    .optional(),
   created_at: z.string(),
-  category: z
-    .string()
-    .min(1, "Category is required")
-    .max(50, "Category too long"),
+  category: z.string().optional(),
   like_amount: z.number().min(0, "Like amount cannot be negative"),
 });
 

@@ -16,29 +16,33 @@ import {
 import { createClient } from "@/supabase/server";
 
 
-// Async function that runs on the server, takes a post interface object as a parameter and returns a
-// Promise<DataResponse<Post>>
+// Async function that runs on the server, takes a post interface object as a parameter and returns a Promise<DataResponse<Post>>
 // The Promise object represents the eventual completion (or failure) of an asynchronous operation and its resulting value. - mdn 2026
 // DataResponse is the interface created to unify all our responses.
 // Post is the interface created to represent a Post from our database.
-export async function getPostById(input: GetPostByIdInput):
+// getPostById's parameters are an input that adheres to the GetPostByIdInput interface and an optional supabaseClient. The optional client argument is an example of dependency injection, and is likely only used in testing.
+export async function getPostById(input: GetPostByIdInput, supabaseClient?: any):
   Promise<DataResponse<Post>> {
 
   try {
-    const supabase = await createClient();
+
+    const supabase = supabaseClient || await createClient();
+
     const validatedInput = getPostByIdInputSchema.parse(input);
 
-    let query = supabase.from("Posts").select(`
-    postid,
-    userid,
+    let query = supabase.from('Posts').select(`
+    post_id,
+    user_id,
     created_at,
+    category,
     text,
-    like_amount,
+    like_amount
    `);
 
-    query = query.eq("postid", validatedInput.postID);
+    query = query.eq('post_id', validatedInput.post_id);
 
     const { data: data, error: dbError } = await query;
+
 
     if (dbError) {
       console.error("Database error fetching post: ", dbError);
@@ -48,13 +52,19 @@ export async function getPostById(input: GetPostByIdInput):
       }
     }
 
-    const post = postSchema.parse(data);
+    if (!data) return { success: false, error: "Nothing returned from database" };
+
+    // NOTE: You can get a mismatch error if the returned object from supabase does not match the zod schema you have for this interaction AND/OR you have mismatched data from the parsed zod object and the defined interface
+    // The fields of the Post interface that represented the optional fields of the Post table in the Postgres db had to also be set as optional. During testing I did not have that and was returning an object without one of the fields (- 1 hour)
+
+    const validatedPost: Post = postSchema.parse(data[0]);
 
     return {
       success: true,
-      data: post,
+      data: validatedPost,
     }
   } catch (error) {
+
     console.error("Error in getPostById:", error);
 
     return {
@@ -74,19 +84,19 @@ export async function searchPosts(query: string) { }
 
 
 export async function getUserPosts(
-  input: GetUserPostsInput,
+  input: GetUserPostsInput, supabaseClient?: any
 ): Promise<DataResponse<UserPostsResponse>> {
   try {
     // Step 1: Input validation using cursor-based schema
     const validatedInput = getUserPostsInputSchema.parse(input);
 
     // Step 2: Create Supabase client
-    const supabase = await createClient();
+    const supabase = supabaseClient || await createClient();
 
     // Step 3: Build query with explicit column selection
     let query = supabase.from("Posts").select(`
-        postid,
-        userid,
+        post_id,
+        user_id,
         created_at,
         category,
         text,
@@ -94,7 +104,7 @@ export async function getUserPosts(
       `);
 
     // Step 4: Apply filters
-    query = query.eq("userID", validatedInput.userID);
+    query = query.eq("user_id", validatedInput.userID);
 
     if (validatedInput.category) {
       query = query.eq("category", validatedInput.category);
