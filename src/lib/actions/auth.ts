@@ -70,44 +70,51 @@ export async function signupAction(formData: FormData) {
       };
     }
     
-    // Insert user data into Users table
-    if (data.user) {
-      const { error: userInsertError } = await supabase
-        .from("Users")
-        .insert([
-          {
-            email: parsed.email.toLowerCase(),
-            first_name: parsed.firstName,
-            last_name: parsed.lastName,
-            created_at: new Date().toISOString(),
-          },
-        ]);
+    // Wait for user authentication to complete and verify user ID exists
+    if (!data.user?.id) {
+      return {
+        success: false,
+        error: "Authentication failed - no user ID generated",
+      };
+    }
 
-      if (userInsertError) {
-        console.error("Error inserting user: ", userInsertError);
-        return {
-          success: false,
-          error: "Failed to create user",
-        };
-      }
+    // Insert user data into Users table with the authenticated user's ID
+    const { error: userInsertError } = await supabase
+      .from("Users")
+      .insert([
+        {
+          user_id: data.user.id,
+          email: parsed.email.toLowerCase(),
+          first_name: parsed.firstName,
+          last_name: parsed.lastName,
+        },
+      ]);
 
-      // Insert mostly empty profile into Profile table
-      const { error: profileInsertError } = await supabase
-        .from("Profile")
-        .insert([
-          {
-            first_name: parsed.firstName,
-            last_name: parsed.lastName,
-          },
-        ]);
+    if (userInsertError) {
+      console.error("Error inserting user: ", userInsertError);
+      return {
+        success: false,
+        error: "Failed to create user",
+      };
+    }
 
-      if (profileInsertError) {
-        console.error("Error inserting profile: ", profileInsertError);
-        return {
-          success: false,
-          error: "Failed to create profile",
-        };
-      }
+    // Insert profile with the authenticated user's ID
+    const { error: profileInsertError } = await supabase
+      .from("Profile")
+      .insert([
+        {
+          user_id: data.user.id,
+          first_name: parsed.firstName,
+          last_name: parsed.lastName,
+        },
+      ]);
+
+    if (profileInsertError) {
+      console.error("Error inserting profile: ", profileInsertError);
+      return {
+        success: false,
+        error: "Failed to create profile",
+      };
     }
 
     return { success: true, data };
