@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Group, Stack, Text } from "@mantine/core";
+import { Button, Stack, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { PostCard } from "@/components/feed/post-card";
