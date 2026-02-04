@@ -12,6 +12,7 @@ import {
 	type CreateReportValues,
 	type FeedFilterValues,
 } from "@/lib/validations/post";
+import { createClient } from "@/supabase/server";
 
 const idSchema = z.string().min(1, "ID is required");
 
@@ -20,14 +21,32 @@ export async function createPost(input: CreatePostValues) {
 		// Re-validate on server
 		const parsed = createPostSchema.parse(input);
 
-		// TODO: Get authenticated user
-
-		// TODO: Insert post into database
+		// Get authenticated user
+		const supabase = await createClient();
+		const { data: authData } = await supabase.auth.getUser();
 		
-		// Stub return
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
+
+		// Insert post into database
+		const { data, error } = await supabase
+			.from("Posts")
+			.insert({
+				user_id: authData.user.id,
+				category: parsed.scientificField,
+				text: parsed.content,
+			})
+			.select()
+			.single();
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
 		return {
 			success: true,
-			data: { id: "stub", ...parsed },
+			data: { id: data.post_id, ...parsed },
 		};
 	} catch (error) {
 		if (error instanceof z.ZodError) {
