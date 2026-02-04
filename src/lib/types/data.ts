@@ -70,7 +70,7 @@ export interface SearchFeedInput {
 }
 
 export interface GetUserPostsInput {
-  userID: string;
+  user_id: string;
   limit?: number;
   cursor?: string; // ISO datetime string for cursor position
   category?: string;

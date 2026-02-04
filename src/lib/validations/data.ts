@@ -56,7 +56,7 @@ export const searchFeedInputSchema = z.object({
  * Cursor-based pagination provides better performance for real-time feeds
  */
 export const getUserPostsInputSchema = z.object({
-  userID: z.string(),
+  user_id: z.string(),
   limit: z.number().min(1).max(100).default(10),
   cursor: z.iso.datetime().optional(), // ISO datetime string for cursor position
   category: z.string().optional(),

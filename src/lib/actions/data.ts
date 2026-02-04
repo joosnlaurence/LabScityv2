@@ -16,11 +16,25 @@ import {
 import { createClient } from "@/supabase/server";
 
 
-// Async function that runs on the server, takes a post interface object as a parameter and returns a Promise<DataResponse<Post>>
+// Returns a Promise<DataResponse<Post>>
 // The Promise object represents the eventual completion (or failure) of an asynchronous operation and its resulting value. - mdn 2026
 // DataResponse is the interface created to unify all our responses.
 // Post is the interface created to represent a Post from our database.
-// getPostById's parameters are an input that adheres to the GetPostByIdInput interface and an optional supabaseClient. The optional client argument is an example of dependency injection, and is likely only used in testing.
+
+/**
+ * Retrieves a single post from the database by its ID.
+ *
+ * @param input - Object containing the post_id to fetch
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with the post data or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await getPostById({ post_id: GetPostByIdInput });
+ * if (result.success) {
+ *   console.log(result.data.text);
+ * }
+ * */
 export async function getPostById(input: GetPostByIdInput, supabaseClient?: any):
   Promise<DataResponse<Post>> {
 
@@ -43,7 +57,6 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
 
     const { data: data, error: dbError } = await query;
 
-
     if (dbError) {
       console.error("Database error fetching post: ", dbError);
       return {
@@ -56,7 +69,6 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
 
     // NOTE: You can get a mismatch error if the returned object from supabase does not match the zod schema you have for this interaction AND/OR you have mismatched data from the parsed zod object and the defined interface
     // The fields of the Post interface that represented the optional fields of the Post table in the Postgres db had to also be set as optional. During testing I did not have that and was returning an object without one of the fields (- 1 hour)
-
     const validatedPost: Post = postSchema.parse(data[0]);
 
     return {
@@ -74,18 +86,28 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
   }
 }
 
-
-// NOTE: I want to be able to search all posts by certain filters (e.g. kind of science, by date created )
-export async function searchPosts(query: string) { }
-
-// NOTE: will comments be associated with posts objects in the database or held somewhere else?
-// They might need to be held somewhere else so accessing them without the post can be done (i.e. moderation)
-// export async function getComments() {}
-
-
-export async function getUserPosts(
-  input: GetUserPostsInput, supabaseClient?: any
-): Promise<DataResponse<UserPostsResponse>> {
+/**
+ * Retrieves a paginated list of posts for a specific user with optional filtering.
+ *
+ * @param input - Object containing user ID, pagination cursor, filters, and sorting options
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with posts array and pagination metadata
+ *
+ * @example
+ * ```typescript
+ * const result = await getUserPosts({
+ *   user_id: "user123",
+ *   limit: 10,
+ *   sortBy: "created_at",
+ *   sortOrder: "desc"
+ * });
+ * if (result.success) {
+ *   console.log(result.data.posts);
+ *   console.log(result.data.pagination.hasMore);
+ * }
+ * */
+export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: any):
+  Promise<DataResponse<UserPostsResponse>> {
   try {
     // Step 1: Input validation using cursor-based schema
     const validatedInput = getUserPostsInputSchema.parse(input);
@@ -104,7 +126,7 @@ export async function getUserPosts(
       `);
 
     // Step 4: Apply filters
-    query = query.eq("user_id", validatedInput.userID);
+    query = query.eq("user_id", validatedInput.user_id);
 
     if (validatedInput.category) {
       query = query.eq("category", validatedInput.category);
@@ -210,10 +232,9 @@ export async function getUserPosts(
   }
 }
 
-// NOTE: Do last as will call other funcs
-// TODO: Dr. Sharonwski wants to have non followed user's posts to enter the feed. This is going to be difficult to test without content on the platform.
-// TODO: Dependency Injection possibility here because we have two kinds of feeds
-export async function getFeedPosts() {
-  // TODO: Will need to retrieve posts by some metrics
-  // TODO: Will need to sort posts (chronological probably - with a filter on followed users posts? - then other posts?)
-}
+// NOTE: I want to be able to search all posts by certain filters (e.g. kind of science, by date created )
+export async function searchPosts(query: string) { }
+
+// NOTE: will comments be associated with posts objects in the database or held somewhere else?
+// They might need to be held somewhere else so accessing them without the post can be done (i.e. moderation)
+// export async function getComments() {}

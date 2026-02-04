@@ -20,12 +20,19 @@ async function testGetPostById() {
   console.log("Result: ", result1);
 
   const test_user: GetUserPostsInput = {
-    userID: "02fe68aa-1c88-477d-9f0f-b9dd86736537"
+    user_id: "02fe68aa-1c88-477d-9f0f-b9dd86736537"
   }
 
   const result2 = await getUserPosts(test_user, supabaseAdmin);
 
   console.log("Result: ", result2);
+
+  const result3 = await getUserPosts({
+    user_id: "02fe68aa-1c88-477d-9f0f-b9dd86736537",
+    limit: 1,
+  }, supabaseAdmin);
+
+  console.log("Result3 ", result3);
 }
 
 if (require.main === module) {
