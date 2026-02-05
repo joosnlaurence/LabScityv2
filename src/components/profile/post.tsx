@@ -13,9 +13,9 @@ const LSPostActionMenu = () => {
 
       {/* Menu dropdown itself  */}
       <Menu.Dropdown>
-        <Menu.Label>Post Options</Menu.Label>
+        <Menu.Label c="navy.6">Post Options</Menu.Label>
         {/* Edit */}
-        <Menu.Item leftSection={<IconPencil size={14} />}>
+        <Menu.Item c="navy.7" leftSection={<IconPencil size={14} />}>
           Edit Post
         </Menu.Item>
         {/* Delete */}

@@ -4,6 +4,7 @@ import ProfileWidget from "@/components/profile/profile-widget"
 import Post from "@/components/profile/post"
 import ProfileListWidget from "@/components/profile/profile-list-widget";
 import { Stack } from "@mantine/core";
+import ViewSelector from "@/components/profile/view-selector";
 
 export default function ProfilePage() {
   return (
@@ -24,7 +25,7 @@ export default function ProfilePage() {
         profilePicURL="https://ih1.redbubble.net/image.5595885630.8128/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg"
         profileHeaderImageURL="https://external-preview.redd.it/r6g38aXSaQWtd1KxwJbQ-Fs5jtSVDxX3wtLHJEdqixw.jpg?width=1080&crop=smart&auto=webp&s=87a2c94cb3e1561e2b6abd467ea68d81b9901720"
       />
-
+      <ViewSelector />
       <Post
         posterName="Rafael Niebles"
         posterResearchInterest="JavaScript Hater"
