@@ -1,13 +1,13 @@
 import { Button, Text, Card, Box, Center } from "@mantine/core";
-import OtherProfile, { OtherProfileProps } from "./other-profile";
+import LSMiniProfile, { OtherProfileProps } from "./ls-mini-profile";
 import { IconDots } from "@tabler/icons-react";
 
-export interface ProfileListWidgetProps {
+export interface LSMiniProfileListProps {
   widgetTitle: string,
   profiles?: OtherProfileProps[]
 }
 
-export default function ProfileListWidget({ widgetTitle, profiles }: ProfileListWidgetProps) {
+export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfileListProps) {
   return (
     <Card shadow="sm" padding="lg" radius="md">
       <Center mb={8}>
@@ -25,7 +25,7 @@ export default function ProfileListWidget({ widgetTitle, profiles }: ProfileList
                       consult backend people!
             */
             profiles.map((otherProfile) => {
-              return <OtherProfile
+              return <LSMiniProfile
                 key={otherProfile.key}
                 posterName={otherProfile.posterName}
                 posterResearchInterest={otherProfile.posterResearchInterest}

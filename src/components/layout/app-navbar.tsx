@@ -18,7 +18,6 @@ export function AppNavbar() {
       h={60}
       bg="gray.7"
       style={{
-        borderTop: "1px solid lightgray",
         position: "fixed",
         bottom: 0,
         left: 0,

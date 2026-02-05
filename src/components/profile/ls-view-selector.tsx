@@ -1,6 +1,6 @@
 import { Box, Button } from "@mantine/core";
 
-export default function ViewSelector() {
+export default function LSViewSelector() {
   // TODO: Finish this!!!
   return (
     <Box

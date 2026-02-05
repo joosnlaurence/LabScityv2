@@ -5,17 +5,6 @@ import { useDisclosure } from '@mantine/hooks';
 import { Modal } from '@mantine/core';
 import { useForm } from "@mantine/form"
 
-interface ProfileWidgetProps {
-  profileName: string,
-  profileInstitution: string,
-  profileRole: string,
-  profileResearchInterest: string,
-  profileAbout?: string,
-  profileSkills?: string[],
-  profileHeaderImageURL?: string,
-  profilePicURL?: string
-}
-
 const LSEditProfilePopover = () => {
   const [opened, { open, close }] = useDisclosure(false) // TODO: what is this doing?
 
@@ -100,7 +89,18 @@ const LSEditProfilePopover = () => {
   )
 }
 
-export default function ProfileWidget({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: ProfileWidgetProps) {
+interface LSProfileHeroProps {
+  profileName: string,
+  profileInstitution: string,
+  profileRole: string,
+  profileResearchInterest: string,
+  profileAbout?: string,
+  profileSkills?: string[],
+  profileHeaderImageURL?: string,
+  profilePicURL?: string
+}
+
+export default function LSProfileHero({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: LSProfileHeroProps) {
   return (
     <Card shadow="sm" padding="none" radius="md">
       <Image

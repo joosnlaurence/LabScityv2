@@ -1,13 +1,13 @@
 import { Text, Box, Avatar } from "@mantine/core";
 
-export interface OtherProfileProps {
+export interface LSMiniProfileProps {
   key: number,
   posterName: string,
   posterResearchInterest: string,
   posterProfilePicURL?: string,
 }
 
-export default function OtherProfile({ posterName, posterResearchInterest, posterProfilePicURL }: OtherProfileProps) {
+export default function LSMiniProfile({ posterName, posterResearchInterest, posterProfilePicURL }: LSMiniProfileProps) {
   return (
     <Box style={{ display: "flex", alignItems: "center", gap: 12 }} mb={12}>
       <Avatar src={posterProfilePicURL} radius="xl" />

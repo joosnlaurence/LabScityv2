@@ -1,5 +1,6 @@
 import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon } from "@mantine/core";
-import { IconDots, IconHeart, IconMessageCircle, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
+import { IconDots, IconHeart, IconHeartFilled, IconMessageCircle, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
+import { useState } from "react";
 
 const LSPostActionMenu = () => {
   return (
@@ -29,7 +30,27 @@ const LSPostActionMenu = () => {
   )
 }
 
-interface PostProps {
+const LSPostLikeButton = () => {
+  const [active, setActive] = useState(false)
+
+  return (
+    <Button
+      c="navy.6"
+      variant="transparent"
+      leftSection={active ?
+        <IconHeartFilled size={18} color="red" /> : // fill with red if active
+        <IconHeart size={18} />
+      }
+      size="compact-sm"
+      style={{ alignItems: "center", textAlign: "center" }}
+      onClick={() => setActive(!active)} // TODO: add api functionality here
+    >
+      Like
+    </Button>
+  )
+}
+
+interface LSPostProps {
   posterName: string,
   posterResearchInterest: string,
   posterProfilePicURL: string,
@@ -38,14 +59,14 @@ interface PostProps {
   postText: string
 }
 
-export default function Post({
+export default function LSPost({
   posterName,
   posterResearchInterest,
   posterProfilePicURL: posterProfilePic,
   attachmentPreviewURL,
   timestamp,
   postText
-}: PostProps) {
+}: LSPostProps) {
   return (
     <Card shadow="sm" padding="lg" radius="md">
       <Box>
@@ -93,18 +114,11 @@ export default function Post({
           style={{
             display: "flex",
             justifyContent: "space-between",
+            alignItems: "flex-start",
             width: "100%",
           }}
         >
-          <Button
-            c="navy.6"
-            variant="transparent"
-            leftSection={<IconHeart size={18} />}
-            size="compact-sm"
-            style={{ alignItems: "center", textAlign: "center" }}
-          >
-            Like
-          </Button>
+          <LSPostLikeButton />
           <Button
             c="navy.6"
             variant="transparent"
