@@ -1,5 +1,33 @@
-import { Group, Button, Text, Image, Card, Box, Avatar, ActionIcon } from "@mantine/core";
-import { IconDots, IconHeart, IconMessageCircle, IconShare } from "@tabler/icons-react";
+import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon, Popover, TextInput } from "@mantine/core";
+import { IconDots, IconHeart, IconMessageCircle, IconPencil, IconPhoto, IconSearch, IconSettings, IconShare, IconTrash } from "@tabler/icons-react";
+
+const LSPostActionMenu = () => {
+  return (
+    <Menu>
+      {/* Action button to trigger menu */}
+      <Menu.Target>
+        <ActionIcon variant="transparent" size="sm">
+          <IconDots size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
+        </ActionIcon>
+      </Menu.Target>
+
+      {/* Menu dropdown itself  */}
+      <Menu.Dropdown>
+        <Menu.Label>Post Options</Menu.Label>
+        {/* Edit */}
+        <Menu.Item leftSection={<IconPencil size={14} />}>
+          Edit Post
+        </Menu.Item>
+        {/* Delete */}
+        <Menu.Item
+          color="red"
+          leftSection={<IconTrash size={14} />}>
+          Delete Post
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  )
+}
 
 interface PostProps {
   posterName: string,
@@ -36,9 +64,7 @@ export default function Post({
                   alignItems: "center",
                 }}
               >
-                <ActionIcon variant="transparent" size="sm">
-                  <IconDots size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
-                </ActionIcon>
+                <LSPostActionMenu />
               </Box>
             </Group>
             <Text c="navy.7" mt={-4} size="sm">
