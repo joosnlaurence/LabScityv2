@@ -9,7 +9,7 @@ export interface LSMiniProfileProps {
 
 export default function LSMiniProfile({ posterName, posterResearchInterest, posterProfilePicURL }: LSMiniProfileProps) {
   return (
-    <Box style={{ display: "flex", alignItems: "center", gap: 12 }} mb={12}>
+    <Box style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <Avatar src={posterProfilePicURL} radius="xl" />
       <Box>
         <Text c="navy.7" size="md" fw={600}>

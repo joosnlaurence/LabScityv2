@@ -1,5 +1,5 @@
-import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon } from "@mantine/core";
-import { IconDots, IconHeart, IconHeartFilled, IconMessageCircle, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
+import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon, TextInput, Textarea, Stack, Grid, Flex, Divider } from "@mantine/core";
+import { IconDots, IconHeart, IconHeartFilled, IconMessageCircle, IconMessageCircleFilled, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 
 const LSPostActionMenu = () => {
@@ -30,7 +30,7 @@ const LSPostActionMenu = () => {
   )
 }
 
-const LSPostLikeButton = () => {
+const LSLikeButton = () => {
   const [active, setActive] = useState(false)
 
   return (
@@ -50,6 +50,41 @@ const LSPostLikeButton = () => {
   )
 }
 
+interface LSCommentProps {
+  commenterName: string
+  commenterResearchInterest: string,
+  commentContent: string
+}
+
+const LSComment = ({ commenterName, commenterResearchInterest, commentContent }: LSCommentProps) => {
+  return (
+    <Stack gap={0}>
+      <Flex >
+        {/* poster info */}
+        <Avatar mr={8} />
+        <Stack gap={0} >
+          <Text size="sm" fw={600}>{commenterName}</Text>
+          <Text size="sm">{commenterResearchInterest}</Text>
+
+          {/* comment content */}
+          <Text
+            size="sm"
+            mt={8}
+            style={{
+              wordBreak: 'break-word',
+            }}
+          >
+            {commentContent}
+          </Text>
+
+          {/* comment actions ... TODO: add later */}
+
+        </Stack>
+      </Flex >
+    </Stack >
+  );
+}
+
 interface LSPostProps {
   posterName: string,
   posterResearchInterest: string,
@@ -67,6 +102,8 @@ export default function LSPost({
   timestamp,
   postText
 }: LSPostProps) {
+  const [showCommentInput, setShowCommentInput] = useState(false)
+
   return (
     <Card shadow="sm" padding="lg" radius="md">
       <Box>
@@ -118,13 +155,18 @@ export default function LSPost({
             width: "100%",
           }}
         >
-          <LSPostLikeButton />
+          <LSLikeButton />
+          {/* comment section ACTIVATOR BUTTON */}
           <Button
             c="navy.6"
             variant="transparent"
-            leftSection={<IconMessageCircle size={18} />}
+            leftSection={showCommentInput ?
+              <IconMessageCircleFilled size={18} /> :
+              <IconMessageCircle size={18} />
+            }
             size="compact-sm"
             style={{ alignItems: "center", textAlign: "center" }}
+            onClick={() => setShowCommentInput(!showCommentInput)}
           >
             Comment
           </Button>
@@ -138,7 +180,22 @@ export default function LSPost({
             Share
           </Button>
         </Box>
+        {/* comment input */}
+        <Box mt={12}>
+          {showCommentInput &&
+            <Textarea label="Write a Comment..." mb={16} />
+          }
+          {/* comment section entries */}
+          <Divider mb={16} />
+          <Stack gap={3}>
+            <LSComment
+              commenterName={"Brendan Fraser"}
+              commenterResearchInterest={"Machine Learning"}
+              commentContent="Hello this is a beautiful comment"
+            />
+          </Stack>
+        </Box>
       </Box>
-    </Card>
+    </Card >
   );
 };
