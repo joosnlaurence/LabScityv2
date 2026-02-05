@@ -1,5 +1,5 @@
-import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon, Popover, TextInput } from "@mantine/core";
-import { IconDots, IconHeart, IconMessageCircle, IconPencil, IconPhoto, IconSearch, IconSettings, IconShare, IconTrash } from "@tabler/icons-react";
+import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon } from "@mantine/core";
+import { IconDots, IconHeart, IconMessageCircle, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
 
 const LSPostActionMenu = () => {
   return (
