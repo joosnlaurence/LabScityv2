@@ -1,5 +1,5 @@
 import { AppNavbar } from "@/components/layout/app-navbar";
-import { Box } from "@mantine/core";
+import { Box, Space } from "@mantine/core";
 
 export default function AuthenticatedLayout({
   children,
@@ -12,6 +12,8 @@ export default function AuthenticatedLayout({
       <Box>
         {children}
       </Box>
+      { /* add some empty space at footer to make space for navbar */}
+      <Space h={70} />
     </Box>
   );
 }

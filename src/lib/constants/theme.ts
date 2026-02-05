@@ -11,10 +11,10 @@ export const theme = createTheme({
       "#D8E0E8", // page background
       "#CFE1F1",
       "#9CC3E2",
-      "#6AA4D3", // tertiary text (navy.5) e.g. post timestamp
-      "#3885C4", // secondary text (navy.6) e.g. post action buttons
-      "#073869", // primary Navy (button background)
-      "#07386A", // primary text (navy.8)
+      "#6AA4D3", // tertiary text   (navy.5) e.g. post timestamp
+      "#3885C4", // secondary text  (navy.6) e.g. post action buttons
+      "#07386A", // primary text    (navy.7) e.g. name in profile
+      "#073869", // primary navy    (navy.8) e.g. button background --- SAME AS .7?
       "#06325E",
     ],
     gray: [

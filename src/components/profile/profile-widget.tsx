@@ -102,7 +102,7 @@ const LSEditProfilePopover = () => {
 
 export default function ProfileWidget({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: ProfileWidgetProps) {
   return (
-    <Card bg="gray.2" shadow="sm" padding="none" radius="md" m={4} withBorder>
+    <Card shadow="sm" padding="none" radius="md">
       <Image
         bg="gray"
         w="100%"
@@ -125,18 +125,11 @@ export default function ProfileWidget({ profileName, profileInstitution, profile
             radius="xl"
             size="xl"
           />
-          <Box>
-            <Text c="navy.8" size="32px" fw={700} mb={4}>
-              {profileName}
-            </Text>
-
-            <Box>
-              <Text span c="navy.7" size="18px" fw={600} mb={2}>{profileRole}, {profileInstitution}</Text>
-            </Box>
-
-            <Text c="navy.7" size="16px" mb={1.5}>{profileResearchInterest}</Text>
-
-          </Box>
+          <Stack gap="0">
+            <Text c="navy.7" size="xl" fw={600}>{profileName}</Text>
+            <Text c="navy.7" size="md">{profileResearchInterest}</Text>
+            <Text c="navy.6" size="md">{profileRole}, {profileInstitution}</Text>
+          </Stack>
         </Box>
         <Box mb={12}>
           {profileAbout &&
@@ -153,7 +146,7 @@ export default function ProfileWidget({ profileName, profileInstitution, profile
               <Group gap={8}>
                 {(profileSkills.map((skill, i) => {
                   return (
-                    <Badge key={i} color="navy.7" variant="light">
+                    <Badge key={i} color="navy.6" variant="light">
                       {skill}
                     </Badge>
                   )
@@ -171,6 +164,6 @@ export default function ProfileWidget({ profileName, profileInstitution, profile
           </Box>
         </Box>
       </Box>
-    </Card>
+    </Card >
   );
 };
