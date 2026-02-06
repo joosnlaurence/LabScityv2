@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { useState } from "react";
-import { getFeed } from "@/lib/actions/post";
+import { getFeed } from "@/lib/actions/feed";
 import type { FeedPostItem } from "@/lib/types/feed";
 import { feedKeys } from "@/lib/query-keys";
 import {

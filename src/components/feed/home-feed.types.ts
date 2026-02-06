@@ -4,7 +4,7 @@ import {
 	createReport,
 	likeComment,
 	likePost,
-} from "@/lib/actions/post";
+} from "@/lib/actions/feed";
 
 export type CreatePostAction = typeof createPost;
 export type CreateCommentAction = typeof createComment;
