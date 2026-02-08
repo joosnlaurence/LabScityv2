@@ -2,6 +2,14 @@ import "@testing-library/jest-dom/vitest";
 import "whatwg-fetch";
 import { vi } from "vitest";
 
+// Mantine Select/Menu use ScrollArea; floating-ui uses ResizeObserver. jsdom does not provide it.
+class ResizeObserverMock {
+	observe = vi.fn();
+	unobserve = vi.fn();
+	disconnect = vi.fn();
+}
+global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+
 // Mantine uses window.matchMedia for color scheme; jsdom does not provide it.
 Object.defineProperty(window, "matchMedia", {
 	writable: true,
