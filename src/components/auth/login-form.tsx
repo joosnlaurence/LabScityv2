@@ -13,7 +13,7 @@ import type { loginAction } from "@/lib/actions/auth";
 
 type LoginAction = typeof loginAction;
 
-export function LoginForm({ 
+export function LSLoginForm({ 
   loginAction 
 }: { 
   loginAction: LoginAction 

@@ -12,7 +12,7 @@ import type { signupAction } from "@/lib/actions/auth";
 
 type SignupAction = typeof signupAction;
 
-export function SignupForm({ 
+export function LSSignupForm({ 
   signupAction 
 }: { 
   signupAction: SignupAction 
