@@ -12,7 +12,12 @@ import type { signupAction } from "@/lib/actions/auth";
 
 type SignupAction = typeof signupAction;
 
-export function SignupForm({ 
+/**
+ * Registration form for new .edu users. Validates name, email, password, and confirm password, then delegates to the provided server action.
+ * @param props - Component props
+ * @param props.signupAction - Server action invoked on submit to create the account
+ */
+export function LSSignupForm({ 
   signupAction 
 }: { 
   signupAction: SignupAction 

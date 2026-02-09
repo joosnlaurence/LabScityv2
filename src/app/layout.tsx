@@ -7,6 +7,11 @@ export const metadata = {
   description: "Social Media for Scientists",
 };
 
+/**
+ * Root layout: HTML shell, MantineProvider with app theme and light color scheme, and global metadata.
+ * @param props - Layout props
+ * @param props.children - Page content
+ */
 export default function RootLayout({
   children,
 }: {

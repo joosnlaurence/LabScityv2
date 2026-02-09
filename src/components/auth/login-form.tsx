@@ -13,7 +13,12 @@ import type { loginAction } from "@/lib/actions/auth";
 
 type LoginAction = typeof loginAction;
 
-export function LoginForm({ 
+/**
+ * Login form for .edu users. Validates email/password and delegates sign-in to the provided server action.
+ * @param props - Component props
+ * @param props.loginAction - Server action invoked on submit to sign in with email and password
+ */
+export function LSLoginForm({ 
   loginAction 
 }: { 
   loginAction: LoginAction 
