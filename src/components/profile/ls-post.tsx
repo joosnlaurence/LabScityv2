@@ -1,5 +1,5 @@
 import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon, TextInput, Textarea, Stack, Grid, Flex, Divider } from "@mantine/core";
-import { IconDots, IconHeart, IconHeartFilled, IconMessageCircle, IconMessageCircleFilled, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
+import { IconDots, IconHeart, IconHeartFilled, IconLink, IconMessageCircle, IconMessageCircleFilled, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 
 const LSPostActionMenu = () => {
@@ -47,6 +47,34 @@ const LSLikeButton = () => {
     >
       Like
     </Button>
+  )
+}
+
+const LSShareButton = () => {
+  {/* TODO: fill in the icon while menu active */ }
+  return (
+    <Menu>
+      <Menu.Target>
+        <Button
+          c="navy.6"
+          variant="transparent"
+          leftSection={<IconShare size={18} />}
+          size="compact-sm"
+          style={{ alignItems: "center", textAlign: "center" }}
+        >
+          Share
+        </Button>
+      </Menu.Target>
+
+      {/* only one share option for now which is to copy url */}
+
+      <Menu.Dropdown>
+        <Menu.Label c="navy.6">Sharing Options</Menu.Label>
+        <Menu.Item c="navy.7" leftSection={<IconLink size={14} />}>
+          Copy URL
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   )
 }
 
@@ -170,28 +198,31 @@ export default function LSPost({
           >
             Comment
           </Button>
-          <Button
-            c="navy.6"
-            variant="transparent"
-            leftSection={<IconShare size={18} />}
-            size="compact-sm"
-            style={{ alignItems: "center", textAlign: "center" }}
-          >
-            Share
-          </Button>
+          <LSShareButton />
         </Box>
         {/* comment input */}
         <Box mt={12}>
           {showCommentInput &&
-            <Textarea label="Write a Comment..." mb={16} />
+            // TODO: complete form logic
+            <form>
+              <Stack mb={16}>
+                <Textarea label="Write a Comment..." />
+                <Button type="submit">Comment</Button>
+              </Stack>
+            </form>
           }
           {/* comment section entries */}
           <Divider mb={16} />
-          <Stack gap={3}>
+          <Stack gap={16}>
             <LSComment
               commenterName={"Brendan Fraser"}
               commenterResearchInterest={"Machine Learning"}
               commentContent="Hello this is a beautiful comment"
+            />
+            <LSComment
+              commenterName={"Brendan Fraser"}
+              commenterResearchInterest={"Machine Learning"}
+              commentContent="Hello this is another beautiful comment"
             />
           </Stack>
         </Box>

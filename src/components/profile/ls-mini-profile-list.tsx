@@ -1,10 +1,10 @@
-import { Button, Text, Card, Box, Center } from "@mantine/core";
-import LSMiniProfile, { OtherProfileProps } from "./ls-mini-profile";
+import { Button, Text, Card, Center, Stack } from "@mantine/core";
+import LSMiniProfile, { LSMiniProfileProps } from "./ls-mini-profile";
 import { IconDots } from "@tabler/icons-react";
 
 export interface LSMiniProfileListProps {
   widgetTitle: string,
-  profiles?: OtherProfileProps[]
+  profiles?: LSMiniProfileProps[]
 }
 
 export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfileListProps) {
@@ -15,13 +15,13 @@ export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfi
           {widgetTitle}
         </Text>
       </Center>
-      <Box>
+      <Stack gap={12}>
         {
           // We must pass profiles and there must be something in the list
           // Otherwise, the list shouldn't be displayed
           profiles && profiles.length > 0 ?
             /*
-               FIXME: The key should come from the loop and not manually?
+               FIXME: the key should come from the loop and not manually?
                       consult backend people!
             */
             profiles.map((otherProfile) => {
@@ -32,7 +32,7 @@ export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfi
                 posterProfilePicURL={otherProfile.posterProfilePicURL} />
             }) : <Center><Text size="sm" c="navy.6">Nothing to see here!</Text></Center>
         }
-      </Box>
+      </Stack>
       <Center>
         <Button variant="transparent">
           <IconDots style={{ color: "var(--mantine-color-navy-6)" }} />
