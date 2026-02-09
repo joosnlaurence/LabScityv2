@@ -75,6 +75,57 @@ export async function createPost(input: CreatePostValues, supabaseClient?: any) 
 	}
 }
 
+/**
+ * Delete a post from the database. The user must be authenticated and must be the owner of the post.
+ *
+ * @param postId - The ID of the post to delete
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with success status or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await deletePost("123");
+ * if (result.success) {
+ *   console.log("Post deleted successfully");
+ * }
+ * ```
+ */
+export async function deletePost(postId: string, supabaseClient?: any) {
+	try {
+		// Validate post ID
+		idSchema.parse(postId);
+
+		// Get authenticated user
+		const supabase = supabaseClient ?? (await createClient());
+		const { data: authData } = await supabase.auth.getUser();
+		
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
+
+		// Delete post from database (only if user owns it)
+		const { error } = await supabase
+			.from("Posts")
+			.delete()
+			.eq("post_id", postId)
+			.eq("user_id", authData.user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, data: { id: postId } };
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message ?? "Validation failed",
+			};
+		}
+		return { success: false, error: "Failed to delete post" };
+	}
+}
+
 // NOTE: Do last as will call other funcs
 // TODO: Dr. Sharonwski wants to have non followed user's posts to enter the feed. This is going to be difficult to test without content on the platform.
 // TODO: Dependency Injection possibility here because we have two kinds of feeds
@@ -148,7 +199,7 @@ export async function createComment(postId: string, values: CreateCommentValues,
 			return { success: false, error: error.message };
 		}
 
-		return { success: true, data: { id: data.post_id, ...parsed } };
+		return { success: true, data: { id: data.comment_id, ...parsed } };
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return {
@@ -157,6 +208,57 @@ export async function createComment(postId: string, values: CreateCommentValues,
 			};
 		}
 		return { success: false, error: "Failed to create comment" };
+	}
+}
+
+/**
+ * Delete a comment from the database. The user must be authenticated and must be the owner of the comment.
+ *
+ * @param commentId - The ID of the comment to delete
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with success status or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await deleteComment("456");
+ * if (result.success) {
+ *   console.log("Comment deleted successfully");
+ * }
+ * ```
+ */
+export async function deleteComment(commentId: string, supabaseClient?: any) {
+	try {
+		// Validate comment ID
+		idSchema.parse(commentId);
+
+		// Get authenticated user
+		const supabase = supabaseClient ?? (await createClient());
+		const { data: authData } = await supabase.auth.getUser();
+		
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
+
+		// Delete comment from database (only if user owns it)
+		const { error } = await supabase
+			.from("Comment")
+			.delete()
+			.eq("comment_id", commentId)
+			.eq("user_id", authData.user.id);
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, data: { id: commentId } };
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message ?? "Validation failed",
+			};
+		}
+		return { success: false, error: "Failed to delete comment" };
 	}
 }
 
