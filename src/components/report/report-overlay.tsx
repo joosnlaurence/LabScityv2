@@ -57,7 +57,15 @@ export function ReportOverlay({ open, title, preview, onClose, onSubmit }: Repor
       <div className={classes.panel}>
         <Text className={classes.title}>{title}</Text>
         {preview}
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form
+          onSubmit={handleSubmit(async (values) => {
+            try {
+              await onSubmit(values);
+            } catch {
+              // Hook's mutation onError already showed notification; overlay stays open to retry.
+            }
+          })}
+        >
           <Stack gap="sm">
             <Select
               label="Report type"

@@ -35,11 +35,15 @@ export function CommentComposer({
 	});
 
 	const onCommentSubmit = handleSubmit(async (values) => {
-		await onAddComment(postId, values);
-		reset({
-			userName: "",
-			content: "",
-		});
+		try {
+			await onAddComment(postId, values);
+			reset({
+				userName: "",
+				content: "",
+			});
+		} catch {
+			// Hook's mutation onError already showed notification; don't reset form so user can retry.
+		}
 	});
 
 	return (
