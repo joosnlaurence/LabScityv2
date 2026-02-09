@@ -16,13 +16,28 @@ import { createClient } from "@/supabase/server";
 
 const idSchema = z.string().min(1, "ID is required");
 
-export async function createPost(input: CreatePostValues) {
+/**
+ * Insert a new post into the database with the given content and scientific field. The user must be authenticated to create a post.
+ *
+ * @param input - Object containing the content, scientific field, and category for the new post
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with the created post data or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await createPost({ content: "This is a new post about science!", scientificField: "Biology", category: "formal" });
+ * if (result.success) {
+ *   console.log(result.data.id); // ID of the created post
+ * }
+ * */
+
+export async function createPost(input: CreatePostValues, supabaseClient?: any) {
 	try {
 		// Re-validate on server
 		const parsed = createPostSchema.parse(input);
 
 		// Get authenticated user
-		const supabase = await createClient();
+		const supabase = supabaseClient ?? (await createClient());
 		const { data: authData } = await supabase.auth.getUser();
 		
 		if (!authData.user) {
@@ -34,7 +49,8 @@ export async function createPost(input: CreatePostValues) {
 			.from("Posts")
 			.insert({
 				user_id: authData.user.id,
-				category: parsed.scientificField,
+				scientific_field: parsed.scientificField,
+				category: parsed.category,
 				text: parsed.content,
 			})
 			.select()
