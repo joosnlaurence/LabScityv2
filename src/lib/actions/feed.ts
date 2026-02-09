@@ -104,15 +104,51 @@ export async function getFeed(input: FeedFilterValues) {
 	}
 }
 
-export async function createComment(postId: string, values: CreateCommentValues) {
+/**
+ * Insert a new comment into the database for a specific post. The user must be authenticated to create a comment.
+ *
+ * @param postId - The ID of the post to comment on
+ * @param values - Object containing the comment content
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with the created comment data or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await createComment("123", { content: "Great post!", userName: "John" });
+ * if (result.success) {
+ *   console.log(result.data.id); // ID of the created comment
+ * }
+ * ```
+ */
+export async function createComment(postId: string, values: CreateCommentValues, supabaseClient?: any) {
 	try {
 		idSchema.parse(postId);
-		createCommentSchema.parse(values);
+		const parsed = createCommentSchema.parse(values);
 
-		// TODO: Get authenticated user
-		// TODO: Insert comment into database
+		// Get authenticated user
+		const supabase = supabaseClient ?? (await createClient());
+		const { data: authData } = await supabase.auth.getUser();
+		
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
 
-		return { success: true, data: { id: "stub-comment" } };
+		// Insert comment into database
+		const { data, error } = await supabase
+			.from("Comment")
+			.insert({
+				post_id: postId,
+				user_id: authData.user.id,
+				text: parsed.content,
+			})
+			.select()
+			.single();
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, data: { id: data.post_id, ...parsed } };
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return {
@@ -149,14 +185,88 @@ export async function createReport(
 	}
 }
 
-export async function likePost(postId: string) {
+/**
+ * Toggle like status for a post. If the user has already liked the post, it will be unliked. If not liked, it will be liked.
+ * The user must be authenticated to like/unlike a post.
+ *
+ * @param postId - The ID of the post to like/unlike
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with isLiked status (true if liked, false if unliked) or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await likePost("123");
+ * if (result.success) {
+ *   console.log(result.data.isLiked); // true if post was liked, false if unliked
+ * }
+ * ```
+ */
+export async function likePost(postId: string, supabaseClient?: any) {
 	try {
 		idSchema.parse(postId);
 
-		// TODO: Get authenticated user
-		// TODO: Toggle like in database
+		// Get authenticated user
+		const supabase = supabaseClient ?? (await createClient());
+		const { data: authData } = await supabase.auth.getUser();
+		
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
 
-		return { success: true, data: { isLiked: true } };
+		// Check if like already exists
+		const { data: existingLike } = await supabase
+			.from("Likes")
+			.select()
+			.eq("post_id", postId)
+			.eq("user_id", authData.user.id)
+			.maybeSingle();
+
+		if (existingLike) {
+			// Unlike: Remove like and decrement like_amount
+			const { error: deleteError } = await supabase
+				.from("Likes")
+				.delete()
+				.eq("post_id", postId)
+				.eq("user_id", authData.user.id);
+
+			if (deleteError) {
+				return { success: false, error: deleteError.message };
+			}
+
+			// Decrement like_amount on the post
+			const { error: updateError } = await supabase.rpc("decrement_like_amount", {
+				post_id_param: postId,
+			});
+
+			if (updateError) {
+				return { success: false, error: updateError.message };
+			}
+
+			return { success: true, data: { isLiked: false } };
+		} else {
+			// Like: Insert like and increment like_amount
+			const { error: insertError } = await supabase
+				.from("Likes")
+				.insert({
+					post_id: postId,
+					user_id: authData.user.id,
+				});
+
+			if (insertError) {
+				return { success: false, error: insertError.message };
+			}
+
+			// Increment like_amount on the post
+			const { error: updateError } = await supabase.rpc("increment_like_amount", {
+				post_id_param: postId,
+			});
+
+			if (updateError) {
+				return { success: false, error: updateError.message };
+			}
+
+			return { success: true, data: { isLiked: true } };
+		}
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return {
