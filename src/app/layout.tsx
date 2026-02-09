@@ -4,6 +4,7 @@ import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { theme } from "@/lib/constants/theme";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "LabScity",
