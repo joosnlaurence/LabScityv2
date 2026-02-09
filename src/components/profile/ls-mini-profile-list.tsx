@@ -9,7 +9,7 @@ export interface LSMiniProfileListProps {
 
 export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfileListProps) {
   return (
-    <Card shadow="sm" padding="lg" radius="md">
+    <Card shadow="sm" padding="lg" radius="md" h="100%">
       <Center mb={8}>
         <Text c="navy.8" fw={600} size="xl">
           {widgetTitle}
@@ -33,11 +33,6 @@ export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfi
             }) : <Center><Text size="sm" c="navy.6">Nothing to see here!</Text></Center>
         }
       </Stack>
-      <Center>
-        <Button variant="transparent">
-          <IconDots style={{ color: "var(--mantine-color-navy-6)" }} />
-        </Button>
-      </Center>
     </Card>
   );
 };

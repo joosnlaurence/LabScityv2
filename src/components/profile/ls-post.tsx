@@ -1,4 +1,4 @@
-import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon, TextInput, Textarea, Stack, Grid, Flex, Divider } from "@mantine/core";
+import { Menu, Group, Button, Text, Image, Card, Box, Avatar, ActionIcon, TextInput, Textarea, Stack, Grid, Flex, Divider, Center } from "@mantine/core";
 import { IconDots, IconHeart, IconHeartFilled, IconLink, IconMessageCircle, IconMessageCircleFilled, IconPencil, IconShare, IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -91,8 +91,8 @@ const LSComment = ({ commenterName, commenterResearchInterest, commentContent }:
         {/* poster info */}
         <Avatar mr={8} />
         <Stack gap={0} >
-          <Text size="sm" fw={600}>{commenterName}</Text>
-          <Text size="sm">{commenterResearchInterest}</Text>
+          <Text size="sm" fw={600} c="navy.7">{commenterName}</Text>
+          <Text size="sm" c="navy.7 ">{commenterResearchInterest}</Text>
 
           {/* comment content */}
           <Text
@@ -161,7 +161,10 @@ export default function LSPost({
         <Text c="navy.8" size="sm" my={12} style={{ lineHeight: 1.2 }}>
           {postText}
         </Text>
-        <Image radius="md" w="100%" src={attachmentPreviewURL} />
+        {/* image preview */}
+        <Center>
+          <Image radius="md" w="50%" src={attachmentPreviewURL} />
+        </Center>
         <Text size="sm" c="navy.5" ml={2} my={12}>
           {timestamp.toLocaleTimeString("en-US", {
             hour: "numeric",
@@ -212,7 +215,7 @@ export default function LSPost({
             </form>
           }
           {/* comment section entries */}
-          <Divider mb={16} />
+          <Divider mb={16} c="navy.1" />
           <Stack gap={16}>
             <LSComment
               commenterName={"Brendan Fraser"}
