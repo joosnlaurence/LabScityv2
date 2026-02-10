@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { getPostById } from "../actions/data";
+import { getPostById, searchUserContent } from "../actions/data";
 import { GetPostByIdInput, GetUserPostsInput } from "../types/data";
 import { getUserPosts } from "../actions/data";
 
@@ -33,6 +33,10 @@ async function testGetPostById() {
   }, supabaseAdmin);
 
   console.log("Result3 ", result3);
+
+  // FIXME: searchUserContent doesn't have a return value.
+  await searchUserContent("h", supabaseAdmin);
+
 }
 
 if (require.main === module) {

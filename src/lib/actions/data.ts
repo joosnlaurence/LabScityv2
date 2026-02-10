@@ -7,13 +7,18 @@ import type {
   DataResponse,
   GetUserPostsInput,
   UserPostsResponse,
+  SearchResponse,
 } from "@/lib/types/data";
+
+import { User } from "@/lib/types/feed"
+
 import {
   getPostByIdInputSchema,
   getUserPostsInputSchema,
   postSchema,
 } from "@/lib/validations/data";
 import { createClient } from "@/supabase/server";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 
 // Returns a Promise<DataResponse<Post>>
@@ -106,7 +111,7 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
  *   console.log(result.data.pagination.hasMore);
  * }
  * */
-export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: any):
+export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: SupabaseClient):
   Promise<DataResponse<UserPostsResponse>> {
   try {
     // Step 1: Input validation using cursor-based schema
@@ -232,8 +237,46 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: an
   }
 }
 
-// NOTE: I want to be able to search all posts by certain filters (e.g. kind of science, by date created )
-export async function searchPosts(query: string) { }
+// FIXME: CREATE PROPER SCHEMA
+// FIXME: FIX POSTGRESQL VIEW TO CORRECTLY SORT/FILTER/ORDER RESULTS
+export async function searchUserContent(searchQuery: string, supabaseClient?: SupabaseClient):
+  // TODO: create a searchResponse interface
+  Promise<DataResponse<SearchResponse>> {
+  try {
+    const supabase = supabaseClient || await createClient();
+
+    // If there is no filter I am going to run 4 queries. The question is how.
+    const { data, error: dbError } = await supabase
+      .from('user_generated_content_search') // Your View Name
+      .select('*')
+      .textSearch('tsv', searchQuery, {
+        config: 'english',
+        type: 'websearch' // <--- This is the key
+      });
+
+    console.log("searchUserContent data: ", data)
+    if (dbError) {
+      console.error("Database error fetching user posts:", dbError);
+      return {
+        success: false,
+        error: "Failed to retrieve user posts",
+      };
+    }
+
+  } catch (error) {
+
+    console.error("Error in searchPosts")
+    return {
+      success: false,
+      error: "An unexpected error occurred while searching",
+    }
+  }
+
+  return {
+    success: true,
+
+  }
+}
 
 // NOTE: will comments be associated with posts objects in the database or held somewhere else?
 // They might need to be held somewhere else so accessing them without the post can be done (i.e. moderation)
