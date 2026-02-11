@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { getPostById, searchUserContent } from "../actions/data";
-import { GetPostByIdInput, GetUserPostsInput } from "../types/data";
-import { getUserPosts } from "../actions/data";
+import { getPostById, searchUserContent } from "../../lib/actions/data";
+import { GetPostByIdInput, GetUserPostsInput } from "../../lib/types/data";
+import { getUserPosts } from "../../lib/actions/data";
 
 async function testGetPostById() {
   console.log("Starting testing");
@@ -35,7 +35,10 @@ async function testGetPostById() {
   console.log("Result3 ", result3);
 
   // FIXME: searchUserContent doesn't have a return value.
-  await searchUserContent("h", supabaseAdmin);
+  await searchUserContent("Post", supabaseAdmin);
+  await searchUserContent("Chris", supabaseAdmin);
+  await searchUserContent("test group", supabaseAdmin);
+
 
 }
 
