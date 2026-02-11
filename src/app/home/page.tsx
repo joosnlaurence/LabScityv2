@@ -12,7 +12,7 @@ import {
 	getFeed,
 	likeComment,
 	likePost,
-} from "@/lib/actions/post";
+} from "@/lib/actions/feed";
 import { feedKeys } from "@/lib/query-keys";
 import { feedFilterSchema } from "@/lib/validations/post";
 

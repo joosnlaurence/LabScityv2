@@ -1,0 +1,11 @@
+.newPostCard {
+  border-radius: 16px;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.2);
+  background: var(--mantine-color-gray-0);
+  padding: 16px 20px;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
