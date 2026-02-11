@@ -59,19 +59,10 @@ export interface GetFeedInput {
 }
 
 /** Input for searching posts with filters and pagination */
-export interface SearchFeedInput {
+export interface SearchInput {
   query: string;
   limit?: number;
-  offset?: number;
-  filters?: {
-    category?: string;
-    userId?: string;
-    dateRange?: {
-      from?: string;
-      to?: string;
-    };
-  };
-}
+};
 
 /** Input for fetching user-specific posts with pagination */
 export interface GetUserPostsInput {
@@ -94,24 +85,14 @@ export interface UserPostsResponse {
   };
 }
 
-/** Response for search results with optional pagination */
-export interface SearchResponse {
-  // TODO: Decide whether to return Posts or to return a kind of Post preview type (post_id, author, or some other identifying characteristic to show to a user?)
-  posts?: Post[];
-  // TODO: Same thing with Users, but User's are usually much less public facing data so it might be fine-ish to return User types.
-  users?: User[];
-  // TODO: Make an article interface.
-  articles?: any;
-  // TODO: Make a Group interface
-  groups?: any;
+// NOTE: This is extremely fragile. Will need to be updated if changes are made to search view on db
+/** Holds a single response from search function */
+export interface searchResult {
+  content_type: string,
+  content: string,
+  category: string,
+  id: string,
+  names: string,
+  tsv: string,
+};
 
-  // FIXME: This is almost certainly not the right way to do this. I'll find out later
-  sortOrder?: "user" | "post" | "article" | "group";
-
-  pagination?: {
-    limit: number;
-    hasMore: boolean;
-    nextCursor?: string;
-    prevCursor?: string;
-  };
-}
