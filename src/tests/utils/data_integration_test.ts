@@ -1,9 +1,9 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { getPostById } from "../actions/data";
-import { GetPostByIdInput, GetUserPostsInput } from "../types/data";
-import { getUserPosts } from "../actions/data";
+import { getPostById, searchUserContent } from "../../lib/actions/data";
+import { GetPostByIdInput, GetUserPostsInput } from "../../lib/types/data";
+import { getUserPosts } from "../../lib/actions/data";
 
-async function testGetPostById() {
+async function integration_test_data_ts() {
   console.log("Starting testing");
 
   const supabaseAdmin = createClient(
@@ -33,8 +33,20 @@ async function testGetPostById() {
   }, supabaseAdmin);
 
   console.log("Result3 ", result3);
+
+  const result4 = await searchUserContent({ query: "post" }, supabaseAdmin);
+  const result5 = await searchUserContent({ query: "Chris" }, supabaseAdmin);
+  const result6 = await searchUserContent({ query: "test group" }, supabaseAdmin);
+  const result7 = await searchUserContent({ query: "blah", limit: 5 }, supabaseAdmin);
+
+  console.log("result4: ", result4);
+  console.log("result5: ", result5);
+  console.log("result6: ", result6);
+  console.log("result7: ", result7);
+
+
 }
 
 if (require.main === module) {
-  testGetPostById();
+  integration_test_data_ts();
 }

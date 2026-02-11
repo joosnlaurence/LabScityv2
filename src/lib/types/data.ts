@@ -1,5 +1,6 @@
-// Core post type - aligned with current database schema
+import { User } from '@/lib/types/feed'
 
+/** Core post type aligned with database schema */
 export interface Post {
   post_id: number;
   user_id: string;
@@ -9,7 +10,7 @@ export interface Post {
   like_amount: number;
 }
 
-// Extended post with optional user information (for future expansion)
+/** Extended post with optional author information */
 export interface PostWithAuthor extends Post {
   author?: {
     id: string;
@@ -19,18 +20,19 @@ export interface PostWithAuthor extends Post {
   };
 }
 
-// Response wrapper for consistent API responses
+/** Generic wrapper for consistent API responses */
 export interface DataResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
 }
 
-// Input types for our actions
+/** Input for fetching a single post by ID */
 export interface GetPostByIdInput {
   post_id: number;
 }
 
+/** Response containing posts with pagination and filters */
 export interface FeedResponse {
   posts: Post[];
   pagination: {
@@ -46,6 +48,7 @@ export interface FeedResponse {
   };
 }
 
+/** Input parameters for retrieving feed posts */
 export interface GetFeedInput {
   limit?: number;
   offset?: number;
@@ -55,20 +58,13 @@ export interface GetFeedInput {
   sortOrder?: "asc" | "desc";
 }
 
-export interface SearchFeedInput {
+/** Input for searching posts with filters and pagination */
+export interface SearchInput {
   query: string;
   limit?: number;
-  offset?: number;
-  filters?: {
-    category?: string;
-    userId?: string;
-    dateRange?: {
-      from?: string;
-      to?: string;
-    };
-  };
-}
+};
 
+/** Input for fetching user-specific posts with pagination */
 export interface GetUserPostsInput {
   user_id: string;
   limit?: number;
@@ -78,6 +74,7 @@ export interface GetUserPostsInput {
   sortOrder?: "asc" | "desc";
 }
 
+/** Response for user posts with cursor-based pagination */
 export interface UserPostsResponse {
   posts: Post[];
   pagination: {
@@ -87,3 +84,15 @@ export interface UserPostsResponse {
     prevCursor?: string;
   };
 }
+
+// NOTE: This is extremely fragile. Will need to be updated if changes are made to search view on db
+/** Holds a single response from search function */
+export interface searchResult {
+  content_type: string,
+  content: string,
+  category: string,
+  id: string,
+  names: string,
+  tsv: string,
+};
+

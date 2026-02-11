@@ -7,13 +7,21 @@ import type {
   DataResponse,
   GetUserPostsInput,
   UserPostsResponse,
+  searchResult,
+  SearchInput
 } from "@/lib/types/data";
+
+import { User } from "@/lib/types/feed"
+
 import {
   getPostByIdInputSchema,
   getUserPostsInputSchema,
   postSchema,
+  searchResultSchema,
+  SearchResultSchema,
 } from "@/lib/validations/data";
 import { createClient } from "@/supabase/server";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 
 // Returns a Promise<DataResponse<Post>>
@@ -106,7 +114,7 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
  *   console.log(result.data.pagination.hasMore);
  * }
  * */
-export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: any):
+export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: SupabaseClient):
   Promise<DataResponse<UserPostsResponse>> {
   try {
     // Step 1: Input validation using cursor-based schema
@@ -232,9 +240,79 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: an
   }
 }
 
-// NOTE: I want to be able to search all posts by certain filters (e.g. kind of science, by date created )
-export async function searchPosts(query: string) { }
+function formatQuery(query: string) {
+  if (!query) {
+    return '';
+  }
+  const words = query.split(/\s+/);
+  const formattedQuery = words.map(w => `${w}'':*`).join(' & ');
+  return formattedQuery;
+}
 
-// NOTE: will comments be associated with posts objects in the database or held somewhere else?
-// They might need to be held somewhere else so accessing them without the post can be done (i.e. moderation)
-// export async function getComments() {}
+// TODO: CREATE PROPER SCHEMA
+// TODO: FIX POSTGRESQL VIEW TO CORRECTLY SORT/FILTER/ORDER RESULTS
+// TODO: Should sorting and ordering be done on the server or by the database?
+// TODO: ADD pagination for search
+
+/**
+ * Retrieves a list user generated content (Users, Posts, Articles, and Groups)
+ *
+ * @param searchQuery - string representing the query in plain english
+ * @param limit - The maximum number of returned results (default=10)
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @return Promise resolving to DataResponse with matching content or an empty array
+ *
+ * @example
+ * ```typescript
+ * const data = await searchUserContent("foo");
+ * if (result.success) {
+ *   console.log(data);
+ * }
+ * */
+export async function searchUserContent(input: SearchInput, supabaseClient?: SupabaseClient):
+  Promise<DataResponse<searchResult[]>> {
+
+  try {
+    const supabase = supabaseClient || await createClient();
+    // Default to a limit of ten?
+    const querylimit = input.limit || 10;
+    const formattedQuery = formatQuery(input.query);
+
+    const { data, error: dbError } = await supabase
+      // NOTE: user_generated_content_search is a virtual table (a VIEW) on the db.
+      .from('user_generated_content_search')
+      .select('*')
+      .textSearch('tsv', formattedQuery, {
+        config: 'english',
+      }).limit(querylimit);
+
+    if (dbError) {
+      console.error("Failed to retreive search results: ", dbError);
+      return {
+        success: false,
+        error: "Failed to retrieve user posts",
+      };
+    }
+
+    const validatedSearchResults = searchResultSchema.array().parse(data);
+
+    return {
+      success: true,
+      data: validatedSearchResults,
+    }
+
+  } catch (error) {
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: `Invalid input: ${error.issues[0]?.message || "Validation failed"}`,
+      };
+    }
+
+    return {
+      success: false,
+      error: "an unexpected error ocurred when retrieving search results",
+    };
+  }
+}

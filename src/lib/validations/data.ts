@@ -115,19 +115,42 @@ export const feedResponseSchema = z.object({
     .optional(),
 });
 
+// // FIXME: I don't think is needed
+// /**
+//  * Validates user posts response structure with cursor-based pagination
+//  * Includes cursor metadata for efficient real-time feed navigation
+//  */
+// export const userPostsResponseSchema = z.object({
+//   posts: z.array(postSchema),
+//   pagination: z.object({
+//     limit: z.number().min(1),
+//     hasMore: z.boolean(),
+//     nextCursor: z.iso.datetime(),
+//     prevCursor: z.iso.datetime(),
+//   }),
+// });
+
 /**
- * Validates user posts response structure with cursor-based pagination
- * Includes cursor metadata for efficient real-time feed navigation
+ * Represents a single result of search
+ * This schema must adhere to the database response which must return all the data as text
  */
-export const userPostsResponseSchema = z.object({
-  posts: z.array(postSchema),
-  pagination: z.object({
-    limit: z.number().min(1),
-    hasMore: z.boolean(),
-    nextCursor: z.iso.datetime(),
-    prevCursor: z.iso.datetime(),
-  }),
+export const searchResultSchema = z.object({
+  content_type: z.string(),
+  content: z.string(),
+  category: z.string(),
+  id: z.string(),
+  names: z.string(),
+  tsv: z.string(),
 });
+
+// // FIXME: I don't think this is necessary
+// /**
+//   * Validates that the response from the usergencontent search is of the same shape.
+//   *
+//   */
+// export const searchResponseSchema = z.object({
+//   results: z.array(searchResultSchema),
+// })
 
 // =============================================================================
 // TYPE EXPORTS
@@ -141,6 +164,8 @@ export type SearchFeedInput = z.infer<typeof searchFeedInputSchema>;
 export type GetUserPostsInput = z.infer<typeof getUserPostsInputSchema>;
 
 // Server Response Types
+export type SearchResultSchema = z.infer<typeof searchResultSchema>;
+// export type SearchResponseSchema = z.infer<typeof searchResponseSchema>;
 export type PostData = z.infer<typeof postSchema>;
 export type FeedResponseSchema = z.infer<typeof feedResponseSchema>;
-export type UserPostsResponseSchema = z.infer<typeof userPostsResponseSchema>;
+// export type UserPostsResponseSchema = z.infer<typeof userPostsResponseSchema>;
