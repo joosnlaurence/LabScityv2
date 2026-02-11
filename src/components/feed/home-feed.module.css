@@ -1,0 +1,81 @@
+.newPostButton {
+  align-self: flex-start;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+  background: var(--mantine-color-gray-0);
+  border: 1px solid var(--mantine-color-navy-3);
+  color: var(--mantine-color-navy-8);
+  font-weight: 700;
+  padding: 6px 12px;
+  height: auto;
+}
+
+.newPostButton:hover {
+  background: var(--mantine-color-gray-1);
+  border-color: var(--mantine-color-navy-4);
+}
+
+.postStack {
+  position: relative;
+  gap: 18px;
+  width: 100%;
+}
+
+.commentSection {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-left: 0;
+  padding-left: 22px;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+}
+
+.commentSection::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -14px;
+  bottom: 0;
+  width: 2px;
+  background: var(--mantine-color-navy-7);
+  border-radius: 999px;
+}
+
+.commentItem {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+  display: flex;
+}
+
+.commentCard {
+  /*This is some magic do not mess with it unless you change the comment line*/
+  width: calc(100% - 12px);
+}
+
+.commentItem::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  width: 18px;
+  height: 2px;
+  background: var(--mantine-color-navy-7);
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
+.commentItem:last-child::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: 4px;
+  height: calc(50% + 20px);
+  background: var(--mantine-color-gray-2);
+  border-radius: 999px;
+  transform: translateY(0);
+}

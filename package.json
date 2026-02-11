@@ -7,16 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@mantine/core": "^8.3.12",
     "@mantine/hooks": "^8.3.12",
+    "@mantine/notifications": "^8.3.14",
     "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.91.0",
+    "@supabase/supabase-js": "^2.91.1",
+    "@tabler/icons-react": "^3.36.1",
     "@tanstack/react-query": "^5.90.16",
-    "next": "16.1.1",
+    "dotenv": "^17.2.4",
+    "next": "^16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.0",
@@ -25,12 +29,19 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.1",
-    "typescript": "^5"
+    "jsdom": "^28.0.0",
+    "msw": "^2.12.9",
+    "typescript": "5.9.3",
+    "vitest": "^4.0.18",
+    "whatwg-fetch": "^3.6.20"
   }
 }

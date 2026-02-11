@@ -1,0 +1,26 @@
+.container {
+	min-height: 100vh;
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 2rem;
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 1rem;
+}
+
+@media (min-width: 768px) {
+	.grid {
+		grid-template-columns: 65% 35%;
+	}
+}
+
+.feed {
+	padding: 0;
+}
+
+.rightSidebar {
+	padding: 0;
+}

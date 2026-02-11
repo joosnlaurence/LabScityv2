@@ -3,7 +3,6 @@
 import { z } from "zod";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
 import { createClient } from "@/supabase/server";
-// import { supabase } from "./SupabaseClient";
 
 /**
  * Server action: signs in the user with email and password. Validates with loginSchema, then calls Supabase signInWithPassword.
@@ -14,7 +13,7 @@ export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const supabase = await createClient();
-  
+
   // Validate with Zod schema
   try {
     const parsed = loginSchema.parse({ email, password });
@@ -32,8 +31,6 @@ export async function loginAction(formData: FormData) {
         error: error.message ?? "Invalid email or password",
       };
     }
-
-    console.log("makes it past the try catch:", data);
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -79,6 +76,53 @@ export async function signupAction(formData: FormData) {
       return {
         success: false,
         error: error.message ?? "Failed to create account",
+      };
+    }
+    
+    // Wait for user authentication to complete and verify user ID exists
+    if (!data.user?.id) {
+      return {
+        success: false,
+        error: "Authentication failed - no user ID generated",
+      };
+    }
+
+    // Insert user data into Users table with the authenticated user's ID
+    const { error: userInsertError } = await supabase
+      .from("Users")
+      .insert([
+        {
+          user_id: data.user.id,
+          email: parsed.email.toLowerCase(),
+          first_name: parsed.firstName,
+          last_name: parsed.lastName,
+        },
+      ]);
+
+    if (userInsertError) {
+      console.error("Error inserting user: ", userInsertError);
+      return {
+        success: false,
+        error: "Failed to create user",
+      };
+    }
+
+    // Insert profile with the authenticated user's ID
+    const { error: profileInsertError } = await supabase
+      .from("Profile")
+      .insert([
+        {
+          user_id: data.user.id,
+          first_name: parsed.firstName,
+          last_name: parsed.lastName,
+        },
+      ]);
+
+    if (profileInsertError) {
+      console.error("Error inserting profile: ", profileInsertError);
+      return {
+        success: false,
+        error: "Failed to create profile",
       };
     }
 

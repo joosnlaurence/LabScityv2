@@ -44,7 +44,7 @@ export function LSLoginForm({
       formData.append("password", data.password);
       const result = await loginAction(formData);
       if (result.success) {
-        router.push("/dashboard");
+        router.push("/home");
       } else if (result.error) {
         setServerError(result.error);
       }

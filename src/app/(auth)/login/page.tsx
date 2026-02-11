@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { loginAction } from "@/lib/actions/auth";
 import { LSLoginForm } from "@/components/auth/login-form";
 
