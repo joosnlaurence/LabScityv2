@@ -21,10 +21,9 @@ const LSProfileMobileLayout = () => {
 
   const params = useParams<{ user_id: string }>();
   const profile = useUserProfile(params.user_id);
-  console.log(profile);
-  const username = profile.data?.first_name + " " + profile.data?.last_name;
+  const username = profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
   const userPosts = useUserPosts(params.user_id);
-  const listPosts = userPosts.data?.posts.map(post =>
+  const listPosts = userPosts.userPosts?.posts.map(post =>
     <li key={post.post_id}>
       <LSPost
         posterName={username}
@@ -42,7 +41,7 @@ const LSProfileMobileLayout = () => {
   return (
     <Stack p={8}>
       <LSProfileHero
-        profileName={username}
+        profileName="temp"
         profileInstitution="Univ. of Central Florida"
         profileRole="Student"
         profileResearchInterest="Machine Learning"
@@ -86,16 +85,25 @@ const LSProfileDesktopLayout = () => {
 
   const params = useParams<{ user_id: string }>();
   const profile = useUserProfile(params.user_id);
-  const username = profile.data?.first_name + " " + profile.data?.last_name;
+  const username = profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
   const userPosts = useUserPosts(params.user_id);
-  const listPosts = userPosts.data?.posts.map(post =>
+
+  if (profile.status === "pending") {
+    return <div> Loading Profile... </div>
+  }
+
+  if (profile.status === "error") {
+    return <div> Error loading Profile... </div>
+  }
+
+  const listPosts = userPosts.userPosts?.posts.map(post =>
     <li key={post.post_id}>
       <LSPost
         posterName={username}
-        posterResearchInterest="This isn't in the database"
-        attachmentPreviewURL="urlurl"
-        posterProfilePicURL="profilepicurl"
-        postText={post.text || ""}
+        posterResearchInterest="posterResearchInterest n/a"
+        attachmentPreviewURL="attachmentPreviewURL n/a"
+        posterProfilePicURL="posterProfilePicURL n/a"
+        postText={post.text || "postText n/a"}
         timestamp={post.created_at}
       />
     </li>
@@ -107,16 +115,15 @@ const LSProfileDesktopLayout = () => {
         <Box flex={5}>
           <LSProfileHero
             profileName={username}
-            profileInstitution="Univ. of Central Florida"
-            profileRole="Student"
-            profileResearchInterest="Machine Learning"
-            profileAbout="Hello this is my beautiful account"
+            profileInstitution="profileInstitution n/a"
+            profileRole="profileRole n/a"
+            profileResearchInterest="profileResearchInterest n/a"
+            profileAbout="profileAbout n/a"
             profileSkills={[
-              "JavaScript",
-              "php...!?",
+              "profileSkills n/a",
             ]}
-            profilePicURL="https://ih1.redbubble.net/image.5595885630.8128/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg"
-            profileHeaderImageURL="https://external-preview.redd.it/r6g38aXSaQWtd1KxwJbQ-Fs5jtSVDxX3wtLHJEdqixw.jpg?width=1080&crop=smart&auto=webp&s=87a2c94cb3e1561e2b6abd467ea68d81b9901720"
+            profilePicURL="profilePicURL n/a"
+            profileHeaderImageURL="profileHeaderImageURL n/a"
           />
         </Box>
         <Flex flex={3} direction="column" gap={8}>
