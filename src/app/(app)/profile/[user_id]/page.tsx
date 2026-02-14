@@ -21,6 +21,7 @@ const LSProfileMobileLayout = () => {
 
   const params = useParams<{ user_id: string }>();
   const profile = useUserProfile(params.user_id);
+  console.log(profile);
   const username = profile.data?.first_name + " " + profile.data?.last_name;
   const userPosts = useUserPosts(params.user_id);
   const listPosts = userPosts.data?.posts.map(post =>
@@ -34,8 +35,9 @@ const LSProfileMobileLayout = () => {
         timestamp={post.created_at}
       />
     </li>
-
   )
+
+
 
   return (
     <Stack p={8}>

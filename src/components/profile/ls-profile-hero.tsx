@@ -100,6 +100,7 @@ interface LSProfileHeroProps {
   profilePicURL?: string
 }
 
+{/*Needs to be refactored if we want conditional rendering of the hero based on the status of the query if we don't want to wrap it in an another component*/ }
 export default function LSProfileHero({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: LSProfileHeroProps) {
   return (
     <Card shadow="sm" padding="none" radius="md">
