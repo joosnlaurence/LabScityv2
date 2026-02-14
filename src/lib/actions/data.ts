@@ -316,3 +316,35 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
     };
   }
 }
+
+// FIXME: Return a proper value and take in a proper parameter
+export async function getUser(user_id: string, supabaseClient?: SupabaseClient): Promise<DataResponse<User>> {
+
+  try {
+
+    const supabase = supabaseClient || await createClient();
+
+    let query = supabase.from("Users").select('*').eq('user_id', user_id).overrideTypes<User[]>();
+
+    const { data, error } = await query;
+
+
+    if (error) {
+      return { success: false, error: `Error fr in getUser ${error.message}` }
+    }
+
+    console.log(data[0]);
+
+    return {
+      success: true, data: data[0]
+    }
+
+  } catch (error) {
+    console.log("Error getting User ", error)
+  }
+
+  return { success: false, error: `Failed to get user` }
+
+}
+
+

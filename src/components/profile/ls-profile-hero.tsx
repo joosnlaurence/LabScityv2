@@ -9,7 +9,7 @@ const LSEditProfilePopover = () => {
   const [opened, { open, close }] = useDisclosure(false) // TODO: what is this doing?
 
   const editProfileForm = useForm({
-    mode: "uncontrolled", // WARNING: SHOULD SWITCH TO CONTROLLED? 
+    mode: "uncontrolled", // WARNING: SHOULD SWITCH TO CONTROLLED?
     initialValues: {
       firstName: "",
       lastName: "",
