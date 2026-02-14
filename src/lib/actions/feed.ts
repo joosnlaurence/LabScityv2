@@ -46,7 +46,7 @@ export async function createPost(input: CreatePostValues, supabaseClient?: any) 
 
 		// Insert post into database
 		const { data, error } = await supabase
-			.from("Posts")
+			.from("posts")
 			.insert({
 				user_id: authData.user.id,
 				scientific_field: parsed.scientificField,
@@ -105,7 +105,7 @@ export async function deletePost(postId: string, supabaseClient?: any) {
 
 		// Delete post from database (only if user owns it)
 		const { error } = await supabase
-			.from("Posts")
+			.from("posts")
 			.delete()
 			.eq("post_id", postId)
 			.eq("user_id", authData.user.id);
@@ -186,7 +186,7 @@ export async function createComment(postId: string, values: CreateCommentValues,
 
 		// Insert comment into database
 		const { data, error } = await supabase
-			.from("Comment")
+			.from("comment")
 			.insert({
 				post_id: postId,
 				user_id: authData.user.id,
@@ -241,7 +241,7 @@ export async function deleteComment(commentId: string, supabaseClient?: any) {
 
 		// Delete comment from database (only if user owns it)
 		const { error } = await supabase
-			.from("Comment")
+			.from("comment")
 			.delete()
 			.eq("comment_id", commentId)
 			.eq("user_id", authData.user.id);
@@ -304,7 +304,7 @@ export async function createReport(
 		if (commentId != null) {
 			// Report is for a comment - get the comment creator's user_id
 			const { data: commentData, error: commentError } = await supabase
-				.from("Comment")
+				.from("comment")
 				.select("user_id")
 				.eq("comment_id", commentId)
 				.single();
@@ -317,7 +317,7 @@ export async function createReport(
 		} else {
 			// Report is for a post - get the post creator's user_id
 			const { data: postData, error: postError } = await supabase
-				.from("Posts")
+				.from("posts")
 				.select("user_id")
 				.eq("post_id", postId)
 				.single();
@@ -331,7 +331,7 @@ export async function createReport(
 
 		// Insert report into database
 		const { error } = await supabase
-			.from("FeedReport")
+			.from("feed_report")
 			.insert({
 				reporter_id: authData.user.id,
 				reported_id: reportedUserId,
@@ -387,7 +387,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 
 		// Check if like already exists
 		const { data: existingLike } = await supabase
-			.from("Likes")
+			.from("likes")
 			.select()
 			.eq("post_id", postId)
 			.eq("user_id", authData.user.id)
@@ -396,7 +396,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 		if (existingLike) {
 			// Unlike: Remove like and decrement like_amount
 			const { error: deleteError } = await supabase
-				.from("Likes")
+				.from("likes")
 				.delete()
 				.eq("post_id", postId)
 				.eq("user_id", authData.user.id);
@@ -418,7 +418,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 		} else {
 			// Like: Insert like and increment like_amount
 			const { error: insertError } = await supabase
-				.from("Likes")
+				.from("likes")
 				.insert({
 					post_id: postId,
 					user_id: authData.user.id,
@@ -481,7 +481,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 
 		// Check if like already exists
 		const { data: existingLike } = await supabase
-			.from("Comment_likes")
+			.from("comment_likes")
 			.select()
 			.eq("comment_id", commentId)
 			.eq("user_id", authData.user.id)
@@ -490,7 +490,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 		if (existingLike) {
 			// Unlike: Remove like and decrement like_count
 			const { error: deleteError } = await supabase
-				.from("Comment_likes")
+				.from("comment_likes")
 				.delete()
 				.eq("comment_id", commentId)
 				.eq("user_id", authData.user.id);
@@ -512,7 +512,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 		} else {
 			// Like: Insert like and increment like_count
 			const { error: insertError } = await supabase
-				.from("Comment_likes")
+				.from("comment_likes")
 				.insert({
 					comment_id: commentId,
 					user_id: authData.user.id,

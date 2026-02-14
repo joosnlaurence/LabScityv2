@@ -52,7 +52,7 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
 
     const validatedInput = getPostByIdInputSchema.parse(input);
 
-    let query = supabase.from('Posts').select(`
+    let query = supabase.from('posts').select(`
     post_id,
     user_id,
     created_at,
@@ -124,7 +124,7 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
     const supabase = supabaseClient || await createClient();
 
     // Step 3: Build query with explicit column selection
-    let query = supabase.from("Posts").select(`
+    let query = supabase.from("posts").select(`
         post_id,
         user_id,
         created_at,
