@@ -92,8 +92,9 @@ export async function createPost(input: CreatePostValues, supabaseClient?: any) 
  */
 export async function deletePost(postId: string, supabaseClient?: any) {
 	try {
+		const postIdStr = String(postId);
 		// Validate post ID
-		idSchema.parse(postId);
+		idSchema.parse(postIdStr);
 
 		// Get authenticated user
 		const supabase = supabaseClient ?? (await createClient());
@@ -107,14 +108,14 @@ export async function deletePost(postId: string, supabaseClient?: any) {
 		const { error } = await supabase
 			.from("posts")
 			.delete()
-			.eq("post_id", postId)
+			.eq("post_id", postIdStr)
 			.eq("user_id", authData.user.id);
 
 		if (error) {
 			return { success: false, error: error.message };
 		}
 
-		return { success: true, data: { id: postId } };
+			return { success: true, data: { id: postIdStr } };
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return {
@@ -129,19 +130,137 @@ export async function deletePost(postId: string, supabaseClient?: any) {
 // NOTE: Do last as will call other funcs
 // TODO: Dr. Sharonwski wants to have non followed user's posts to enter the feed. This is going to be difficult to test without content on the platform.
 // TODO: Dependency Injection possibility here because we have two kinds of feeds
-export async function getFeed(input: FeedFilterValues) {
+/**
+ * Fetch feed posts with optional category filtering and cursor-based pagination.
+ * Returns posts sorted by creation date (most recent first).
+ *
+ * @param input - Feed filter values (category, cursor, limit)
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with posts array and nextCursor for pagination
+ *
+ * @example
+ * ```typescript
+ * const result = await getFeed({ category: "formal", limit: 20 });
+ * if (result.success) {
+ *   console.log(result.data.posts); // Array of posts
+ * }
+ * ```
+ */
+export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 	try {
 		// Re-validate on server
 		const parsed = feedFilterSchema.parse(input);
 
-		// TODO: Get authenticated user
-		// TODO: Will need to retrieve posts by some metrics
-  	    // TODO: Will need to sort posts (chronological probably - with a filter on followed users posts? - then other posts?)
-		// TODO: Query posts with cursor-based pagination
+		// Get authenticated user
+		const supabase = supabaseClient ?? (await createClient());
+		const { data: authData } = await supabase.auth.getUser();
+
+		// Build the query
+		let query = supabase
+			.from("posts")
+			.select(
+				`
+				post_id,
+				created_at,
+				category,
+				text,
+				like_amount,
+				scientific_field,
+				user_id,
+				users:user_id(user_id, first_name, last_name),
+				likes(user_id)
+			`
+			)
+			.order("created_at", { ascending: false });
+
+		// Apply category filter if provided
+		if (parsed.category) {
+			query = query.eq("category", parsed.category);
+		}
+
+		// Apply cursor pagination (fetch limit + 1 to detect if more posts exist)
+		const pageSize = parsed.limit;
+		if (parsed.cursor) {
+			query = query.lt("post_id", parsed.cursor);
+		}
+		query = query.limit(pageSize + 1);
+
+		const { data: posts, error } = await query;
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		if (!posts) {
+			return { success: true, data: { posts: [], nextCursor: null } };
+		}
+
+		// Check if there are more posts beyond the page size
+		const hasMore = posts.length > pageSize;
+		const postsToReturn = hasMore ? posts.slice(0, pageSize) : posts;
+
+		// Determine next cursor
+		const nextCursor = hasMore ? postsToReturn[postsToReturn.length - 1]?.post_id : null;
+
+		// Helper function to calculate time ago
+		const getTimeAgo = (date: string): string => {
+			const now = new Date();
+			const postDate = new Date(date);
+			const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+
+			if (diffInSeconds < 60) return "just now";
+			if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+			if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+			if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+			return postDate.toLocaleDateString();
+		};
+
+		// Fetch comments for each post
+		const postsWithComments = await Promise.all(
+			postsToReturn.map(async (post: any) => {
+				const { data: comments } = await supabase
+					.from("comment")
+					.select(
+						`
+						comment_id,
+						text,
+						created_at,
+						user_id,
+						users:user_id(user_id, first_name, last_name),
+						comment_likes(user_id)
+					`
+					)
+					.eq("post_id", post.post_id)
+					.order("created_at", { ascending: false });
+
+				return { post, comments: comments || [] };
+			})
+		);
+
+		// Format the response
+		const formattedPosts = postsWithComments.map(({ post, comments }: any) => ({
+			id: post.post_id,
+			userName: `${post.users?.first_name} ${post.users?.last_name}`.trim(),
+			scientificField: post.scientific_field,
+			content: post.text,
+			timeAgo: getTimeAgo(post.created_at),
+			comments: comments.map((comment: any) => ({
+				id: comment.comment_id,
+				userName: `${comment.users?.first_name} ${comment.users?.last_name}`.trim(),
+				content: comment.text,
+				timeAgo: getTimeAgo(comment.created_at),
+				isLiked: authData.user
+					? comment.comment_likes?.some((like: any) => like.user_id === authData.user?.id)
+					: false,
+			})),
+			isLiked: post.likes && post.likes.length > 0 && authData.user
+				? post.likes.some((like: any) => like.user_id === authData.user?.id)
+				: false,
+		}));
 
 		const data: GetFeedResult = {
-			posts: [],
-			nextCursor: null,
+			posts: formattedPosts,
+			nextCursor,
 		};
 		return { success: true, data };
 	} catch (error) {
@@ -173,7 +292,8 @@ export async function getFeed(input: FeedFilterValues) {
  */
 export async function createComment(postId: string, values: CreateCommentValues, supabaseClient?: any) {
 	try {
-		idSchema.parse(postId);
+		const postIdStr = String(postId);
+		idSchema.parse(postIdStr);
 		const parsed = createCommentSchema.parse(values);
 
 		// Get authenticated user
@@ -188,7 +308,7 @@ export async function createComment(postId: string, values: CreateCommentValues,
 		const { data, error } = await supabase
 			.from("comment")
 			.insert({
-				post_id: postId,
+				post_id: postIdStr,
 				user_id: authData.user.id,
 				text: parsed.content,
 			})
@@ -228,8 +348,9 @@ export async function createComment(postId: string, values: CreateCommentValues,
  */
 export async function deleteComment(commentId: string, supabaseClient?: any) {
 	try {
+		const commentIdStr = String(commentId);
 		// Validate comment ID
-		idSchema.parse(commentId);
+		idSchema.parse(commentIdStr);
 
 		// Get authenticated user
 		const supabase = supabaseClient ?? (await createClient());
@@ -243,14 +364,14 @@ export async function deleteComment(commentId: string, supabaseClient?: any) {
 		const { error } = await supabase
 			.from("comment")
 			.delete()
-			.eq("comment_id", commentId)
+			.eq("comment_id", commentIdStr)
 			.eq("user_id", authData.user.id);
 
 		if (error) {
 			return { success: false, error: error.message };
 		}
 
-		return { success: true, data: { id: commentId } };
+			return { success: true, data: { id: commentIdStr } };
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return {
@@ -287,8 +408,10 @@ export async function createReport(
 	supabaseClient?: any,
 ) {
 	try {
-		idSchema.parse(postId);
-		if (commentId != null) idSchema.parse(commentId);
+		const postIdStr = String(postId);
+		const commentIdStr = commentId ? String(commentId) : null;
+		idSchema.parse(postIdStr);
+		if (commentIdStr != null) idSchema.parse(commentIdStr);
 		const parsed = createReportSchema.parse(values);
 
 		// Get authenticated user
@@ -301,12 +424,12 @@ export async function createReport(
 
 		let reportedUserId: string;
 
-		if (commentId != null) {
+		if (commentIdStr != null) {
 			// Report is for a comment - get the comment creator's user_id
 			const { data: commentData, error: commentError } = await supabase
 				.from("comment")
 				.select("user_id")
-				.eq("comment_id", commentId)
+				.eq("comment_id", commentIdStr)
 				.single();
 
 			if (commentError || !commentData) {
@@ -319,7 +442,7 @@ export async function createReport(
 			const { data: postData, error: postError } = await supabase
 				.from("posts")
 				.select("user_id")
-				.eq("post_id", postId)
+				.eq("post_id", postIdStr)
 				.single();
 
 			if (postError || !postData) {
@@ -335,8 +458,8 @@ export async function createReport(
 			.insert({
 				reporter_id: authData.user.id,
 				reported_id: reportedUserId,
-				post_id: postId,
-				comment_id: commentId,
+				post_id: postIdStr,
+				comment_id: commentIdStr,
 				type: parsed.type,
 				additional_context: parsed.reason,
 			});
@@ -375,7 +498,8 @@ export async function createReport(
  */
 export async function likePost(postId: string, supabaseClient?: any) {
 	try {
-		idSchema.parse(postId);
+		const postIdStr = String(postId);
+		idSchema.parse(postIdStr);
 
 		// Get authenticated user
 		const supabase = supabaseClient ?? (await createClient());
@@ -389,7 +513,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 		const { data: existingLike } = await supabase
 			.from("likes")
 			.select()
-			.eq("post_id", postId)
+			.eq("post_id", postIdStr)
 			.eq("user_id", authData.user.id)
 			.maybeSingle();
 
@@ -398,7 +522,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 			const { error: deleteError } = await supabase
 				.from("likes")
 				.delete()
-				.eq("post_id", postId)
+				.eq("post_id", postIdStr)
 				.eq("user_id", authData.user.id);
 
 			if (deleteError) {
@@ -407,7 +531,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 
 			// Decrement like_amount on the post
 			const { error: updateError } = await supabase.rpc("decrement_like_amount", {
-				post_id_param: postId,
+				post_id_param: postIdStr,
 			});
 
 			if (updateError) {
@@ -420,7 +544,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 			const { error: insertError } = await supabase
 				.from("likes")
 				.insert({
-					post_id: postId,
+					post_id: postIdStr,
 					user_id: authData.user.id,
 				});
 
@@ -430,7 +554,7 @@ export async function likePost(postId: string, supabaseClient?: any) {
 
 			// Increment like_amount on the post
 			const { error: updateError } = await supabase.rpc("increment_like_amount", {
-				post_id_param: postId,
+				post_id_param: postIdStr,
 			});
 
 			if (updateError) {
@@ -469,7 +593,8 @@ export async function likePost(postId: string, supabaseClient?: any) {
  */
 export async function likeComment(commentId: string, supabaseClient?: any) {
 	try {
-		idSchema.parse(commentId);
+		const commentIdStr = String(commentId);
+		idSchema.parse(commentIdStr);
 
 		// Get authenticated user
 		const supabase = supabaseClient ?? (await createClient());
@@ -483,7 +608,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 		const { data: existingLike } = await supabase
 			.from("comment_likes")
 			.select()
-			.eq("comment_id", commentId)
+			.eq("comment_id", commentIdStr)
 			.eq("user_id", authData.user.id)
 			.maybeSingle();
 
@@ -492,7 +617,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 			const { error: deleteError } = await supabase
 				.from("comment_likes")
 				.delete()
-				.eq("comment_id", commentId)
+				.eq("comment_id", commentIdStr)
 				.eq("user_id", authData.user.id);
 
 			if (deleteError) {
@@ -501,7 +626,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 
 			// Decrement like_count on the comment
 			const { error: updateError } = await supabase.rpc("decrement_comment_like_count", {
-				comment_id_param: commentId,
+				comment_id_param: commentIdStr,
 			});
 
 			if (updateError) {
@@ -514,7 +639,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 			const { error: insertError } = await supabase
 				.from("comment_likes")
 				.insert({
-					comment_id: commentId,
+					comment_id: commentIdStr,
 					user_id: authData.user.id,
 				});
 
@@ -524,7 +649,7 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
 
 			// Increment like_count on the comment
 			const { error: updateError } = await supabase.rpc("increment_comment_like_count", {
-				comment_id_param: commentId,
+				comment_id_param: commentIdStr,
 			});
 
 			if (updateError) {
