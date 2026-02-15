@@ -7,6 +7,7 @@ export interface LSMiniProfileListProps {
   profiles?: LSMiniProfileProps[]
 }
 
+// TODO: figure out if the conditional rendering needs to be here or in page.tsx
 export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfileListProps) {
   return (
     <Card shadow="sm" padding="lg" radius="md" h="100%">
@@ -20,13 +21,9 @@ export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfi
           // We must pass profiles and there must be something in the list
           // Otherwise, the list shouldn't be displayed
           profiles && profiles.length > 0 ?
-            /*
-               FIXME: the key should come from the loop and not manually?
-                      consult backend people!
-            */
             profiles.map((otherProfile) => {
               return <LSMiniProfile
-                key={otherProfile.key}
+                posterEmail={otherProfile.posterEmail}
                 posterName={otherProfile.posterName}
                 posterResearchInterest={otherProfile.posterResearchInterest}
                 posterProfilePicURL={otherProfile.posterProfilePicURL} />

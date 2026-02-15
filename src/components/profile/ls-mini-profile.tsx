@@ -1,8 +1,10 @@
 import { Text, Box, Avatar } from "@mantine/core";
 
+// TODO: It needs to show the name and email. We don't want usernames, but user needs a way to differentiate profiles.
 export interface LSMiniProfileProps {
-  key: number,
+  // key: number,
   posterName: string,
+  posterEmail: string,
   posterResearchInterest: string,
   posterProfilePicURL?: string,
 }

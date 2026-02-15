@@ -16,6 +16,7 @@ interface UserPostsQueryResponse {
   error?: Error
 }
 
+// FIXME: This is probably a bad way of doing this, but it does just pass the error up to the parent component which can handle it more gracefully?
 export function useUserProfile(user_id: string, options?: { enabled?: boolean }): UserProfileQueryResponse {
 
   // TANSTACK QUERY format that
@@ -48,5 +49,16 @@ export function useUserPosts(user_id: string): UserPostsQueryResponse {
     error: error || undefined,
   }
 
+  export function useUserFollowers(user_id: string): UserPostsQueryResponse {
+    const { status, data, error } = useQuery({
+      queryKey: profileKeys.posts(user_id),
+      queryFn: async () => getUserFollowers({ user_id: user_id })
+    });
 
-}
+    return {
+      status: status,
+      userPosts: data?.data,
+      error: error || undefined,
+    }
+
+  }
