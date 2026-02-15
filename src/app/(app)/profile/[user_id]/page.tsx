@@ -1,29 +1,31 @@
-"use client"
+"use client";
+import { Box, Divider, Flex, Stack, useMantineTheme } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { useParams } from "next/navigation";
+import LSMiniProfile from "@/components/profile/ls-mini-profile";
+import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
+import LSPost from "@/components/profile/ls-post";
 // TODO: CREATE THE FOLLOWING/FOLLOWED relationships
 // TODO: FIGURE OUT THE ROUTING so that it passes the user_id otw to this profile page
 /* TODO: Figure out how to get the comments on each post *I think the right move is to have a join on posts and comments with the same postid* */
 // TODO: Figure out profile pictures
 // TODO: READ TANSTACK DOCS (Need to understand queries, invalidating queries, and mutations)
 // TODO: FIGURE OUT THE OPENGRAPH docs for sharing across whole platform
-import LSProfileHero from "@/components/profile/ls-profile-hero"
-import LSPost from "@/components/profile/ls-post"
-import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
-import { Box, Divider, Flex, Stack } from "@mantine/core";
-import { useMantineTheme } from '@mantine/core';
-import { useMediaQuery } from '@mantine/hooks';
-
-
-
-import { useUserProfile, useUserPosts } from "@/components/profile/use-profile";
-import { useParams } from "next/navigation";
+import LSProfileHero from "@/components/profile/ls-profile-hero";
+import {
+  useUserFollowing,
+  useUserPosts,
+  useUserProfile,
+} from "@/components/profile/use-profile";
 
 const LSProfileMobileLayout = () => {
-
   const params = useParams<{ user_id: string }>();
   const profile = useUserProfile(params.user_id);
-  const username = profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
+  const username =
+    profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
   const userPosts = useUserPosts(params.user_id);
-  const listPosts = userPosts.userPosts?.posts.map(post =>
+  const following = useUserFollowing(params.user_id);
+  const listPosts = userPosts.userPosts?.posts.map((post) => (
     <li key={post.post_id}>
       <LSPost
         posterName={username}
@@ -34,9 +36,7 @@ const LSProfileMobileLayout = () => {
         timestamp={post.created_at}
       />
     </li>
-  )
-
-
+  ));
 
   return (
     <Stack p={8}>
@@ -46,9 +46,7 @@ const LSProfileMobileLayout = () => {
         profileRole="profileRole n/a"
         profileResearchInterest="profileResearchInterest n/a"
         profileAbout="profileAbout n/a"
-        profileSkills={[
-          "profileSkills n/a",
-        ]}
+        profileSkills={["profileSkills n/a"]}
         profilePicURL="profilePicURL n/a"
         profileHeaderImageURL="profileHeaderImageURL n/a"
       />
@@ -56,43 +54,30 @@ const LSProfileMobileLayout = () => {
       <LSMiniProfileList widgetTitle="Friends" />
       <LSMiniProfileList
         widgetTitle="Following"
-        profiles={[
-          {
-            key: 0,
-            posterName: "Beethoven",
-            posterResearchInterest: "European Music",
-            posterProfilePicURL:
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsxuN8XD4da9_EVO8m6ZP4aECjlYM8mBkbTg&s",
-          },
-          {
-            key: 1,
-            posterName: "2Pac Shakur",
-            posterResearchInterest: "Rap",
-            posterProfilePicURL:
-              "https://npr.brightspotcdn.com/dims4/default/3ef5a7e/2147483647/strip/true/crop/2814x2110+0+0/resize/880x660!/quality/90/",
-          },
-        ]}
+        profiles={following.data}
       />
     </Stack>
-  )
-}
+  );
+};
 
 const LSProfileDesktopLayout = () => {
-
   const params = useParams<{ user_id: string }>();
   const profile = useUserProfile(params.user_id);
-  const username = profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
+  const username =
+    profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
   const userPosts = useUserPosts(params.user_id);
+  const following = useUserFollowing(params.user_id);
+
 
   if (profile.status === "pending") {
-    return <div> Loading Profile... </div>
+    return <div> Loading Profile... </div>;
   }
 
   if (profile.status === "error") {
-    return <div> Error loading Profile... </div>
+    return <div> Error loading Profile... </div>;
   }
 
-  const listPosts = userPosts.userPosts?.posts.map(post =>
+  const listPosts = userPosts.userPosts?.posts.map((post) => (
     <li key={post.post_id}>
       <LSPost
         posterName={username}
@@ -103,7 +88,7 @@ const LSProfileDesktopLayout = () => {
         timestamp={post.created_at}
       />
     </li>
-  )
+  ));
 
   return (
     <Box py={24} px={80}>
@@ -115,9 +100,7 @@ const LSProfileDesktopLayout = () => {
             profileRole="profileRole n/a"
             profileResearchInterest="profileResearchInterest n/a"
             profileAbout="profileAbout n/a"
-            profileSkills={[
-              "profileSkills n/a",
-            ]}
+            profileSkills={["profileSkills n/a"]}
             profilePicURL="profilePicURL n/a"
             profileHeaderImageURL="profileHeaderImageURL n/a"
           />
@@ -130,40 +113,23 @@ const LSProfileDesktopLayout = () => {
           <Box flex={5}>
             <LSMiniProfileList
               widgetTitle="Following"
-              profiles={[
-                {
-                  posterEmail: "posterEmail",
-                  posterName: "Beethoven",
-                  posterResearchInterest: "European Music",
-                  posterProfilePicURL:
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsxuN8XD4da9_EVO8m6ZP4aECjlYM8mBkbTg&s",
-                },
-                {
-                  posterName: "2Pac Shakur",
-                  posterEmail: "posterEmail",
-                  posterResearchInterest: "Rap",
-                  posterProfilePicURL:
-                    "https://npr.brightspotcdn.com/dims4/default/3ef5a7e/2147483647/strip/true/crop/2814x2110+0+0/resize/880x660!/quality/90/",
-                },
-              ]}
+              profiles={following.data}
             />
           </Box>
         </Flex>
-      </Flex >
+      </Flex>
       {/* posts */}
       <Divider my={20} color="navy.1" />
       <Stack mt={20} px="20%">
         {listPosts}
       </Stack>
-    </Box >
-  )
-}
+    </Box>
+  );
+};
 
 export default function ProfilePage() {
   const theme = useMantineTheme();
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
 
-  return isMobile ?
-    <LSProfileMobileLayout /> :
-    <LSProfileDesktopLayout />
+  return isMobile ? <LSProfileMobileLayout /> : <LSProfileDesktopLayout />;
 }

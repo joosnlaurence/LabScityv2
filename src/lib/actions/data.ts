@@ -52,7 +52,7 @@ export async function getPostById(input: GetPostByIdInput, supabaseClient?: any)
 
     const validatedInput = getPostByIdInputSchema.parse(input);
 
-    let query = supabase.from('Posts').select(`
+    let query = supabase.from('posts').select(`
     post_id,
     user_id,
     created_at,
@@ -124,7 +124,7 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
     const supabase = supabaseClient || await createClient();
 
     // Step 3: Build query with explicit column selection
-    let query = supabase.from("Posts").select(`
+    let query = supabase.from("posts").select(`
         post_id,
         user_id,
         created_at,
@@ -273,6 +273,7 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
   Promise<DataResponse<searchResult[]>> {
 
   try {
+
     const supabase = supabaseClient || await createClient();
     // Default to a limit of ten?
     const querylimit = input.limit || 10;
@@ -324,16 +325,14 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
 
     const supabase = supabaseClient || await createClient();
 
-    let query = supabase.from("Users").select('*').eq('user_id', user_id).overrideTypes<User[]>();
+    let query = supabase.from("users").select('*').eq('user_id', user_id).overrideTypes<User[]>();
 
     const { data, error } = await query;
-
 
     if (error) {
       return { success: false, error: `Error fr in getUser ${error.message}` }
     }
 
-    console.log(data[0]);
 
     return {
       success: true, data: data[0]

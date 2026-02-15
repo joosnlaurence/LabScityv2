@@ -3,6 +3,7 @@ import { getUser, getUserPosts } from "@/lib/actions/data";
 import { profileKeys } from "@/lib/query-keys";
 import { Post, User } from "@/lib/types/feed";
 import { UserPostsResponse } from "@/lib/types/data";
+import { getUserFollowers, getUserFollowing } from "@/lib/actions/profile";
 
 interface UserProfileQueryResponse {
   status: "success" | "pending" | "error",
@@ -48,17 +49,32 @@ export function useUserPosts(user_id: string): UserPostsQueryResponse {
     userPosts: data?.data,
     error: error || undefined,
   }
+}
 
-  export function useUserFollowers(user_id: string): UserPostsQueryResponse {
-    const { status, data, error } = useQuery({
-      queryKey: profileKeys.posts(user_id),
-      queryFn: async () => getUserFollowers({ user_id: user_id })
-    });
 
-    return {
-      status: status,
-      userPosts: data?.data,
-      error: error || undefined,
-    }
+export function useUserFollowers(user_id: string) {
+  const { status, data, error } = useQuery({
+    queryKey: profileKeys.followers(user_id),
+    queryFn: async () => getUserFollowers(user_id)
+  });
 
+  return {
+    status: status,
+    error: error || undefined,
+    data: data?.data
   }
+}
+
+export function useUserFollowing(user_id: string) {
+  const { status, data, error } = useQuery({
+    queryKey: profileKeys.following(user_id),
+    queryFn: async () => getUserFollowing(user_id)
+  })
+
+
+  return {
+    status: status,
+    error: error || undefined,
+    data: data?.data
+  }
+}
