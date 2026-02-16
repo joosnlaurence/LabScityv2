@@ -159,7 +159,7 @@ export function useHomeFeed({
 
   const likeCommentMutation = useMutation({
     mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
-      const result = await likeCommentAction(postId, commentId);
+      const result = await likeCommentAction(commentId);
       if (!result.success) {
         throw new Error(result.error ?? "Failed to update like");
       }
