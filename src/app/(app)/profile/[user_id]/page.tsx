@@ -14,6 +14,7 @@ import LSPost from "@/components/profile/ls-post";
 import LSProfileHero from "@/components/profile/ls-profile-hero";
 import {
   useUserFollowing,
+  useUserFriends,
   useUserPosts,
   useUserProfile,
 } from "@/components/profile/use-profile";
@@ -25,6 +26,7 @@ const LSProfileMobileLayout = () => {
     profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
   const userPosts = useUserPosts(params.user_id);
   const following = useUserFollowing(params.user_id);
+  const friends = useUserFriends(params.user_id)
   const listPosts = userPosts.userPosts?.posts.map((post) => (
     <li key={post.post_id}>
       <LSPost
@@ -51,7 +53,7 @@ const LSProfileMobileLayout = () => {
         profileHeaderImageURL="profileHeaderImageURL n/a"
       />
       {listPosts}
-      <LSMiniProfileList widgetTitle="Friends" />
+      <LSMiniProfileList widgetTitle="Friends" profiles={friends.data} />
       <LSMiniProfileList
         widgetTitle="Following"
         profiles={following.data}
@@ -66,6 +68,7 @@ const LSProfileDesktopLayout = () => {
   const username =
     profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
   const userPosts = useUserPosts(params.user_id);
+  const friends = useUserFriends(params.user_id)
   const following = useUserFollowing(params.user_id);
 
 
@@ -76,6 +79,12 @@ const LSProfileDesktopLayout = () => {
   if (profile.status === "error") {
     return <div> Error loading Profile... </div>;
   }
+
+  const friendIds = new Set(friends.data?.map(friend => friend.user_id));
+
+  const notFollowedBack = following.data?.filter(user =>
+    !friendIds.has(user.user_id)
+  );
 
   const listPosts = userPosts.userPosts?.posts.map((post) => (
     <li key={post.post_id}>
@@ -107,13 +116,12 @@ const LSProfileDesktopLayout = () => {
         </Box>
         <Flex flex={3} direction="column" gap={8}>
           <Box flex={3}>
-            {/* The two mini lists will need to be populated. follows table exists, it needs to be queried and a useQuery needs to be written and placed in use-profile?*/}
-            <LSMiniProfileList widgetTitle="Friends" />
+            <LSMiniProfileList widgetTitle="Friends" profiles={friends.data} />
           </Box>
           <Box flex={5}>
             <LSMiniProfileList
               widgetTitle="Following"
-              profiles={following.data}
+              profiles={notFollowedBack}
             />
           </Box>
         </Flex>

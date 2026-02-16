@@ -281,6 +281,7 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
 
     const { data, error: dbError } = await supabase
       // NOTE: user_generated_content_search is a virtual table (a VIEW) on the db.
+      // TODO: remove * when table is finalized
       .from('user_generated_content_search')
       .select('*')
       .textSearch('tsv', formattedQuery, {
@@ -325,6 +326,7 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
 
     const supabase = supabaseClient || await createClient();
 
+    // TODO: remove * when table gets finalized
     let query = supabase.from("users").select('*').eq('user_id', user_id).overrideTypes<User[]>();
 
     const { data, error } = await query;
@@ -339,7 +341,7 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
     }
 
   } catch (error) {
-    console.log("Error getting User ", error)
+    console.error("Error getting User ", error)
   }
 
   return { success: false, error: `Failed to get user` }

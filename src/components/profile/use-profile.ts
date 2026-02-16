@@ -3,7 +3,7 @@ import { getUser, getUserPosts } from "@/lib/actions/data";
 import { profileKeys } from "@/lib/query-keys";
 import { Post, User } from "@/lib/types/feed";
 import { UserPostsResponse } from "@/lib/types/data";
-import { getUserFollowers, getUserFollowing } from "@/lib/actions/profile";
+import { getUserFollowers, getUserFollowing, getUserFriends } from "@/lib/actions/profile";
 
 interface UserProfileQueryResponse {
   status: "success" | "pending" | "error",
@@ -69,6 +69,21 @@ export function useUserFollowing(user_id: string) {
   const { status, data, error } = useQuery({
     queryKey: profileKeys.following(user_id),
     queryFn: async () => getUserFollowing(user_id)
+  })
+
+  console.log(data?.data)
+
+  return {
+    status: status,
+    error: error || undefined,
+    data: data?.data
+  }
+}
+
+export function useUserFriends(user_id: string) {
+  const { status, data, error } = useQuery({
+    queryKey: profileKeys.following(user_id),
+    queryFn: async () => getUserFriends(user_id)
   })
 
 

@@ -13,6 +13,7 @@ export const profileKeys = {
   all: ["profile"] as const,
   user: (user_id: string) => [...profileKeys.all, "user", user_id] as const,
   followers: (user_id: string) => [...profileKeys.all, "followers", user_id] as const,
+  friends: (user_id: string) => [...profileKeys.all, "friends", user_id] as const,
   following: (user_id: string) => [...profileKeys.all, "following", user_id] as const,
   posts: (user_id: string) => [...profileKeys.all, "posts", user_id] as const,
 }
