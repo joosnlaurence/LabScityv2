@@ -77,9 +77,9 @@ export async function signupAction(formData: FormData) {
       };
     }
 
-    // Insert user data into Users table with the authenticated user's ID
+    // Insert user data into users table with the authenticated user's ID
     const { error: userInsertError } = await supabase
-      .from("Users")
+      .from("users")
       .insert([
         {
           user_id: data.user.id,
@@ -99,7 +99,7 @@ export async function signupAction(formData: FormData) {
 
     // Insert profile with the authenticated user's ID
     const { error: profileInsertError } = await supabase
-      .from("Profile")
+      .from("profile")
       .insert([
         {
           user_id: data.user.id,
