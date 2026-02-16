@@ -118,7 +118,7 @@ interface LSPostProps {
   posterResearchInterest: string,
   posterProfilePicURL: string,
   attachmentPreviewURL: string,
-  timestamp: Date,
+  timestamp: string,
   postText: string
 }
 
@@ -127,6 +127,7 @@ export default function LSPost({
   posterResearchInterest,
   posterProfilePicURL: posterProfilePic,
   attachmentPreviewURL,
+  /* FIXME: Put dynamic timestamps back at some point, not worth working on atm though */
   timestamp,
   postText
 }: LSPostProps) {
@@ -166,17 +167,7 @@ export default function LSPost({
           <Image radius="md" w="50%" src={attachmentPreviewURL} />
         </Center>
         <Text size="sm" c="navy.5" ml={2} my={12}>
-          {timestamp.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })}{" "}
-          •{" "}
-          {timestamp.toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
+          {timestamp}
         </Text>
         <Box
           style={{
