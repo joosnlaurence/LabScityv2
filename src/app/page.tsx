@@ -29,7 +29,7 @@ export default function Home() {
 
       <section className={styles.hero}>
         <h1 className={styles.heroTitle}>
-          Something about
+          Welcome to
           <br />
           <span>LabScity</span>
         </h1>
@@ -39,7 +39,7 @@ export default function Home() {
         <div className={styles.exploreGrid}>
           <div>
             <h2 className={styles.exploreTitle}>Explore Top Content</h2>
-            <p className={styles.exploreDescription}>Description . . .</p>
+            <p className={styles.exploreDescription}>Discover top research, insights, and breakthroughs from across the scientific community</p>
           </div>
 
           <div className={styles.categoryGroup}>
