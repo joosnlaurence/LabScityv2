@@ -22,8 +22,8 @@ async function test() {
   console.log("Get Chris followers: ", (await result3).data)
   console.log("Get Chris following: ", (await result4).data)
 
-  const result5 = getUserFollowers("57701fec-e179-4b37-a5e9-92b6e934024e", supabaseAdmin)
-  const result6 = getUserFollowing("57701fec-e179-4b37-a5e9-92b6e934024e", supabaseAdmin)
+  const result5 = getUserFollowers("66d5fb76-fa15-4edf-8f1c-3b645465a94c", supabaseAdmin)
+  const result6 = getUserFollowing("66d5fb76-fa15-4edf-8f1c-3b645465a94c", supabaseAdmin)
 
   console.log("Liam followers: ", (await result5).data);
   console.log("Liam following: ", (await result6).data);
