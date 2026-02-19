@@ -24,7 +24,7 @@ export function TrendingWidget({ hashtags }: TrendingWidgetProps) {
 		>
 			<Stack gap="md">
 				<Text
-					c="navy.8"
+					c="navy.7"
 					fw={600}
 					className={classes.trendingTitle}
 				>
@@ -34,7 +34,7 @@ export function TrendingWidget({ hashtags }: TrendingWidgetProps) {
 					{displayHashtags.map((hashtag, index) => (
 						<Text
 							key={index}
-							c="navy.8"
+							c="navy.7"
 							fw={600}
 							className={classes.hashtag}
 						>

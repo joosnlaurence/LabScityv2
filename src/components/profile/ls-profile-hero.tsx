@@ -135,13 +135,13 @@ export default function LSProfileHero({ profileName, profileInstitution, profile
         <Box mb={12}>
           {profileAbout &&
             <Box mb={12}>
-              <Text c="navy.8" fw={600}>About</Text>
+              <Text c="navy.7" fw={600}>About</Text>
               <Text c="navy.7">{profileAbout}</Text>
             </Box>
           }
           {(profileSkills && profileSkills.length > 0) &&
             <Box mb={12}>
-              <Text c="navy.8" fw={600} mb={8}>
+              <Text c="navy.7" fw={600} mb={8}>
                 Skills
               </Text>
               <Group gap={8}>

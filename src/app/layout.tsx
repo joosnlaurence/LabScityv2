@@ -1,10 +1,14 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+
+import { Inter } from "next/font/google";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { theme } from "@/lib/constants/theme";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Metadata } from "next"
+
+const inter = Inter({ subsets: ["latin"] }); // due to bundler ordering, globals.css doesnt import font; this does
 
 export const metadata: Metadata = {
   title: "LabScity",
@@ -21,7 +25,7 @@ export default function RootLayout({
       <head>
         <ColorSchemeScript defaultColorScheme="light" />
       </head>
-      <body>
+      <body className={inter.className}>
         <QueryProvider>
           <MantineProvider theme={theme} defaultColorScheme="light">
             <Notifications />

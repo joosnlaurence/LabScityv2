@@ -140,7 +140,7 @@ export default function LSPost({
           <Avatar radius="xl" src={posterProfilePic} />
           <Box style={{ flex: 1 }}>
             <Group mb={2}>
-              <Text c="navy.8" size="lg" fw={600} span>
+              <Text c="navy.7" size="lg" fw={600} span>
                 {posterName}
               </Text>
               <Box
@@ -159,7 +159,7 @@ export default function LSPost({
             </Text>
           </Box>
         </Box>
-        <Text c="navy.8" size="sm" my={12} style={{ lineHeight: 1.2 }}>
+        <Text c="navy.7" size="sm" my={12} style={{ lineHeight: 1.2 }}>
           {postText}
         </Text>
         {/* image preview */}
