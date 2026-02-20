@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { loginAction } from "@/lib/actions/auth";
-import { LoginForm } from "@/components/auth/login-form";
+import { LSLoginForm } from "@/components/auth/ls-login-form";
 
 export const metadata: Metadata = {
   title: "Login | LabScity",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return <LoginForm loginAction={loginAction} />;
+  return <LSLoginForm loginAction={loginAction} />;
 }

@@ -59,6 +59,12 @@ export async function signupAction(formData: FormData) {
     const { data, error } = await supabase.auth.signUp({
       email: parsed.email.toLowerCase(),
       password: parsed.password,
+      options: {
+        data: {
+          first_name: parsed.firstName,
+          last_name: parsed.lastName,
+        },
+      },
     });
 
     if (error) {
@@ -69,53 +75,6 @@ export async function signupAction(formData: FormData) {
       };
     }
     
-    // Wait for user authentication to complete and verify user ID exists
-    if (!data.user?.id) {
-      return {
-        success: false,
-        error: "Authentication failed - no user ID generated",
-      };
-    }
-
-    // Insert user data into users table with the authenticated user's ID
-    const { error: userInsertError } = await supabase
-      .from("users")
-      .insert([
-        {
-          user_id: data.user.id,
-          email: parsed.email.toLowerCase(),
-          first_name: parsed.firstName,
-          last_name: parsed.lastName,
-        },
-      ]);
-
-    if (userInsertError) {
-      console.error("Error inserting user: ", userInsertError);
-      return {
-        success: false,
-        error: "Failed to create user",
-      };
-    }
-
-    // Insert profile with the authenticated user's ID
-    const { error: profileInsertError } = await supabase
-      .from("profile")
-      .insert([
-        {
-          user_id: data.user.id,
-          first_name: parsed.firstName,
-          last_name: parsed.lastName,
-        },
-      ]);
-
-    if (profileInsertError) {
-      console.error("Error inserting profile: ", profileInsertError);
-      return {
-        success: false,
-        error: "Failed to create profile",
-      };
-    }
-
     return { success: true, data };
   } catch (error) {
     if (error instanceof z.ZodError) {

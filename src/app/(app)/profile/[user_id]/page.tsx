@@ -1,6 +1,6 @@
 "use client";
-import { Box, Divider, Flex, Stack, useMantineTheme } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
+import { Box, Divider, Flex, Stack } from "@mantine/core";
+import { useIsMobile } from "@/app/use-is-mobile";
 import { useParams } from "next/navigation";
 import LSMiniProfile from "@/components/profile/ls-mini-profile";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
@@ -136,8 +136,7 @@ const LSProfileDesktopLayout = () => {
 };
 
 export default function ProfilePage() {
-  const theme = useMantineTheme();
-  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
+  const isMobile = useIsMobile();
 
   return isMobile ? <LSProfileMobileLayout /> : <LSProfileDesktopLayout />;
 }

@@ -10,7 +10,8 @@ export default function AuthLayout({
       mih="100vh"
       align="center"
       justify="center"
-      bg="navy.2" 
+      bg="navy.7"
+      py="xl"
     >
       {children}
     </Flex>

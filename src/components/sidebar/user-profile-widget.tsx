@@ -35,7 +35,7 @@ export function UserProfileWidget({ user }: UserProfileWidgetProps) {
           {displayUser.last_name[0]}
         </Avatar>
         <Text
-          c="navy.8"
+          c="navy.7"
           fw={600}
           className={classes.userName}
         >

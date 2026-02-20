@@ -3,19 +3,20 @@
 import { createTheme } from "@mantine/core";
 
 export const theme = createTheme({
-  fontFamily: 'Konkhmer Sleokchher, sans-serif',
+  // NOTE: the font used by this should be imported somewhere; inter is pulled in the root layout.tsx file
+  fontFamily: "Inter, sans-serif", // loaded via next/font in root layout
   colors: {
     navy: [
-      "#EFF4F6", // card background, button text
+      "#EFF4F6", // card bg/btn text  (navy.0)
       "#E7F0F8",
-      "#D8E0E8", // page background
+      "#D8E0E8", // page background   (navy.2)
       "#CFE1F1",
       "#9CC3E2",
-      "#6AA4D3", // tertiary text   (navy.5) e.g. post timestamp
-      "#3885C4", // secondary text  (navy.6) e.g. post action buttons
-      "#07386A", // primary text    (navy.7) e.g. name in profile
-      "#07386A", // primary navy    (navy.8) e.g. button background --- SAME AS .7?
-      "#06325E",
+      "#6AA4D3", // tertiary text     (navy.5) e.g. post timestamp
+      "#3885C4", // secondary text    (navy.6) e.g. post action buttons
+      "#07386A", // primary text/navy (navy.7) e.g. profiles name — darkest shade
+      "#07386A", // (unused, mirrors navy.7)
+      "#07386A", // (unused, mirrors navy.7)
     ],
     gray: [
       "#FFFFFF", // white (input backgrounds)

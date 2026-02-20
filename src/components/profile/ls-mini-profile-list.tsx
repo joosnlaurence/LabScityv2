@@ -26,7 +26,7 @@ export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfi
   return (
     <Card shadow="sm" padding="lg" radius="md" h="100%">
       <Center mb={8}>
-        <Text c="navy.8" fw={600} size="xl">
+        <Text c="navy.7" fw={600} size="xl">
           {widgetTitle}
         </Text>
       </Center>

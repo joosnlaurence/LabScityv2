@@ -72,7 +72,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          
+
           <div className={styles.audienceImageWrapper}>
             <Image
               src="/landing-page-collab.png"
