@@ -2,7 +2,7 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 
 import { Inter } from "next/font/google";
-import { ColorSchemeScript, MantineProvider } from "@mantine/core";
+import { ColorSchemeScript, MantineProvider, Space } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { theme } from "@/lib/constants/theme";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -30,6 +30,8 @@ export default function RootLayout({
           <MantineProvider theme={theme} defaultColorScheme="light">
             <Notifications />
             {children}
+            { /* add some empty space at footer */}
+            <Space h={40} />
           </MantineProvider>
         </QueryProvider>
       </body >
