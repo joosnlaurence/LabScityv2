@@ -240,12 +240,14 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 		// Format the response
 		const formattedPosts = postsWithComments.map(({ post, comments }: any) => ({
 			id: post.post_id,
+			userId: post.user_id,
 			userName: `${post.users?.first_name} ${post.users?.last_name}`.trim(),
 			scientificField: post.scientific_field,
 			content: post.text,
 			timeAgo: getTimeAgo(post.created_at),
 			comments: comments.map((comment: any) => ({
 				id: comment.comment_id,
+				userId: comment.user_id,
 				userName: `${comment.users?.first_name} ${comment.users?.last_name}`.trim(),
 				content: comment.text,
 				timeAgo: getTimeAgo(comment.created_at),

@@ -44,6 +44,7 @@ export function HomeFeed(props: HomeFeedProps) {
 								.map((post) => (
 									<PostCard
 										key={post.id}
+										userId={post.userId}
 										userName={post.userName}
 										field={post.scientificField}
 										timeAgo={post.timeAgo}
@@ -104,8 +105,7 @@ export function HomeFeed(props: HomeFeedProps) {
 			<Stack gap="lg" w="100%">
 				{posts.map((post) => (
 					<Stack key={post.id} className={classes.postStack} w="100%">
-						<PostCard
-							userName={post.userName}
+						<PostCard						userId={post.userId}							userName={post.userName}
 							field={post.scientificField}
 							timeAgo={post.timeAgo}
 							content={post.content}

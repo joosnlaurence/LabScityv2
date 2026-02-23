@@ -68,6 +68,7 @@ export interface PostWithRelations extends Post {
  */
 export interface FeedPostItem {
   id: string;
+  userId: string;
   userName: string;
   scientificField: string;
   content: string;
@@ -81,6 +82,7 @@ export interface FeedPostItem {
 
 export interface FeedCommentItem {
   id: string;
+  userId: string;
   userName: string;
   content: string;
   timeAgo: string;
