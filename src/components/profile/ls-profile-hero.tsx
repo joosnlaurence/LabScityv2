@@ -104,14 +104,17 @@ interface LSProfileHeroProps {
 export default function LSProfileHero({ profileName, profileInstitution, profileRole, profileResearchInterest, profileAbout, profileSkills, profileHeaderImageURL, profilePicURL }: LSProfileHeroProps) {
   return (
     <Card shadow="sm" padding="none" radius="md">
+
       <Image
         bg="gray"
         w="100%"
         h={100}
         mb={-64}
         src={profileHeaderImageURL}
+        fallbackSrc="https://placehold.co/600x100?text=Header"
       />
-      <Box p="lg">
+
+      <Box p="lg" pos="relative" style={{ zIndex: 99 }}>
         <Box
           style={{
             display: "flex",
@@ -121,10 +124,15 @@ export default function LSProfileHero({ profileName, profileInstitution, profile
           }}
           mb={12}
         >
-          <Avatar
+          {/* use custom placeholder images for header + avatar
+              default avatar icon from mantine fucks up z ordering
+              this approach ensures image is atop header even if supplied url is bad */}
+          <Image
             src={profilePicURL}
-            radius="xl"
-            size="xl"
+            fallbackSrc="https://placehold.co/100x100?text=PFP"
+            w={80}
+            h={80}
+            radius="50%"
           />
           <Stack gap="0">
             <Text c="navy.7" size="xl" fw={600}>{profileName}</Text>

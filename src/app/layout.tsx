@@ -2,7 +2,7 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 
 import { Inter } from "next/font/google";
-import { ColorSchemeScript, MantineProvider } from "@mantine/core";
+import { ColorSchemeScript, Flex, MantineProvider, Space } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { theme } from "@/lib/constants/theme";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -13,6 +13,9 @@ const inter = Inter({ subsets: ["latin"] }); // due to bundler ordering, globals
 export const metadata: Metadata = {
   title: "LabScity",
   description: "Social Media for Scientists",
+  icons: {
+    icon: "/logo-sm.png",
+  },
 };
 
 export default function RootLayout({
@@ -22,9 +25,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+
       <head>
         <ColorSchemeScript defaultColorScheme="light" />
       </head>
+
       <body className={inter.className}>
         <QueryProvider>
           <MantineProvider theme={theme} defaultColorScheme="light">
