@@ -1,89 +1,121 @@
-import Image from "next/image";
+"use client" // TODO: For useismobile, need to fix so this can be entirely serverside
+
 import Link from "next/link";
-import styles from "./page.module.css";
+import { useIsMobile } from "./use-is-mobile";
+import { Button, Image, Box, Flex, Title, Text, Group, Badge, Stack, Card } from "@mantine/core";
+
+const topContent = [
+  "Quantum Computing",
+  "Neuroscience",
+  "Gene Editing",
+  "Climate Modeling",
+  "Dark Matter",
+  "Protein Folding",
+  "Superconductors",
+  "Astrobiology",
+]
+
+const whoFor = [
+  "Scientists",
+  "Engineers",
+  "Researchers"
+]
 
 export default function Home() {
+  const isMobile = useIsMobile()
+
   return (
-    <div className={styles.page}>
-      <header className={styles.navbar}>
-        <div className={styles.logoContainer}>
-          <Image
-            src="/logo.png"
-            alt="LabScity logo"
-            height={150}
-            width={150}
-            priority
-            className={styles.logo}
-          />
-        </div>
+    <Box h="100vh">
+      <Flex justify="space-between" align="center" p={16}>
 
-        <div className={styles.navActions}>
-          <Link href="/login" className={styles.signIn}>
-            Sign in
+        {/* navbar logo */}
+        <Image
+          src="/logo-sm.png"
+          alt="LabScity logo"
+          h={50}
+          w="auto"
+        />
+
+        {/* login signup buttons */}
+        <Flex gap={8}>
+
+          <Link href="/login">
+            <Button variant="outline" color="navy.8" radius="xl">
+              Sign in
+            </Button>
           </Link>
-          <Link href="/signup" className={styles.joinNow}>
-            Join now
+
+          <Link href="/signup">
+            <Button variant="filled" color="navy.8" radius="xl">
+              Join now
+            </Button>
           </Link>
-        </div>
-      </header>
 
-      <section className={styles.hero}>
-        <h1 className={styles.heroTitle}>
-          Welcome to
-          <br />
-          <span>LabScity</span>
-        </h1>
-      </section>
+        </Flex>
 
-      <section className={styles.exploreSection}>
-        <div className={styles.exploreGrid}>
-          <div>
-            <h2 className={styles.exploreTitle}>Explore Top Content</h2>
-            <p className={styles.exploreDescription}>Discover top research, insights, and breakthroughs from across the scientific community</p>
-          </div>
+      </Flex>
 
-          <div className={styles.categoryGroup}>
-            <Link href="/discover" className={styles.category}>Biology</Link>
-            <Link href="/discover" className={styles.category}>Computer Science</Link>
-            <Link href="/discover" className={styles.category}>Quantum Physics</Link>
-            <Link href="/discover" className={styles.category}>Psychology</Link>
-            <Link href="/discover" className={styles.category}>Show all</Link>
-          </div>
-        </div>
-      </section>
+      {/* big title */}
+      <Box pt={32} pb={16}>
+        <Text size="2rem" ta="center" c="navy.8">
+          Share your work,<br />
+          <Text span fw="800">loud and clear.</Text>
+        </Text>
+      </Box>
 
-      <section className={styles.audienceSection}>
-        <div className={styles.audienceGrid}>
-          <div className={styles.audienceLeft}>
-            <div className={styles.audienceText}>
-              <h2>Who is LabScity for?</h2>
-              <p>Anyone looking to explore, share, and grow within the scientific community.</p>
+      {/* navbar logo */}
+      <Flex justify="center" pb={32}>
+        <Image
+          src="/landing.png"
+          alt="LabScity logo"
+          h={300}
+          w="auto"
+        />
+      </Flex>
 
-              <div className={styles.audienceActions}>
-                <Link href="/discover" className={styles.audienceAction}>
-                  Find researchers →
-                </Link>
-                <Link href="/discover" className={styles.audienceAction}>
-                  Explore projects →
-                </Link>
-                <Link href="/discover" className={styles.audienceAction}>
-                  Discover new research →
-                </Link>
-              </div>
-            </div>
-          </div>
+      {/* presentation cards */}
+      <Flex gap={16} px={8} direction="column">
 
-          <div className={styles.audienceImageWrapper}>
-            <Image
-              src="/landing-page-collab.png"
-              alt="Researchers collaborating"
-              fill
-              className={styles.audienceImage}
-              priority
-            />
-          </div>
-        </div>
-      </section>
-    </div>
+        {/* explore top content */}
+        <Card radius="lg" bg="navy.7" p={32} c="gray.0" flex={1} py={isMobile ? 32 : 64}>
+          <Flex direction={isMobile ? "column" : "row"} justify="center" align="center" gap={isMobile ? 0 : 32}>
+
+            {/* title + desc */}
+            <Flex align="flex-start" direction="column" ta="left" mb={16} gap={8}>
+              <Text size="2rem" fw={800}>Explore Top Content</Text>
+              <Text size="sm" fw={400}>Discover what's at the bleeding edge!</Text>
+            </Flex>
+
+            {/* top content badges */}
+            <Flex wrap="wrap" gap={6} justify="flex-start" w={isMobile ? "100%" : "512"}> {/* NOTE: make sure wrap is on here so badges fit text */}
+              {topContent.map((skill: any, i: any) =>
+                <Badge key={i} color="gray.0" variant="outline" p={16}>
+                  {skill}
+                </Badge>
+              )}
+            </Flex>
+
+          </Flex>
+        </Card>
+
+        {/* who is ls for */}
+        <Card radius="lg" bg="gray.2" p={32} c="navy.7" flex={1} py={isMobile ? 32 : 64}>
+          <Flex direction="column" align="center">
+
+            {/* title + desc */}
+            <Text size="2rem" fw={800} mb={16} ta="center">Who is LabScity For?</Text>
+
+            <Stack gap={4} w="320">
+              {whoFor.map((subj, i) =>
+                <Button key={i} radius="xl" variant="light" c="navy.7">{subj}</Button>
+              )}
+            </Stack>
+
+          </Flex>
+        </Card>
+
+      </Flex >
+
+    </Box >
   );
 }
