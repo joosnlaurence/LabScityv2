@@ -18,12 +18,12 @@ export default async function AuthenticatedLayout({
   return (
     <Box>
       <AppNavbar userId={user.id} />
-      <Space h={60} /> {/* as big as the navbar; this adds spacing to that so it doesnt look weird */}
+      <Space h={60} visibleFrom="sm" /> {/* as big as the navbar; top spacing if desktop, bottom if mobile */}
       <Box>
         {children}
       </Box>
       {/* add some empty space at footer to make space for navbar on mobile */}
-      <Space h={60} />
+      <Space h={60} hiddenFrom="sm" />
     </Box>
   );
 }

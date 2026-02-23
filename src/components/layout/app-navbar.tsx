@@ -4,6 +4,7 @@ import { Box, Button, Group } from "@mantine/core";
 import { IconFlaskFilled, IconUser } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useIsMobile } from "@/app/use-is-mobile";
 
 const navigation = [
   { href: "/home", icon: IconFlaskFilled, label: "Home" },
@@ -11,7 +12,8 @@ const navigation = [
 ];
 
 export function AppNavbar({ userId }: { userId: string }) {
-  const pathname = usePathname();
+  const isMobile = useIsMobile()
+  const pathname = usePathname()
 
   function getHref(item: (typeof navigation)[number]): string {
     if (item.href === "/profile") {
@@ -33,12 +35,13 @@ export function AppNavbar({ userId }: { userId: string }) {
       bg="navy.7"
       pos="fixed"
       w="100%"
+      {...isMobile && { bottom: 0 }} // switch between top/bottom
       style={{
         zIndex: 99999999 // THIS NEEDS TO BE HUGE! should stay atop everythin
       }}
     >
 
-      <Group h="100%" justify="flex-start" align="center">
+      <Group h="100%" justify={isMobile ? "center" : "flex-start"} align="center">
         {navigation.map((item) => {
           const active = isActive(item);
           const href = getHref(item);
@@ -57,7 +60,7 @@ export function AppNavbar({ userId }: { userId: string }) {
               c={active ? "gray.0" : "navy.5"}
               style={{ transition: "color 0.2s", pointerEvents: "none" }}
             >
-              {item.label}
+              {!isMobile && item.label} {/* only show label on desktop */}
             </Button>
           ) : (
             <Button
@@ -70,7 +73,7 @@ export function AppNavbar({ userId }: { userId: string }) {
               c="navy.5"
               style={{ transition: "color 0.2s" }}
             >
-              {item.label}
+              {!isMobile && item.label}
             </Button>
           )
         })}
