@@ -576,6 +576,79 @@ export async function likePost(postId: string, supabaseClient?: any) {
 
 
 /**
+ * Get the top 5 trending scientific fields for the current month based on post count.
+ * Returns hashtags formatted with # prefix. If fewer than 5 fields exist, fills remaining slots with #FeedMeMorePosts.
+ *
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with array of 5 hashtags or error message
+ *
+ * @example
+ * ```typescript
+ * const result = await getTrendingScientificFields();
+ * if (result.success) {
+ *   console.log(result.data.hashtags); // ["#Biology", "#Physics", ...]
+ * }
+ * ```
+ */
+export async function getTrendingScientificFields(supabaseClient?: any) {
+	try {
+		const supabase = supabaseClient ?? (await createClient());
+
+		// Get the date from 30 days ago
+		const now = new Date();
+		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+		// Query posts from the last 30 days grouped by scientific field
+		const { data: posts, error } = await supabase
+			.from("posts")
+			.select("scientific_field")
+			.gte("created_at", thirtyDaysAgo.toISOString());
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		if (!posts || posts.length === 0) {
+			// No posts this month, return array filled with #FeedMeMorePosts
+			const hashtags = Array(5).fill("#FeedMeMorePosts");
+			return { success: true, data: { hashtags } };
+		}
+
+		// Count occurrences of each scientific field
+		const fieldCounts = posts.reduce(
+			(acc: Record<string, number>, post: any) => {
+				const field = post.scientific_field;
+				acc[field] = (acc[field] || 0) + 1;
+				return acc;
+			},
+			{} as Record<string, number>
+		);
+
+		// Sort by count (descending) and get top 5
+		const topFields = Object.entries(fieldCounts)
+			.sort(([, countA], [, countB]) => (countB as number) - (countA as number))
+			.slice(0, 5)
+			.map(([field]) => `#${field}`);
+
+		// Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
+		const hashtags = [
+			...topFields,
+			...Array(Math.max(0, 5 - topFields.length)).fill("#FeedMeMorePosts"),
+		];
+
+		return { success: true, data: { hashtags } };
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message ?? "Validation failed",
+			};
+		}
+		return { success: false, error: "Failed to fetch trending fields" };
+	}
+}
+
+/**
  * Toggle like status for a comment. If the user has already liked the comment, it will be unliked. If not liked, it will be liked.
  * The user must be authenticated to like/unlike a comment.
  *
