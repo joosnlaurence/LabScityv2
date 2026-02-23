@@ -1,5 +1,6 @@
 "use client";
 import { Box, Divider, Flex, Stack } from "@mantine/core";
+import { LSSpinner } from "@/components/ui/ls-spinner";
 import { useIsMobile } from "@/app/use-is-mobile";
 import { useParams } from "next/navigation";
 import LSMiniProfile from "@/components/profile/ls-mini-profile";
@@ -73,7 +74,11 @@ const LSProfileDesktopLayout = () => {
 
 
   if (profile.status === "pending") {
-    return <div> Loading Profile... </div>;
+    return (
+      <Flex justify="center" align="center" h="calc(100vh - 120px)">
+        <LSSpinner />
+      </Flex>
+    );
   }
 
   if (profile.status === "error") {

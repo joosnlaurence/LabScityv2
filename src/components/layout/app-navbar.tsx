@@ -1,48 +1,81 @@
 "use client";
 
-import { ActionIcon, Box, Group } from "@mantine/core";
+import { Box, Button, Group } from "@mantine/core";
 import { IconFlaskFilled, IconUser } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navigation = [
-  { href: "/", icon: IconFlaskFilled },
-  { href: "/profile", icon: IconUser },
+  { href: "/home", icon: IconFlaskFilled, label: "Home" },
+  { href: "/profile", icon: IconUser, label: "Profile" },
 ];
 
-export function AppNavbar() {
+export function AppNavbar({ userId }: { userId: string }) {
   const pathname = usePathname();
+
+  function getHref(item: (typeof navigation)[number]): string {
+    if (item.href === "/profile") {
+      return `/profile/${userId}`;
+    }
+    return item.href;
+  }
+
+  function isActive(item: (typeof navigation)[number]) {
+    if (item.href === "/profile") {
+      return pathname.startsWith("/profile");
+    }
+    return pathname === item.href;
+  }
 
   return (
     <Box
       h={60}
-      bg="gray.7"
+      bg="navy.7"
+      pos="fixed"
+      w="100%"
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1001
+        zIndex: 99999999 // THIS NEEDS TO BE HUGE! should stay atop everythin
       }}
     >
-      <Group h="100%" justify="space-around" align="center">
+
+      <Group h="100%" justify="flex-start" align="center">
         {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <ActionIcon
+          const active = isActive(item);
+          const href = getHref(item);
+          const disabled = active;
+
+          // NOTE: we disable the button for the current link we are on
+          // we do this by removing its href
+          // this is probably a shit way to do this but again works for now :)
+
+          return disabled ? (
+            <Button
               key={item.href}
-              component={Link}
-              href={item.href}
               variant="transparent"
+              leftSection={<item.icon size={28} />}
               size="lg"
-              c={isActive ? "gray.0" : "gray.5"}
+              c={active ? "gray.0" : "navy.5"}
+              style={{ transition: "color 0.2s", pointerEvents: "none" }}
+            >
+              {item.label}
+            </Button>
+          ) : (
+            <Button
+              key={item.href}
+              href={href}
+              component={Link}
+              variant="transparent"
+              leftSection={<item.icon size={28} />}
+              size="lg"
+              c="navy.5"
               style={{ transition: "color 0.2s" }}
             >
-              <item.icon size={24} />
-            </ActionIcon>
-          );
+              {item.label}
+            </Button>
+          )
         })}
       </Group>
-    </Box>
+
+    </Box >
   );
 }
