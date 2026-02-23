@@ -600,10 +600,10 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 		const now = new Date();
 		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-		// Query posts from the last 30 days grouped by scientific field
+		// Query posts from the last 30 days with their like amounts
 		const { data: posts, error } = await supabase
 			.from("posts")
-			.select("scientific_field")
+			.select("scientific_field, like_amount")
 			.gte("created_at", thirtyDaysAgo.toISOString());
 
 		if (error) {
@@ -616,21 +616,34 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 			return { success: true, data: { hashtags } };
 		}
 
-		// Count occurrences of each scientific field
-		const fieldCounts = posts.reduce(
-			(acc: Record<string, number>, post: any) => {
+		// Aggregate posts and likes by scientific field
+		const fieldScores = posts.reduce(
+			(acc: Record<string, { postCount: number; totalLikes: number }>, post: any) => {
 				const field = post.scientific_field;
-				acc[field] = (acc[field] || 0) + 1;
+				if (!acc[field]) {
+					acc[field] = { postCount: 0, totalLikes: 0 };
+				}
+				acc[field].postCount += 1;
+				acc[field].totalLikes += post.like_amount || 0;
 				return acc;
 			},
-			{} as Record<string, number>
+			{} as Record<string, { postCount: number; totalLikes: number }>
 		);
 
-		// Sort by count (descending) and get top 5
-		const topFields = Object.entries(fieldCounts)
-			.sort(([, countA], [, countB]) => (countB as number) - (countA as number))
+		// Calculate weighted score: (postCount * 1) + (totalLikes * 0.5)
+		// This means 2 likes = 1 post in terms of scoring
+		const fieldRankings = Object.entries(fieldScores).map(([field, scores]: any) => ({
+			field,
+			score: scores.postCount + scores.totalLikes * 0.5,
+			postCount: scores.postCount,
+			totalLikes: scores.totalLikes,
+		}));
+
+		// Sort by score (descending) and get top 5
+		const topFields = fieldRankings
+			.sort((a, b) => b.score - a.score)
 			.slice(0, 5)
-			.map(([field]) => `#${field}`);
+			.map(({ field }) => `#${field}`);
 
 		// Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
 		const hashtags = [
