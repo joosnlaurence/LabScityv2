@@ -13,6 +13,9 @@ const inter = Inter({ subsets: ["latin"] }); // due to bundler ordering, globals
 export const metadata: Metadata = {
   title: "LabScity",
   description: "Social Media for Scientists",
+  icons: {
+    icon: "/logo-sm.png",
+  },
 };
 
 export default function RootLayout({
