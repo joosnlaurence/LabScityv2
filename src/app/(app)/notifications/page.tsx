@@ -2,7 +2,6 @@
 
 import {
   ActionIcon,
-  Badge,
   Box,
   Divider,
   Flex,
@@ -30,15 +29,14 @@ type NotificationItem = {
   type: NotificationType;
   message: string;
   timestamp: string;
-  isUnread: boolean;
 };
 
-//Temp removal for now 
+//Temp removal for now
 function dismissNotificationAction(
   id: string,
   setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>,
 ) {
-  //Need to actually delete the notification upon dismiss 
+  //Need to actually delete the notification upon dismiss
   setNotifications((current) => current.filter((item) => item.id !== id));
 }
 
@@ -50,7 +48,6 @@ const staticNotifications: NotificationItem[] = [
     type: "like",
     message: "liked your post: post info",
     timestamp: "2m ago",
-    isUnread: true,
   },
   {
     id: "n2",
@@ -58,7 +55,6 @@ const staticNotifications: NotificationItem[] = [
     type: "comment",
     message: "commented on your post: COMMENT",
     timestamp: "14m ago",
-    isUnread: true,
   },
   {
     id: "n3",
@@ -66,7 +62,6 @@ const staticNotifications: NotificationItem[] = [
     type: "message",
     message: "sent you a message: MESSAGE",
     timestamp: "1h ago",
-    isUnread: false,
   },
   {
     id: "n4",
@@ -74,7 +69,6 @@ const staticNotifications: NotificationItem[] = [
     type: "group_invite",
     message: "invited you to join their group.",
     timestamp: "3h ago",
-    isUnread: false,
   },
   {
     id: "n5",
@@ -82,7 +76,6 @@ const staticNotifications: NotificationItem[] = [
     type: "comment",
     message: "commented: COMMENT",
     timestamp: "Yesterday",
-    isUnread: false,
   },
 ];
 
@@ -116,29 +109,7 @@ function NotificationCard({
       : "var(--mantine-color-navy-7)";
 
   return (
-    <Paper
-      withBorder
-      radius="md"
-      p="md"
-      pr={64}
-      pos="relative"
-      bg={item.isUnread ? "blue.0" : "white"}
-      style={{
-        borderColor: item.isUnread ? "var(--mantine-color-blue-3)" : undefined,
-      }}
-    >
-      {item.isUnread ? (
-        <Badge
-          size="xs"
-          variant="filled"
-          color="blue"
-          pos="absolute"
-          top={10}
-          right={40}
-        >
-          New
-        </Badge>
-      ) : null}
+    <Paper withBorder radius="md" p="md" pr={64} pos="relative" bg="white">
       <ActionIcon
         variant="subtle"
         color="gray"
@@ -171,11 +142,11 @@ function NotificationCard({
 }
 
 //Header tells how many notifications, will need to write real function to determine this
-function NotificationsHeader({ unreadCount }: { unreadCount: number }) {
+function NotificationsHeader({ totalCount }: { totalCount: number }) {
   return (
     <Stack gap={4} align="center">
       <Text c="dimmed" size="sm" ta="center">
-        You have {unreadCount} unread notifications.
+        You have {totalCount} notifications.
       </Text>
     </Stack>
   );
@@ -183,11 +154,11 @@ function NotificationsHeader({ unreadCount }: { unreadCount: number }) {
 
 const LSNotificationsMobileLayout = () => {
   const [notifications, setNotifications] = useState(staticNotifications);
-  const unreadCount = notifications.filter((item) => item.isUnread).length;
+  const totalCount = notifications.length;
 
   return (
     <Stack p={8} gap={12}>
-      <NotificationsHeader unreadCount={unreadCount} />
+      <NotificationsHeader totalCount={totalCount} />
       {notifications.map((item) => (
         <NotificationCard
           key={item.id}
@@ -201,13 +172,13 @@ const LSNotificationsMobileLayout = () => {
 
 const LSNotificationsDesktopLayout = () => {
   const [notifications, setNotifications] = useState(staticNotifications);
-  const unreadCount = notifications.filter((item) => item.isUnread).length;
+  const totalCount = notifications.length;
 
   return (
     <Box py={24} px={80}>
       <Flex p={8} direction="row" w="100%" gap={8}>
         <Box flex={5}>
-          <NotificationsHeader unreadCount={unreadCount} />
+          <NotificationsHeader totalCount={totalCount} />
         </Box>
       </Flex>
       <Divider my={20} color="navy.1" />
