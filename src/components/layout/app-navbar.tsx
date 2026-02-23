@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, Group } from "@mantine/core";
-import { IconFlaskFilled, IconMessageFilled, IconUser } from "@tabler/icons-react";
+import { IconFlaskFilled, IconMessageFilled, IconUser, IconBell } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -10,6 +10,7 @@ const navigation = [
   { href: "/home", icon: IconFlaskFilled, label: "Home" },
   { href: "/profile", icon: IconUser, label: "Profile" },
   { href: "/chat", icon: IconMessageFilled, label: "Chat" },
+  { href: "/notifications", icon: IconBell, label: "Notifications"}
 ];
 
 export function AppNavbar({ userId }: { userId: string }) {
