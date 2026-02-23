@@ -3,18 +3,23 @@ import { createClient } from "@/supabase/server";
 import { AppNavbar } from "@/components/layout/app-navbar";
 import { Box, Space } from "@mantine/core";
 
+// this code is running SERVERSIDE!!!
+
 export default async function AuthenticatedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // 1. server checks auth
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // 2. if no auth, go to login 
   if (!user) {
     redirect("/login");
   }
 
+  // 3. if auth OK, render layout; pass userid to clientside components so they can request the data they need based on it (e.g. profiles) 
   return (
     <Box>
       <AppNavbar userId={user.id} />
