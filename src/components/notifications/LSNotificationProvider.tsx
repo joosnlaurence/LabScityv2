@@ -1,26 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/supabase/client'; // Your Supabase client setup
+import { createClient } from '@/supabase/client';
 
 export default function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const supabase = createClient();
 
+  // NOTE: You must make sure the user has been identified first.
+  // WARN: This should be being passed down by a parent component probably
   useEffect(() => {
-    // We declare the channel variable outside so we can clean it up later
+
     let channel: ReturnType<typeof supabase.channel>;
 
     const initializeNotifications = async () => {
-      // 1. We completely pause execution until we guarantee we have the user
-      const { data: { user } } = await supabase.auth.getUser();
 
+      // NOTE: this is an async function and because we need to have user be defined we must make it wait
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return;
       }
 
 
-      // Fetch existing unread notifications (your previous code)
       const { data } = await supabase
         .from('notifications')
         .select('*')

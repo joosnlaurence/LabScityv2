@@ -21,8 +21,8 @@ import {
   NavLink,
 } from '@mantine/core'
 import { IconSend, IconMessageCircle2 } from '@tabler/icons-react'
-import { getOldMessages, getChatsWithPreview, ChatPreview } from '@/components/chat/use-chat' // Adjust path as needed
 import { useParams } from 'next/navigation'
+import { ChatPreview, getChatsWithPreview, getOldMessages } from '@/lib/actions/chat'
 
 // --- TYPES ---
 interface Message {
@@ -75,6 +75,8 @@ export default function ChatPage() {
     initData()
   }, [])
 
+  // THIS SHOULD NOT BE DONE THIS WAY, THE CHATS SHOULD ONLY CHANGE WHEN A NEW ONE IS ADDED OR ONE IS DELETED WHICH WE CAN SPECIFY A NEW CALL TO GETCHATSWITHPREVIEW ON SUCH MUTATIONS
+  // TODO: Remove this useEffect for some kind of idk, pass props??!!
   useEffect(() => {
 
     const initSideBar = async () => {
@@ -83,12 +85,10 @@ export default function ChatPage() {
         const sidebarData = await getChatsWithPreview();
 
         if (sidebarData) setChats(sidebarData)
-        console.log(sidebarData)
       } catch (error) {
         console.error("issue getting chat preview: ", error);
       }
     }
-
     initSideBar()
   }, [])
 
@@ -96,7 +96,6 @@ export default function ChatPage() {
     //THIS WAS NOT WORKING BECAUSE USERID WASN'T BEING SET BEFORE THE CHANNEL WAS SUBSCRIBED I HAD TO MAKE THE USERID GRAB ON MOUNT INSTEAD OF BEING DEPENDENT
     if (!chat_id || !supabase || !userId) return;
 
-    // 1. Force a unique channel name on every render so they never collide in memory
     const uniqueChannelName = `room:${chat_id}-${Date.now()}`;
 
     const channel = supabase
@@ -126,13 +125,11 @@ export default function ChatPage() {
 
     return () => {
       console.log(`Cleaning up channel: ${uniqueChannelName}`);
-      // 2. Simplify the cleanup. removeChannel handles the unsubscription internally.
       supabase.removeChannel(channel);
       setIsConnected(false);
     };
   }, [chat_id, supabase, userId]);
 
-  // 3. AUTO-SCROLL EFFECT
   useEffect(() => {
     // Scroll to bottom whenever messages change
     if (viewport.current) {
@@ -140,7 +137,6 @@ export default function ChatPage() {
     }
   }, [messages])
 
-  // --- HANDLERS ---
   const handleSend = async () => {
     if (!inputText.trim() || !userId || !chat_id) return
 
@@ -166,9 +162,6 @@ export default function ChatPage() {
     }
   }
 
-  // --- RENDER ---
-  // Show loader only if we haven't determined the user yet
-  if (!userId) return <Center h="100vh"><Loader /></Center>
   if (!chat_id) return <Center h="100vh"><Loader /></Center>
 
   return (
