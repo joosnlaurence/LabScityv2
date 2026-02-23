@@ -1,4 +1,7 @@
+"use client" // TODO: For useismobile, need to fix so this can be entirely serverside
+
 import Link from "next/link";
+import { useIsMobile } from "./use-is-mobile";
 import { Button, Image, Box, Flex, Title, Text, Group, Badge, Stack, Card } from "@mantine/core";
 
 const topContent = [
@@ -19,8 +22,10 @@ const whoFor = [
 ]
 
 export default function Home() {
+  const isMobile = useIsMobile()
+
   return (
-    <Box bg="gray.0">
+    <Box h="100vh">
       <Flex justify="space-between" align="center" p={16}>
 
         {/* navbar logo */}
@@ -69,11 +74,11 @@ export default function Home() {
       </Flex>
 
       {/* presentation cards */}
-      <Stack gap={16} px={8}>
+      <Flex gap={16} px={8} direction="column">
 
         {/* explore top content */}
-        <Card radius="lg" bg="navy.7" p={32} c="gray.0" >
-          <Flex direction="column">
+        <Card radius="lg" bg="navy.7" p={32} c="gray.0" flex={1} py={isMobile ? 32 : 64}>
+          <Flex direction={isMobile ? "column" : "row"} justify="center" align="center" gap={isMobile ? 0 : 32}>
 
             {/* title + desc */}
             <Flex align="flex-start" direction="column" ta="left" mb={16} gap={8}>
@@ -82,7 +87,7 @@ export default function Home() {
             </Flex>
 
             {/* top content badges */}
-            <Flex wrap="wrap" gap={8} justify="flex-start"> {/* NOTE: make sure wrap is on here so badges fit text */}
+            <Flex wrap="wrap" gap={6} justify="flex-start" w={isMobile ? "100%" : "512"}> {/* NOTE: make sure wrap is on here so badges fit text */}
               {topContent.map((skill: any, i: any) =>
                 <Badge key={i} color="gray.0" variant="outline" p={16}>
                   {skill}
@@ -94,13 +99,13 @@ export default function Home() {
         </Card>
 
         {/* who is ls for */}
-        <Card radius="lg" bg="gray.2" p={32} c="navy.7" >
-          <Flex direction="column">
+        <Card radius="lg" bg="gray.2" p={32} c="navy.7" flex={1} py={isMobile ? 32 : 64}>
+          <Flex direction="column" align="center">
 
             {/* title + desc */}
-            <Text size="2rem" fw={800} mb={16}>Who is LabScity For?</Text>
+            <Text size="2rem" fw={800} mb={16} ta="center">Who is LabScity For?</Text>
 
-            <Stack gap={4}>
+            <Stack gap={4} w="320">
               {whoFor.map((subj, i) =>
                 <Button key={i} radius="xl" variant="light" c="navy.7">{subj}</Button>
               )}
@@ -109,7 +114,7 @@ export default function Home() {
           </Flex>
         </Card>
 
-      </Stack>
+      </Flex >
 
     </Box >
   );
