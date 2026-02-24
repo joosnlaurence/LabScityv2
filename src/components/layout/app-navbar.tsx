@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Divider,
+  Flex,
   Group,
   Menu,
   Stack,
@@ -207,67 +208,63 @@ export function AppNavbar({ userId }: { userId: string }) {
   }
 
   return (
-    <Box
+    <Flex
       h={60}
       bg="navy.7"
       pos="fixed"
       w="100%"
+      justify={isMobile ? "center" : "flex-start"}
+      align="center"
       {...(isMobile && { bottom: 0 })} // switch between top/bottom
       style={{
         zIndex: 99999999, // THIS NEEDS TO BE HUGE! should stay atop everythin
       }}
     >
-      <Group
-        h="100%"
-        justify={isMobile ? "center" : "flex-start"}
-        align="center"
-      >
-        {navigation.map((item) => {
-          const active = isActive(item);
-          const href = getHref(item);
+      {navigation.map((item) => {
+        const active = isActive(item);
+        const href = getHref(item);
 
-          //Desktop notifications open a dropdown, mobile goes to /notifications
-          if (!isMobile && item.href === "/notifications") {
-            return (
-              <Box key={item.href}>
-                <NotificationsDropdown active={active} />
-              </Box>
-            );
-          }
-
-          const disabled = active;
-
-          // NOTE: we disable the button for the current link we are on
-          // we do this by removing its href
-          // this is probably a shit way to do this but again works for now :)
-
-          return disabled ? (
-            <Button
-              key={item.href}
-              variant="transparent"
-              leftSection={<item.icon size={28} />}
-              size="lg"
-              c={active ? "gray.0" : "navy.5"}
-              style={{ transition: "color 0.2s", pointerEvents: "none" }}
-            >
-              {!isMobile && item.label} {/* only show label on desktop */}
-            </Button>
-          ) : (
-            <Button
-              key={item.href}
-              href={href}
-              component={Link}
-              variant="transparent"
-              leftSection={<item.icon size={28} />}
-              size="lg"
-              c="navy.5"
-              style={{ transition: "color 0.2s" }}
-            >
-              {!isMobile && item.label}
-            </Button>
+        //Desktop notifications open a dropdown, mobile goes to /notifications
+        if (!isMobile && item.href === "/notifications") {
+          return (
+            <Box key={item.href}>
+              <NotificationsDropdown active={active} />
+            </Box>
           );
-        })}
-      </Group>
-    </Box>
+        }
+
+        const disabled = active;
+
+        // NOTE: we disable the button for the current link we are on
+        // we do this by removing its href
+        // this is probably a shit way to do this but again works for now :)
+
+        return disabled ? (
+          <Button
+            key={item.href}
+            variant="transparent"
+            leftSection={<item.icon size={28} />}
+            size="lg"
+            c={active ? "gray.0" : "navy.5"}
+            style={{ transition: "color 0.2s", pointerEvents: "none" }}
+          >
+            {!isMobile && item.label} {/* only show label on desktop */}
+          </Button>
+        ) : (
+          <Button
+            key={item.href}
+            href={href}
+            component={Link}
+            variant="transparent"
+            leftSection={<item.icon size={28} />}
+            size="lg"
+            c="navy.5"
+            style={{ transition: "color 0.2s" }}
+          >
+            {!isMobile && item.label}
+          </Button>
+        );
+      })}
+    </Flex>
   );
 }
