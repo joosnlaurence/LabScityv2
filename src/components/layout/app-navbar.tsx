@@ -99,7 +99,7 @@ function notificationIconColor(type: NavbarNotificationType) {
     : "var(--mantine-color-navy-7)";
 }
 
-function NotificationsDropdown({ active, showLabel }: { active: boolean; showLabel: boolean }) {
+function NotificationsDropdown({ hovered, active, showLabel }: { hovered: boolean, active: boolean; showLabel: boolean }) {
   //Local UI state for preview dismiss, wire this to backend notifications later.
   const [notifications, setNotifications] = useState(recentNotifications);
   const visibleNotifications = notifications.slice(0, 5);
@@ -117,7 +117,7 @@ function NotificationsDropdown({ active, showLabel }: { active: boolean; showLab
           w="100%"
           style={{ transition: "color 0.2s", whiteSpace: "nowrap", cursor: "pointer" }}
         >
-          <Flex align="center" justify="center" gap={8}>
+          <Flex {...hovered && { ml: 32 }} align="center" justify={hovered ? "flex-start" : "center"} gap={8}>
             <IconBell size={28} />
             {showLabel && "Notifications"}
           </Flex>
@@ -225,13 +225,13 @@ export function AppNavbar({ userId }: { userId: string }) {
       direction={isMobile ? "row" : "column"}
       justify="center"
       align="center"
-      gap={16}
+      gap={32} // controls spacing of icons on sidebar/navbar
       {...(isMobile && { bottom: 0 })}
       onMouseEnter={() => !isMobile && setHovered(true)}
       onMouseLeave={() => !isMobile && setHovered(false)}
       style={{
         zIndex: 99999999,
-        transition: "width",
+        transition: "width", // FIXME: make this smooth; when it expands icons do weird fuckery with size so this is bad
         overflow: "hidden",
       }}
     >
@@ -242,11 +242,12 @@ export function AppNavbar({ userId }: { userId: string }) {
         //
         if (!isMobile && item.href === "/notifications") {
           return (
-            <Box key={item.href}
-              w="100%"
-            >
-              <NotificationsDropdown active={active} showLabel={showLabels} />
-            </Box>
+            <NotificationsDropdown
+              key={item.href}
+              hovered={hovered}
+              active={active}
+              showLabel={showLabels}
+            />
           );
         }
 
@@ -263,7 +264,7 @@ export function AppNavbar({ userId }: { userId: string }) {
               underline="never"
               style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
             >
-              <Flex align="center" justify="center" gap={8}>
+              <Flex {...hovered && { ml: 32 }} align="center" justify={hovered ? "flex-start" : "center"} gap={8}>
                 <item.icon size={28} />
                 {showLabels && item.label}
               </Flex>
@@ -274,7 +275,7 @@ export function AppNavbar({ userId }: { userId: string }) {
               w="100%"
               style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
             >
-              <Flex align="center" justify="center" gap={8}>
+              <Flex {...hovered && { ml: 32 }} align="center" justify={hovered ? "flex-start" : "center"} gap={8}>
                 <item.icon size={28} />
                 {showLabels && item.label}
               </Flex>
