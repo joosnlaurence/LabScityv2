@@ -265,6 +265,6 @@ export function AppNavbar({ userId }: { userId: string }) {
           </Button>
         );
       })}
-    </Flex>
+    </Flex >
   );
 }
