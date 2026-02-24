@@ -64,9 +64,13 @@ export default function ChatPage() {
       if (!user) return;
 
       try {
-        // Assuming getOldMessages returns an array of messages
+
         const data = await getOldMessages(parseInt(chat_id))
-        if (data) setMessages(data)
+
+        // NEED to get the dataresponse working witout throwing errors, this should prolly be fixed tho
+        if (!data.data) return;
+
+        if (data) setMessages(data.data)
       } catch (error) {
         console.error('Error fetching messages:', error)
       }
@@ -84,7 +88,8 @@ export default function ChatPage() {
       try {
         const sidebarData = await getChatsWithPreview();
 
-        if (sidebarData) setChats(sidebarData)
+        if (!sidebarData.data) return;
+        if (sidebarData) setChats(sidebarData.data)
       } catch (error) {
         console.error("issue getting chat preview: ", error);
       }
