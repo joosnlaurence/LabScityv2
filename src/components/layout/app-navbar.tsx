@@ -2,6 +2,7 @@
 
 import {
   ActionIcon,
+  Anchor,
   Box,
   Button,
   Divider,
@@ -110,15 +111,17 @@ function NotificationsDropdown({ active, showLabel }: { active: boolean; showLab
   return (
     <Menu shadow="md" width={360} position="bottom" offset={8} zIndex={999999999}>
       <Menu.Target>
-        <Button
-          variant="transparent"
-          leftSection={<IconBell size={28} />}
-          size="lg"
+        <Anchor
           c={active ? "gray.0" : "navy.5"}
-          style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
+          underline="never"
+          w="100%"
+          style={{ transition: "color 0.2s", whiteSpace: "nowrap", cursor: "pointer" }}
         >
-          {showLabel && "Notifications"}
-        </Button>
+          <Flex align="center" justify="center" gap={8}>
+            <IconBell size={28} />
+            {showLabel && "Notifications"}
+          </Flex>
+        </Anchor>
       </Menu.Target>
       <Menu.Dropdown>
         <Stack gap={8} p={8}>
@@ -221,25 +224,27 @@ export function AppNavbar({ userId }: { userId: string }) {
       h={isMobile ? 60 : "100%"}
       direction={isMobile ? "row" : "column"}
       justify="center"
-      align={isMobile ? "center" : "flex-start"}
+      align="center"
       gap={16}
       {...(isMobile && { bottom: 0 })}
       onMouseEnter={() => !isMobile && setHovered(true)}
       onMouseLeave={() => !isMobile && setHovered(false)}
       style={{
         zIndex: 99999999,
-        transition: "width 0.2s ease",
+        transition: "width",
         overflow: "hidden",
       }}
     >
       {navigation.map((item) => {
         const active = isActive(item);
         const href = getHref(item);
-
         //Desktop notifications open a dropdown, mobile goes to /notifications
+        //
         if (!isMobile && item.href === "/notifications") {
           return (
-            <Box key={item.href}>
+            <Box key={item.href}
+              w="100%"
+            >
               <NotificationsDropdown active={active} showLabel={showLabels} />
             </Box>
           );
@@ -247,30 +252,33 @@ export function AppNavbar({ userId }: { userId: string }) {
 
         const disabled = active;
 
-        return disabled ? (
-          <Button
-            key={item.href}
-            variant="transparent"
-            leftSection={<item.icon size={28} />}
-            size="lg"
-            c={active ? "gray.0" : "navy.5"}
-            style={{ transition: "color 0.2s", pointerEvents: "none", whiteSpace: "nowrap" }}
-          >
-            {showLabels && item.label}
-          </Button>
-        ) : (
-          <Button
-            key={item.href}
-            href={href}
-            component={Link}
-            variant="transparent"
-            leftSection={<item.icon size={28} />}
-            size="lg"
-            c="navy.5"
-            style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
-          >
-            {showLabels && item.label}
-          </Button>
+        return (
+          !disabled ?
+            <Anchor
+              key={item.href}
+              href={href}
+              component={Link}
+              c={active ? "gray.0" : "navy.5"}
+              w="100%"
+              underline="never"
+              style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
+            >
+              <Flex align="center" justify="center" gap={8}>
+                <item.icon size={28} />
+                {showLabels && item.label}
+              </Flex>
+            </Anchor> :
+            <Box
+              key={item.href}
+              c={active ? "gray.0" : "navy.5"}
+              w="100%"
+              style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
+            >
+              <Flex align="center" justify="center" gap={8}>
+                <item.icon size={28} />
+                {showLabels && item.label}
+              </Flex>
+            </Box>
         );
       })}
     </Flex >
