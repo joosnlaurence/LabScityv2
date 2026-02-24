@@ -98,7 +98,7 @@ function notificationIconColor(type: NavbarNotificationType) {
     : "var(--mantine-color-navy-7)";
 }
 
-function NotificationsDropdown({ active }: { active: boolean }) {
+function NotificationsDropdown({ active, showLabel }: { active: boolean; showLabel: boolean }) {
   //Local UI state for preview dismiss, wire this to backend notifications later.
   const [notifications, setNotifications] = useState(recentNotifications);
   const visibleNotifications = notifications.slice(0, 5);
@@ -108,16 +108,16 @@ function NotificationsDropdown({ active }: { active: boolean }) {
   };
 
   return (
-    <Menu shadow="md" width={360} position="bottom" offset={8}>
+    <Menu shadow="md" width={360} position="bottom" offset={8} zIndex={999999999}>
       <Menu.Target>
         <Button
           variant="transparent"
           leftSection={<IconBell size={28} />}
           size="lg"
           c={active ? "gray.0" : "navy.5"}
-          style={{ transition: "color 0.2s" }}
+          style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
         >
-          Notifications
+          {showLabel && "Notifications"}
         </Button>
       </Menu.Target>
       <Menu.Dropdown>
@@ -189,9 +189,13 @@ function NotificationsDropdown({ active }: { active: boolean }) {
   );
 }
 
+const NAVBAR_COLLAPSED = 75;
+const NAVBAR_EXPANDED = 194;
+
 export function AppNavbar({ userId }: { userId: string }) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
+  const [hovered, setHovered] = useState(false);
 
   function getHref(item: (typeof navigation)[number]): string {
     if (item.href === "/profile") {
@@ -207,17 +211,25 @@ export function AppNavbar({ userId }: { userId: string }) {
     return pathname === item.href;
   }
 
+  const showLabels = isMobile ? false : hovered;
+
   return (
     <Flex
-      h={60}
       bg="navy.7"
       pos="fixed"
-      w="100%"
-      justify={isMobile ? "center" : "flex-start"}
-      align="center"
-      {...(isMobile && { bottom: 0 })} // switch between top/bottom
+      w={isMobile ? "100%" : hovered ? NAVBAR_EXPANDED : NAVBAR_COLLAPSED}
+      h={isMobile ? 60 : "100%"}
+      direction={isMobile ? "row" : "column"}
+      justify="center"
+      align={isMobile ? "center" : "flex-start"}
+      gap={16}
+      {...(isMobile && { bottom: 0 })}
+      onMouseEnter={() => !isMobile && setHovered(true)}
+      onMouseLeave={() => !isMobile && setHovered(false)}
       style={{
-        zIndex: 99999999, // THIS NEEDS TO BE HUGE! should stay atop everythin
+        zIndex: 99999999,
+        transition: "width 0.2s ease",
+        overflow: "hidden",
       }}
     >
       {navigation.map((item) => {
@@ -228,16 +240,12 @@ export function AppNavbar({ userId }: { userId: string }) {
         if (!isMobile && item.href === "/notifications") {
           return (
             <Box key={item.href}>
-              <NotificationsDropdown active={active} />
+              <NotificationsDropdown active={active} showLabel={showLabels} />
             </Box>
           );
         }
 
         const disabled = active;
-
-        // NOTE: we disable the button for the current link we are on
-        // we do this by removing its href
-        // this is probably a shit way to do this but again works for now :)
 
         return disabled ? (
           <Button
@@ -246,9 +254,9 @@ export function AppNavbar({ userId }: { userId: string }) {
             leftSection={<item.icon size={28} />}
             size="lg"
             c={active ? "gray.0" : "navy.5"}
-            style={{ transition: "color 0.2s", pointerEvents: "none" }}
+            style={{ transition: "color 0.2s", pointerEvents: "none", whiteSpace: "nowrap" }}
           >
-            {!isMobile && item.label} {/* only show label on desktop */}
+            {showLabels && item.label}
           </Button>
         ) : (
           <Button
@@ -259,9 +267,9 @@ export function AppNavbar({ userId }: { userId: string }) {
             leftSection={<item.icon size={28} />}
             size="lg"
             c="navy.5"
-            style={{ transition: "color 0.2s" }}
+            style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
           >
-            {!isMobile && item.label}
+            {showLabels && item.label}
           </Button>
         );
       })}
