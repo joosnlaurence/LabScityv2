@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/supabase/server";
 import { AppNavbar } from "@/components/layout/app-navbar";
+import NotificationProvider from "@/components/notifications/LSNotificationProvider";
 import { Box, Space } from "@mantine/core";
 
 // this code is running SERVERSIDE!!!
@@ -21,14 +22,17 @@ export default async function AuthenticatedLayout({
 
   // 3. if auth OK, render layout; pass userid to clientside components so they can request the data they need based on it (e.g. profiles) 
   return (
-    <Box>
-      <AppNavbar userId={user.id} />
-      <Space h={60} visibleFrom="sm" /> {/* as big as the navbar; top spacing if desktop, bottom if mobile */}
-      <Box>
-        {children}
-      </Box>
-      {/* add some empty space at footer to make space for navbar on mobile */}
-      <Space h={60} hiddenFrom="sm" />
+    <Box style={{ minHeight: "100vh" }}>
+      <NotificationProvider>
+
+        <AppNavbar userId={user.id} />
+        <Space h={60} visibleFrom="sm" /> {/* as big as the navbar; top spacing if desktop, bottom if mobile */}
+        <Box>
+          {children}
+        </Box>
+        {/* add some empty space at footer to make space for navbar on mobile */}
+        <Space h={60} hiddenFrom="sm" />
+      </NotificationProvider>
     </Box>
   );
 }
