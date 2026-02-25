@@ -72,7 +72,6 @@ export const createPostMock = vi.fn(
 		input: CreatePostValues,
 	): Promise<{ success: boolean; error?: string }> => {
 		const newPost: FeedPostItem = makeFeedPost({
-			userName: input.userName,
 			scientificField: input.scientificField,
 			content: input.content,
 			mediaUrl: input.mediaUrl ?? null,
@@ -103,7 +102,6 @@ export const createCommentMock = vi.fn(
 		}
 
 		const comment: FeedCommentItem = makeFeedComment({
-			userName: values.userName,
 			content: values.content,
 		});
 

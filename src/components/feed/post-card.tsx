@@ -1,4 +1,5 @@
 import { ActionIcon, Avatar, Box, Group, Menu, Paper, Text, UnstyledButton } from "@mantine/core";
+import Link from "next/link";
 import {
 	IconDots,
 	IconHeart,
@@ -9,6 +10,7 @@ import {
 import classes from "./post-card.module.css";
 
 interface PostCardProps {
+  userId?: string;
   userName: string;
   field: string;
   timeAgo: string;
@@ -27,6 +29,7 @@ interface PostCardProps {
 }
 
 export function PostCard({
+  userId,
   userName,
   field,
   timeAgo,
@@ -50,26 +53,43 @@ export function PostCard({
     .slice(0, 2)
     .join("");
 
+  const userContent = (
+    <Group gap="sm" align="center">
+      <Avatar size={44} radius="xl" color="navy.7" src={avatarUrl || undefined}>
+        {initials}
+      </Avatar>
+      <Box>
+        {userId ? (
+          <Link href={`/profile/${userId}`} style={{ textDecoration: "none", color: "inherit" }}>
+            <Text className={classes.nameLink} component="span">
+              {userName}
+              {audienceLabel ? (
+                <Text component="span" className={classes.audienceLabel}>
+                  {audienceLabel}
+                </Text>
+              ) : null}
+            </Text>
+          </Link>
+        ) : (
+          <Text className={classes.name}>
+            {userName}
+            {audienceLabel ? (
+              <Text component="span" className={classes.audienceLabel}>
+                {audienceLabel}
+              </Text>
+            ) : null}
+          </Text>
+        )}
+        <Text className={classes.field}>{field}</Text>
+      </Box>
+    </Group>
+  );
+
   return (
     <Paper className={classes.card}>
       <Box className={classes.header}>
         <Group align="flex-start" justify="space-between">
-          <Group gap="sm" align="center">
-            <Avatar size={44} radius="xl" color="navy.7" src={avatarUrl || undefined}>
-              {initials}
-            </Avatar>
-            <Box>
-              <Text className={classes.name}>
-                {userName}
-                {audienceLabel ? (
-                  <Text component="span" className={classes.audienceLabel}>
-                    {audienceLabel}
-                  </Text>
-                ) : null}
-              </Text>
-              <Text className={classes.field}>{field}</Text>
-            </Box>
-          </Group>
+          {userContent}
           <Box className={classes.headerActions}>
             <Text className={classes.time}>{timeAgo}</Text>
             {showMenu ? (

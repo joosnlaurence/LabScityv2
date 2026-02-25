@@ -51,7 +51,6 @@ export function useHomeFeed({
   const createPostMutation = useMutation({
     mutationFn: async (values: CreatePostValues) => {
       const payload = {
-        userName: values.userName,
         scientificField: values.scientificField,
         content: values.content,
         category: values.category,

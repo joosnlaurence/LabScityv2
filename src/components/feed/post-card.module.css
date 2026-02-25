@@ -15,6 +15,18 @@
   line-height: 1.1;
 }
 
+.nameLink {
+  font-weight: 700;
+  color: var(--mantine-color-navy-7);
+  line-height: 1.1;
+  cursor: pointer;
+  transition: text-decoration 0.2s ease;
+}
+
+.nameLink:hover {
+  text-decoration: underline;
+}
+
 .audienceLabel {
   margin-left: 8px;
   font-size: 0.75rem;

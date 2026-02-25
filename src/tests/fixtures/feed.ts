@@ -28,6 +28,7 @@ export function makeFeedComment(
 
 	return {
 		id,
+		userId: options.userId ?? `user-comment-${commentIdCounter}`,
 		userName: options.userName ?? "Dr. Grace Hopper",
 		content: options.content ?? "This is a thoughtful comment on your research.",
 		timeAgo: options.timeAgo ?? "5m ago",
@@ -48,6 +49,7 @@ export function makeFeedPost(
 
 	return {
 		id,
+		userId: options.userId ?? `user-${postIdCounter}`,
 		userName: options.userName ?? "Dr. Ada Lovelace",
 		scientificField: options.scientificField ?? "Computational Mathematics",
 		content:
