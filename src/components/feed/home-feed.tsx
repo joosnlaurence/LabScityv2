@@ -45,6 +45,7 @@ export function HomeFeed(props: HomeFeedProps) {
                   <PostCard
                     key={post.id}
                     userId={post.userId}
+                    userName={post.userName}
                     field={post.scientificField}
                     timeAgo={post.timeAgo}
                     content={post.content}
@@ -107,6 +108,7 @@ export function HomeFeed(props: HomeFeedProps) {
           <Stack key={post.id} className={classes.postStack} w="100%">
             <PostCard
               userId={post.userId}
+              userName={post.userName}
               field={post.scientificField}
               timeAgo={post.timeAgo}
               content={post.content}
