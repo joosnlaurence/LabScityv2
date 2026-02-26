@@ -1,10 +1,6 @@
 import { z } from "zod";
 
 export const createPostSchema = z.object({
-	userName: z
-		.string()
-		.min(1, { message: "Name is required" })
-		.max(80, { message: "Name must be less than 80 characters" }),
 	scientificField: z
 		.string()
 		.min(1, { message: "Scientific field is required" })
@@ -45,10 +41,6 @@ export const feedFilterSchema = z.object({
 });
 
 export const createCommentSchema = z.object({
-	userName: z
-		.string()
-		.min(1, { message: "Name is required" })
-		.max(80, { message: "Name must be less than 80 characters" }),
 	content: z
 		.string()
 		.min(1, { message: "Comment is required" })

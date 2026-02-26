@@ -5,6 +5,15 @@ import type { FeedFilterValues } from "@/lib/validations/post";
  * Use the same keys for server prefetch and client useQuery so hydration matches.
  */
 export const feedKeys = {
-	all: ["feed"] as const,
-	list: (filter: FeedFilterValues) => [...feedKeys.all, "list", filter] as const,
+  all: ["feed"] as const,
+  list: (filter: FeedFilterValues) => [...feedKeys.all, "list", filter] as const,
 };
+
+export const profileKeys = {
+  all: ["profile"] as const,
+  user: (user_id: string) => [...profileKeys.all, "user", user_id] as const,
+  followers: (user_id: string) => [...profileKeys.all, "followers", user_id] as const,
+  friends: (user_id: string) => [...profileKeys.all, "friends", user_id] as const,
+  following: (user_id: string) => [...profileKeys.all, "following", user_id] as const,
+  posts: (user_id: string) => [...profileKeys.all, "posts", user_id] as const,
+}

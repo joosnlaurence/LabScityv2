@@ -1,4 +1,5 @@
 import { ActionIcon, Avatar, Box, Menu, Paper, Text, UnstyledButton } from "@mantine/core";
+import Link from "next/link";
 import { IconDots, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { FeedCommentItem } from "@/lib/types/feed";
 import classes from "./post-comment-card.module.css";
@@ -35,7 +36,15 @@ export function PostCommentCard({
 						{initials}
 					</Avatar>
 					<Box>
-						<Text className={classes.name}>{comment.userName}</Text>
+						{comment.userId ? (
+							<Link href={`/profile/${comment.userId}`} style={{ textDecoration: "none", color: "inherit" }}>
+								<Text className={classes.nameLink} component="span">
+									{comment.userName}
+								</Text>
+							</Link>
+						) : (
+							<Text className={classes.name}>{comment.userName}</Text>
+						)}
 					</Box>
 				</Box>
 				<Box className={classes.headerActions}>

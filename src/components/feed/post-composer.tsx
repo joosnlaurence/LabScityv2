@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, FileInput, Group, Paper, Stack, TextInput, Textarea } from "@mantine/core";
+import { Button, FileInput, Group, Paper, Select, Stack, TextInput, Textarea } from "@mantine/core";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -8,6 +8,62 @@ import {
 	type CreatePostValues,
 } from "@/lib/validations/post";
 import classes from "./post-composer.module.css";
+
+const SCIENCE_CATEGORIES = [
+	"Acoustics",
+	"Aerodynamics",
+	"Anatomy",
+	"Anthropology",
+	"Archaeology",
+	"Astronomy",
+	"Astrophysics",
+	"Biochemistry",
+	"Biology",
+	"Biophysics",
+	"Biotechnology",
+	"Botany",
+	"Chemistry",
+	"Climatology",
+	"Cognitive Science",
+	"Computer Science",
+	"Data Science",
+	"Ecology",
+	"Economics",
+	"Engineering",
+	"Entomology",
+	"Environmental Science",
+	"Epidemiology",
+	"General Sciences",
+	"Genetics",
+	"Geography",
+	"Geology",
+	"Geophysics",
+	"Immunology",
+	"Machine Learning",
+	"Marine Biology",
+	"Materials Science",
+	"Mathematics",
+	"Meteorology",
+	"Microbiology",
+	"Molecular Biology",
+	"Neuroscience",
+	"Oceanography",
+	"Paleontology",
+	"Pathology",
+	"Pharmacology",
+	"Physics",
+	"Physiology",
+	"Psychology",
+	"Quantum Physics",
+	"Robotics",
+	"Seismology",
+	"Sociology",
+	"Statistics",
+	"Toxicology",
+	"Virology",
+	"Zoology",
+	"Other",
+];
 
 export interface PostComposerProps {
 	onSubmit: (values: CreatePostValues) => void | Promise<void>;
@@ -24,7 +80,6 @@ export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposer
 		resolver: zodResolver(createPostSchema),
 		mode: "onChange",
 		defaultValues: {
-			userName: "",
 			scientificField: "",
 			content: "",
 			category: "general",
@@ -42,17 +97,20 @@ export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposer
 		<Paper className={classes.newPostCard}>
 			<form onSubmit={onSubmit}>
 				<Stack gap="sm">
-					<TextInput
-						label="Name"
-						placeholder="Need to remove this"
-						error={errors.userName?.message}
-						{...register("userName")}
-					/>
-					<TextInput
-						label="Scientific Field"
-						placeholder="Need to change to a dropdown"
-						error={errors.scientificField?.message}
-						{...register("scientificField")}
+					<Controller
+						control={control}
+						name="scientificField"
+						render={({ field }) => (
+							<Select
+								label="Scientific Field"
+								placeholder="Select a scientific field"
+								data={SCIENCE_CATEGORIES}
+								searchable
+								value={field.value}
+								onChange={field.onChange}
+								error={errors.scientificField?.message}
+							/>
+						)}
 					/>
 					<Textarea
 						label="Post"
