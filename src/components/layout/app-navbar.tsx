@@ -18,10 +18,15 @@ const navigation = [
   { href: "/home", icon: IconFlaskFilled, label: "Home" },
   { href: "/profile", icon: IconUser, label: "Profile" },
   { href: "/chat", icon: IconMessageFilled, label: "Chat" },
-  { href: "/notifications", icon: IconBell, label: "Notifications" },
 ];
 
-export default function LSAppNavbar({ userId }: { userId: string }) {
+interface LSAppNavbarProps {
+  mobileHeight: number,
+  desktopWidth: number,
+  userId: string
+}
+
+export default function LSAppNavbar({ mobileHeight, desktopWidth, userId }: LSAppNavbarProps) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
 
@@ -39,17 +44,14 @@ export default function LSAppNavbar({ userId }: { userId: string }) {
     return pathname === item.href;
   }
 
-  const mobileNavbarSize = 60
-  const desktopNavbarSize = 164
-
   return (
     <Flex
       bg="navy.7"
       pos="fixed"
 
       // stretch down screen if desktop ( side ); stretch across if mobile
-      w={isMobile ? "100%" : desktopNavbarSize}
-      h={isMobile ? mobileNavbarSize : "100%"}
+      w={isMobile ? "100%" : desktopWidth}
+      h={isMobile ? mobileHeight : "100%"}
 
       direction={isMobile ? "row" : "column"}
       align={isMobile ? "center" : "flex-start"}

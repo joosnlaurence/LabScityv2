@@ -8,9 +8,19 @@ import { useIsMobile } from "../use-is-mobile"
 const LSAppLayout = ({ userId, children }: { userId: string, children: React.ReactNode }) => {
   const isMobile = useIsMobile()
 
+  const mobileNavbarHeight = 60
+  const desktopNavbarWidth = 164
+
   return (
     <Flex direction={isMobile ? "column" : "row"} w="100vw" h="100vh">
-      <LSAppNavbar userId={userId} />
+
+      <LSAppNavbar
+        userId={userId}
+        desktopWidth={desktopNavbarWidth}
+        mobileHeight={mobileNavbarHeight}
+      />
+
+      {/* needed to make room for navbar; 164 is the navbar size */}
       {!isMobile && <Space w={164} />}
       <Flex direction="column" w="100%">
         <LSAppTopBar />
