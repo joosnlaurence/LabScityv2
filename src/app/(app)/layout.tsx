@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/supabase/server";
 import { AppNavbar } from "@/components/layout/app-navbar";
 import NotificationProvider from "@/components/notifications/LSNotificationProvider";
-import { Box, Space } from "@mantine/core";
+import { Box, Button, Flex, Space, Image, Menu } from "@mantine/core";
+import { IconPencil, IconSettings, IconTrash } from "@tabler/icons-react";
+import LSAppTopBar from "./app-topbar";
+import LSAppLayout from "./app-layout";
 
 // this code is running SERVERSIDE!!!
 
@@ -24,14 +27,8 @@ export default async function AuthenticatedLayout({
   return (
     <Box style={{ minHeight: "100vh" }}>
       <NotificationProvider>
-
         <AppNavbar userId={user.id} />
-        <Space h={60} visibleFrom="sm" /> {/* as big as the navbar; top spacing if desktop, bottom if mobile */}
-        <Box>
-          {children}
-        </Box>
-        {/* add some empty space at footer to make space for navbar on mobile */}
-        <Space h={60} hiddenFrom="sm" />
+        <LSAppLayout children={children} />
       </NotificationProvider>
     </Box>
   );

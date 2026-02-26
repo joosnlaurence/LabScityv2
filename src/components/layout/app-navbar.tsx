@@ -98,8 +98,8 @@ function notificationIconColor(type: NavbarNotificationType) {
     : "var(--mantine-color-navy-7)";
 }
 
-function NotificationsDropdown({ active }: { active: boolean }) {
-  //Local UI state for preview dismiss, wire this to backend notifications later.
+function NotificationsDropdown({ active, isMobile }: { active: boolean, isMobile: boolean }) {
+  // Local UI state for preview dismiss, wire this to backend notifications later.
   const [notifications, setNotifications] = useState(recentNotifications);
   const visibleNotifications = notifications.slice(0, 5);
 
@@ -108,18 +108,19 @@ function NotificationsDropdown({ active }: { active: boolean }) {
   };
 
   return (
-    <Menu shadow="md" width={360} position="bottom" offset={8}>
+    <Menu shadow="md" width={360} position="bottom" offset={8} zIndex={999999999}>
+      {/* notifications navbar entry */}
       <Menu.Target>
         <Button
-          variant="transparent"
-          leftSection={<IconBell size={28} />}
-          size="lg"
+          leftSection={<IconBell />}
           c={active ? "gray.0" : "navy.5"}
-          style={{ transition: "color 0.2s" }}
+          variant="transparent"
         >
-          Notifications
+          {!isMobile && "Notifications"}
         </Button>
       </Menu.Target>
+
+      {/* actual dropdown stuff */}
       <Menu.Dropdown>
         <Stack gap={8} p={8}>
           <Text fw={700} size="sm" ta="center">
@@ -209,57 +210,41 @@ export function AppNavbar({ userId }: { userId: string }) {
 
   return (
     <Flex
-      h={60}
       bg="navy.7"
       pos="fixed"
-      w="100%"
-      justify={isMobile ? "center" : "flex-start"}
-      align="center"
-      {...(isMobile && { bottom: 0 })} // switch between top/bottom
-      style={{
-        zIndex: 99999999, // THIS NEEDS TO BE HUGE! should stay atop everythin
-      }}
+      w={isMobile ? "100%" : 164}
+      h={isMobile ? 60 : "100%"}
+      direction={isMobile ? "row" : "column"}
+      justify="center"
+      align={isMobile ? "center" : "flex-start"}
+      p={8}
+      gap={16}
+      {...(isMobile && { bottom: 0 })}
+      style={{ zIndex: 99999999 }}
     >
       {navigation.map((item) => {
         const active = isActive(item);
         const href = getHref(item);
 
-        //Desktop notifications open a dropdown, mobile goes to /notifications
+        // Desktop notifications open a dropdown, mobile goes to /notifications
         if (!isMobile && item.href === "/notifications") {
           return (
-            <Box key={item.href}>
-              <NotificationsDropdown active={active} />
-            </Box>
+            <NotificationsDropdown
+              key={item.href}
+              active={active}
+              isMobile={isMobile}
+            />
           );
         }
 
-        const disabled = active;
-
-        // NOTE: we disable the button for the current link we are on
-        // we do this by removing its href
-        // this is probably a shit way to do this but again works for now :)
-
-        return disabled ? (
-          <Button
-            key={item.href}
-            variant="transparent"
-            leftSection={<item.icon size={28} />}
-            size="lg"
-            c={active ? "gray.0" : "navy.5"}
-            style={{ transition: "color 0.2s", pointerEvents: "none" }}
-          >
-            {!isMobile && item.label} {/* only show label on desktop */}
-          </Button>
-        ) : (
+        return (
           <Button
             key={item.href}
             href={href}
             component={Link}
-            variant="transparent"
             leftSection={<item.icon size={28} />}
-            size="lg"
-            c="navy.5"
-            style={{ transition: "color 0.2s" }}
+            c={active ? "gray.0" : "navy.5"}
+            variant="transparent"
           >
             {!isMobile && item.label}
           </Button>
