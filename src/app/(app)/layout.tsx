@@ -24,6 +24,7 @@ export default async function AuthenticatedLayout({
   return (
     <Box style={{ minHeight: "100vh" }}>
       <NotificationProvider>
+        {/* lots of interactivity with app layout so we offload this to clientside */}
         <LSAppLayout userId={user.id} children={children} />
       </NotificationProvider>
     </Box>

@@ -1,15 +1,17 @@
 "use client"
 
-import LSAppNavbar from "@/components/layout/app-navbar"
+import LSAppNavbar from "./app-navbar"
 import LSAppTopBar from "./app-topbar"
 import { Box, Flex, Space } from "@mantine/core"
 import { useIsMobile } from "../use-is-mobile"
 
-const LSAppLayout = ({ userId, children }: { userId: string, children: React.ReactNode }) => {
-  const isMobile = useIsMobile()
+const mobileNavbarHeight = 60
+const desktopNavbarWidth = 164
 
-  const mobileNavbarHeight = 60
-  const desktopNavbarWidth = 164
+const LSAppLayout = ({ userId, children }: { userId: string, children: React.ReactNode }) => {
+
+
+  const isMobile = useIsMobile()
 
   return (
     <Flex direction={isMobile ? "column" : "row"} w="100vw" h="100vh">

@@ -5,7 +5,6 @@ import {
   Flex,
 } from "@mantine/core";
 import {
-  IconBell,
   IconFlaskFilled,
   IconMessageFilled,
   IconUser,
