@@ -9,7 +9,7 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Box className={classes.container} bg="gray.2">
+    <Box className={classes.container} bg="gray.0">
       <Box className={classes.grid}>
         <Box className={classes.feed}>
           {children}
