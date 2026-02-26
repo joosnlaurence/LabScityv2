@@ -9,8 +9,6 @@ const mobileNavbarHeight = 60
 const desktopNavbarWidth = 164
 
 const LSAppLayout = ({ userId, children }: { userId: string, children: React.ReactNode }) => {
-
-
   const isMobile = useIsMobile()
 
   return (
@@ -23,7 +21,7 @@ const LSAppLayout = ({ userId, children }: { userId: string, children: React.Rea
       />
 
       {/* needed to make room for navbar; 164 is the navbar size */}
-      {!isMobile && <Space w={164} />}
+      {!isMobile && <Space w={desktopNavbarWidth} />}
       <Flex direction="column" w="100%">
         <LSAppTopBar />
 
@@ -32,7 +30,7 @@ const LSAppLayout = ({ userId, children }: { userId: string, children: React.Rea
         </Box>
 
         {/* footer; only needed on mobile */}
-        {isMobile && <Space h={60} />}
+        {isMobile && <Space h={mobileNavbarHeight} />}
 
       </Flex>
     </Flex>
