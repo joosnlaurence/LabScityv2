@@ -27,7 +27,6 @@ export default async function AuthenticatedLayout({
   return (
     <Box style={{ minHeight: "100vh" }}>
       <NotificationProvider>
-        <AppNavbar userId={user.id} />
         <LSAppLayout children={children} />
       </NotificationProvider>
     </Box>

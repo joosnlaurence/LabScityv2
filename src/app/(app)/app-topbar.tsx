@@ -21,12 +21,12 @@ const LSAppTopBar = () => {
 
   return (
     <Flex
-      pos="fixed"
+      pos="sticky"
       bg="gray.0"
       top={0}
       left={isMobile ? 0 : 60}
       h={60}
-      w={isMobile ? "100%" : "calc(100vw - 60px)"}
+      w={"100%"}
       justify="center"
       align="center"
       style={{ borderBottom: "1px solid var(--mantine-color-gray-3)", zIndex: 100 }}
