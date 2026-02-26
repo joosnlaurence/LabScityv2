@@ -54,7 +54,6 @@ async function testFeedActions() {
 	// Test 1: Create Post
 	console.log("=== Test 1: Create Post ===");
 	const postData: CreatePostValues = {
-		userName: "Test User",
 		scientificField: "Computer Science",
 		content: "This is a test post for integration testing",
 		category: "formal",
@@ -94,7 +93,6 @@ async function testFeedActions() {
 	// Test 4: Create Comment
 	console.log("=== Test 4: Create Comment ===");
 	const commentData: CreateCommentValues = {
-		userName: "Test Commenter",
 		content: "This is a test comment on the post",
 	};
 

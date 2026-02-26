@@ -29,7 +29,6 @@ export function CommentComposer({
 		resolver: zodResolver(createCommentSchema),
 		mode: "onChange",
 		defaultValues: {
-			userName: "",
 			content: "",
 		},
 	});
@@ -38,7 +37,6 @@ export function CommentComposer({
 		try {
 			await onAddComment(postId, values);
 			reset({
-				userName: "",
 				content: "",
 			});
 		} catch {
@@ -50,12 +48,6 @@ export function CommentComposer({
 		<Paper className={classes.commentComposer}>
 			<form onSubmit={onCommentSubmit}>
 				<Stack gap="sm">
-					<TextInput
-						label="Name"
-						placeholder="Dr. Ada Lovelace"
-						error={errors.userName?.message}
-						{...register("userName")}
-					/>
 					<Textarea
 						label="Comment"
 						placeholder="Share a thought..."
