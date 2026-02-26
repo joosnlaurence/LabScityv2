@@ -1,13 +1,12 @@
-import { ActionIcon, Avatar, Box, Group, Menu, Paper, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Avatar, Box, Card, Flex, Group, Menu, Paper, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import {
-	IconDots,
-	IconHeart,
-	IconHeartFilled,
-	IconMessageCircle,
-	IconShare3,
+  IconDots,
+  IconHeart,
+  IconHeartFilled,
+  IconMessageCircle,
+  IconShare3,
 } from "@tabler/icons-react";
-import classes from "./post-card.module.css";
 
 interface PostCardProps {
   userId?: string;
@@ -55,98 +54,153 @@ export function PostCard({
 
   const userContent = (
     <Group gap="sm" align="center">
-      <Avatar size={44} radius="xl" color="navy.7" src={avatarUrl || undefined}>
+
+      <Avatar size="md" radius="xl" color="navy.7" src={avatarUrl || undefined}>
         {initials}
       </Avatar>
-      <Box>
+
+      {/* info about the poster */}
+      <Stack gap={-1}>
+        {/* name of the poster, audience label ( ??? )*/}
         {userId ? (
           <Link href={`/profile/${userId}`} style={{ textDecoration: "none", color: "inherit" }}>
-            <Text className={classes.nameLink} component="span">
+            <Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
               {userName}
               {audienceLabel ? (
-                <Text component="span" className={classes.audienceLabel}>
+                <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
                   {audienceLabel}
                 </Text>
               ) : null}
             </Text>
           </Link>
         ) : (
-          <Text className={classes.name}>
+          <Text fw={600} c="navy.7" lh={1.1}>
             {userName}
             {audienceLabel ? (
-              <Text component="span" className={classes.audienceLabel}>
+              <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
                 {audienceLabel}
               </Text>
             ) : null}
           </Text>
         )}
-        <Text className={classes.field}>{field}</Text>
-      </Box>
+        <Text c="navy.7" size="sm" mt={-4}>{field}</Text>
+      </Stack>
     </Group>
   );
 
   return (
-    <Paper className={classes.card}>
-      <Box className={classes.header}>
-        <Group align="flex-start" justify="space-between">
-          {userContent}
-          <Box className={classes.headerActions}>
-            <Text className={classes.time}>{timeAgo}</Text>
-            {showMenu ? (
-              <Menu
-                withinPortal
-                position="bottom-end"
-                classNames={{ dropdown: classes.menuDropdown, item: classes.menuItem }}
-                id={menuId}
-              >
-                <Menu.Target>
-                  <ActionIcon variant="subtle" className={classes.menuButton} aria-label="Post options">
-                    <IconDots size={18} />
-                  </ActionIcon>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item onClick={onReportClick}>Report</Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            ) : null}
-          </Box>
-        </Group>
-      </Box>
-
-      <Text className={classes.content}>{content}</Text>
-
-      {mediaUrl ? (
-        <Box className={classes.media}>
-          <img src={mediaUrl} alt="Post attachment" className={classes.mediaImage} />
+    // post card
+    <Card
+      bg="gray.0"
+      padding="md"
+      radius="md"
+      shadow="sm"
+      style={{ overflow: "hidden" }}
+    >
+      {/* container for post data */}
+      <Stack gap={16}>
+        {/* post header (profile, etc.) */}
+        <Box>
+          <Group align="flex-start" justify="space-between">
+            {userContent}
+            <Group gap="xs" align="center">
+              <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{timeAgo}</Text>
+              {showMenu ? (
+                <Menu
+                  withinPortal
+                  position="bottom-end"
+                  styles={{
+                    dropdown: { padding: "6px" },
+                    item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600 },
+                  }}
+                  id={menuId}
+                >
+                  <Menu.Target>
+                    <ActionIcon variant="subtle" color="navy.6" aria-label="Post options">
+                      <IconDots size={18} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item onClick={onReportClick}>Report</Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              ) : null}
+            </Group>
+          </Group>
         </Box>
-      ) : mediaLabel ? (
-        <Box className={classes.media}>
-          <Text component="span" className={classes.mediaLabel}>
-            {mediaLabel}
-          </Text>
-        </Box>
-      ) : null}
 
-      {showActions ? (
-        <Box className={classes.actions}>
-          <UnstyledButton className={classes.actionButton} onClick={onLikeClick}>
-            {isLiked ? (
-              <IconHeartFilled size={18} className={classes.likedIcon} />
-            ) : (
-              <IconHeart size={18} className={classes.actionIcon} />
-            )}
-            <Text component="span">Like</Text>
-          </UnstyledButton>
-          <UnstyledButton className={classes.actionButton} onClick={onCommentClick}>
-            <IconMessageCircle size={18} className={classes.actionIcon} />
-            <Text component="span">Comment</Text>
-          </UnstyledButton>
-          <UnstyledButton className={classes.actionButton}>
-            <IconShare3 size={18} className={classes.actionIcon} />
-            <Text component="span">Share</Text>
-          </UnstyledButton>
-        </Box>
-      ) : null}
-    </Paper>
+        {/* post content*/}
+        <Text fz="sm" c="navy.7">{content}</Text>
+
+        {/* post media */}
+        {mediaUrl ? (
+          <Flex
+            bg="navy.7"
+            c="navy.0"
+            mih={180}
+            justify="center"
+            align="center"
+            fw={600}
+            style={{ letterSpacing: "0.3px", overflow: "hidden" }}
+          >
+            <img src={mediaUrl} alt="Post attachment" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          </Flex>
+        ) : mediaLabel ? (
+          <Flex
+            bg="navy.7"
+            c="navy.0"
+            mih={180}
+            justify="center"
+            align="center"
+            ta="center"
+            fw={600}
+            style={{ letterSpacing: "0.3px", overflow: "hidden" }}
+          >
+            <Text component="span" style={{ whiteSpace: "pre-line" }}>
+              {mediaLabel}
+            </Text>
+          </Flex>
+        ) : null}
+
+        {/* post actions ( like, comment, etc. ) */}
+        {showActions ? (
+          <SimpleGrid cols={3} spacing="sm" bg="gray.0">
+            <UnstyledButton
+              c="navy.7"
+              fw={600}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 10px", borderRadius: 999 }}
+              onClick={onLikeClick}
+            >
+              {isLiked ? (
+                <IconHeartFilled size={18} style={{ color: "#e03131" }} />
+              ) : (
+                <IconHeart size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
+              )}
+              <Text span fw="bold" fz="sm" c={isLiked ? "#e03131" : "navy.6"}>
+                {isLiked ? "Liked" : "Like"}
+              </Text>
+            </UnstyledButton>
+            <UnstyledButton
+              c="navy.7"
+              fw={600}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 10px", borderRadius: 999 }}
+              onClick={onCommentClick}
+            >
+              <IconMessageCircle size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
+              <Text span fw="bold" fz="sm" c="navy.6">Comment</Text>
+            </UnstyledButton>
+            <UnstyledButton
+              c="navy.7"
+              fw={600}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 10px", borderRadius: 999 }}
+            >
+              <IconShare3 size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
+              <Text span fw="bold" fz="sm" c="navy.6">Share</Text>
+            </UnstyledButton>
+          </SimpleGrid>
+        ) : null}
+
+      </Stack>
+    </Card >
   );
 }

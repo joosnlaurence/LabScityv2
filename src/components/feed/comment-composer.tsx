@@ -7,7 +7,6 @@ import {
 	createCommentSchema,
 	type CreateCommentValues,
 } from "@/lib/validations/post";
-import classes from "./comment-composer.module.css";
 
 export interface CommentComposerProps {
 	postId: string;
@@ -45,7 +44,7 @@ export function CommentComposer({
 	});
 
 	return (
-		<Paper className={classes.commentComposer}>
+		<Paper radius="lg" shadow="xs" bg="gray.0" py="sm" px="md" w="100%">
 			<form onSubmit={onCommentSubmit}>
 				<Stack gap="sm">
 					<Textarea
@@ -55,7 +54,7 @@ export function CommentComposer({
 						error={errors.content?.message}
 						{...register("content")}
 					/>
-					<Group className={classes.formActions}>
+					<Group justify="flex-end">
 						<Button
 							type="submit"
 							disabled={!isValid || isSubmitting || isMutationPending}

@@ -1,8 +1,7 @@
-import { ActionIcon, Avatar, Box, Menu, Paper, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Avatar, Box, Group, Menu, Paper, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import { IconDots, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { FeedCommentItem } from "@/lib/types/feed";
-import classes from "./post-comment-card.module.css";
 
 interface PostCommentCardProps {
 	comment: FeedCommentItem;
@@ -29,39 +28,38 @@ export function PostCommentCard({
 		.join("");
 
 	return (
-		<Paper className={classes.card}>
-			<Box className={classes.header}>
-				<Box className={classes.headerMeta}>
+		<Paper radius="xl" bg="gray.0" shadow="sm" py="sm" px="md" w="100%">
+			<Group justify="space-between" gap="sm">
+				<Group gap="sm">
 					<Avatar size={36} radius="xl" color="navy.7">
 						{initials}
 					</Avatar>
 					<Box>
 						{comment.userId ? (
 							<Link href={`/profile/${comment.userId}`} style={{ textDecoration: "none", color: "inherit" }}>
-								<Text className={classes.nameLink} component="span">
+								<Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
 									{comment.userName}
 								</Text>
 							</Link>
 						) : (
-							<Text className={classes.name}>{comment.userName}</Text>
+							<Text fw={700} c="navy.7" lh={1.1}>{comment.userName}</Text>
 						)}
 					</Box>
-				</Box>
-				<Box className={classes.headerActions}>
-					<Text className={classes.time}>{comment.timeAgo}</Text>
+				</Group>
+				<Group gap="xs" align="center">
+					<Text size="xs" fw={600} c="navy.7" style={{ whiteSpace: "nowrap" }}>{comment.timeAgo}</Text>
 					{showMenu ? (
 						<Menu
 							withinPortal
 							position="bottom-end"
-							classNames={{ dropdown: classes.menuDropdown, item: classes.menuItem }}
+							styles={{
+								dropdown: { padding: "6px" },
+								item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600 },
+							}}
 							id={menuId}
 						>
 							<Menu.Target>
-								<ActionIcon
-									variant="subtle"
-									className={classes.menuButton}
-									aria-label="Comment options"
-								>
+								<ActionIcon variant="subtle" color="navy.7" aria-label="Comment options">
 									<IconDots size={18} />
 								</ActionIcon>
 							</Menu.Target>
@@ -70,33 +68,28 @@ export function PostCommentCard({
 							</Menu.Dropdown>
 						</Menu>
 					) : null}
-				</Box>
-			</Box>
+				</Group>
+			</Group>
 
-			<Text className={classes.content}>{comment.content}</Text>
+			<Text mt="xs" c="navy.7" fw={600} size="sm">{comment.content}</Text>
 
 			{showActions ? (
-				<Box className={classes.actions}>
+				<Group justify="center" gap="xs" mt="xs">
 					<UnstyledButton
-						className={classes.actionButton}
+						c="navy.7"
+						fw={600}
+						fz="xs"
+						style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "4px 8px", borderRadius: 999 }}
 						onClick={() => onLikeClick?.(comment.id)}
 					>
 						{comment.isLiked ? (
-							<IconHeartFilled size={16} className={classes.likedIcon} />
+							<IconHeartFilled size={16} style={{ color: "#e03131" }} />
 						) : (
-							<IconHeart size={16} className={classes.actionIcon} />
+							<IconHeart size={16} style={{ color: "var(--mantine-color-navy-7)" }} />
 						)}
 						<Text component="span">Like</Text>
 					</UnstyledButton>
-					{/* <UnstyledButton className={classes.actionButton}>
-						<IconMessageCircle size={16} className={classes.actionIcon} />
-						<Text component="span">Comment</Text>
-					</UnstyledButton> */}
-					{/* <UnstyledButton className={classes.actionButton}>
-						<IconShare3 size={16} className={classes.actionIcon} />
-						<Text component="span">Share</Text>
-					</UnstyledButton> */}
-				</Box>
+				</Group>
 			) : null}
 		</Paper>
 	);

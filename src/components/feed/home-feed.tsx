@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Stack, Text } from "@mantine/core";
+import { Box, Button, Stack, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { PostCard } from "@/components/feed/post-card";
@@ -9,7 +9,6 @@ import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import type { HomeFeedProps } from "@/components/feed/home-feed.types";
-import classes from "./home-feed.module.css";
 
 export function HomeFeed(props: HomeFeedProps) {
   const {
@@ -74,12 +73,19 @@ export function HomeFeed(props: HomeFeedProps) {
       />
 
       <Button
-        className={classes.newPostButton}
         leftSection={<IconPlus size={14} />}
         radius="xl"
         variant="default"
         size="sm"
-        color="navy"
+        c="navy.7"
+        fw={700}
+        bg="gray.0"
+        style={{
+          alignSelf: "flex-start",
+          boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.2)",
+          border: "1px solid var(--mantine-color-navy-3)",
+          height: "auto",
+        }}
         onClick={() => setIsComposerOpen((open) => !open)}
       >
         New Post
@@ -105,7 +111,7 @@ export function HomeFeed(props: HomeFeedProps) {
 
       <Stack gap="lg" w="100%">
         {posts.map((post) => (
-          <Stack key={post.id} className={classes.postStack} w="100%">
+          <Stack key={post.id} pos="relative" gap="md" w="100%">
             <PostCard
               userId={post.userId}
               userName={post.userName}
@@ -125,40 +131,66 @@ export function HomeFeed(props: HomeFeedProps) {
             />
 
             {activeCommentPostId === post.id || post.comments.length > 0 ? (
-              <Stack className={classes.commentSection} w="100%" align="stretch">
+              <Box
+                pos="relative"
+                w="100%"
+                pl={22}
+                style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "stretch", boxSizing: "border-box" }}
+              >
+                {/* Vertical thread line */}
+                <Box
+                  pos="absolute"
+                  style={{ left: 0, top: -14, bottom: 0, width: 2, background: "var(--mantine-color-navy-7)", borderRadius: 999 }}
+                />
+
                 {activeCommentPostId === post.id ? (
-                  <div className={classes.commentItem}>
-                    <div className={classes.commentCard}>
+                  <Box pos="relative" w="100%" style={{ alignSelf: "stretch", display: "flex", boxSizing: "border-box" }}>
+                    {/* Horizontal connector */}
+                    <Box pos="absolute" style={{ left: -22, top: "50%", width: 18, height: 2, background: "var(--mantine-color-navy-7)", borderRadius: 999, transform: "translateY(-50%)" }} />
+                    {/* Cover tail of vertical line if this is the only item */}
+                    {post.comments.length === 0 && (
+                      <Box pos="absolute" style={{ left: -2, top: "50%", width: 4, height: "calc(50% + 20px)", background: "var(--mantine-color-gray-2)", borderRadius: 999 }} />
+                    )}
+                    <Box style={{ width: "calc(100% - 12px)" }}>
                       <CommentComposer
                         postId={post.id}
                         onAddComment={handleAddComment}
                         isSubmitting={createCommentMutation.isPending}
                       />
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
                 ) : null}
 
-                {post.comments.map((comment) => (
-                  <div key={comment.id} className={classes.commentItem}>
-                    <div className={classes.commentCard}>
-                      <PostCommentCard
-                        comment={comment}
-                        onLikeClick={(commentId) =>
-                          handleToggleCommentLike(post.id, commentId)
-                        }
-                        onReportClick={(commentId) =>
-                          setReportTarget({
-                            type: "comment",
-                            postId: post.id,
-                            commentId,
-                          })
-                        }
-                        menuId={`comment-menu-${comment.id}`}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </Stack>
+                {post.comments.map((comment, index) => {
+                  const isLast = index === post.comments.length - 1;
+                  return (
+                    <Box key={comment.id} pos="relative" w="100%" style={{ alignSelf: "stretch", display: "flex", boxSizing: "border-box" }}>
+                      {/* Horizontal connector */}
+                      <Box pos="absolute" style={{ left: -22, top: "50%", width: 18, height: 2, background: "var(--mantine-color-navy-7)", borderRadius: 999, transform: "translateY(-50%)" }} />
+                      {/* Cover tail of vertical line on last comment */}
+                      {isLast && (
+                        <Box pos="absolute" style={{ left: -2, top: "50%", width: 4, height: "calc(50% + 20px)", background: "var(--mantine-color-gray-2)", borderRadius: 999 }} />
+                      )}
+                      <Box style={{ width: "calc(100% - 12px)" }}>
+                        <PostCommentCard
+                          comment={comment}
+                          onLikeClick={(commentId) =>
+                            handleToggleCommentLike(post.id, commentId)
+                          }
+                          onReportClick={(commentId) =>
+                            setReportTarget({
+                              type: "comment",
+                              postId: post.id,
+                              commentId,
+                            })
+                          }
+                          menuId={`comment-menu-${comment.id}`}
+                        />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
             ) : null}
           </Stack>
         ))}
