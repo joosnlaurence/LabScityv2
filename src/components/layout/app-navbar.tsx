@@ -2,7 +2,6 @@
 
 import {
   ActionIcon,
-  Anchor,
   Box,
   Button,
   Divider,
@@ -99,8 +98,8 @@ function notificationIconColor(type: NavbarNotificationType) {
     : "var(--mantine-color-navy-7)";
 }
 
-function NotificationsDropdown({ hovered, active, showLabel }: { hovered: boolean, active: boolean; showLabel: boolean }) {
-  //Local UI state for preview dismiss, wire this to backend notifications later.
+function NotificationsDropdown({ active, isMobile }: { active: boolean, isMobile: boolean }) {
+  // Local UI state for preview dismiss, wire this to backend notifications later.
   const [notifications, setNotifications] = useState(recentNotifications);
   const visibleNotifications = notifications.slice(0, 5);
 
@@ -110,19 +109,18 @@ function NotificationsDropdown({ hovered, active, showLabel }: { hovered: boolea
 
   return (
     <Menu shadow="md" width={360} position="bottom" offset={8} zIndex={999999999}>
+      {/* notifications navbar entry */}
       <Menu.Target>
-        <Anchor
+        <Button
+          leftSection={<IconBell />}
           c={active ? "gray.0" : "navy.5"}
-          underline="never"
-          w="100%"
-          style={{ transition: "color 0.2s", whiteSpace: "nowrap", cursor: "pointer" }}
+          variant="transparent"
         >
-          <Flex {...hovered && { ml: 32 }} align="center" justify={hovered ? "flex-start" : "center"} gap={8}>
-            <IconBell size={28} />
-            {showLabel && "Notifications"}
-          </Flex>
-        </Anchor>
+          {!isMobile && "Notifications"}
+        </Button>
       </Menu.Target>
+
+      {/* actual dropdown stuff */}
       <Menu.Dropdown>
         <Stack gap={8} p={8}>
           <Text fw={700} size="sm" ta="center">
@@ -192,13 +190,9 @@ function NotificationsDropdown({ hovered, active, showLabel }: { hovered: boolea
   );
 }
 
-const NAVBAR_COLLAPSED = 75;
-const NAVBAR_EXPANDED = 194;
-
 export function AppNavbar({ userId }: { userId: string }) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
-  const [hovered, setHovered] = useState(false);
 
   function getHref(item: (typeof navigation)[number]): string {
     if (item.href === "/profile") {
@@ -214,74 +208,48 @@ export function AppNavbar({ userId }: { userId: string }) {
     return pathname === item.href;
   }
 
-  const showLabels = isMobile ? false : hovered;
-
   return (
     <Flex
       bg="navy.7"
       pos="fixed"
-      w={isMobile ? "100%" : hovered ? NAVBAR_EXPANDED : NAVBAR_COLLAPSED}
+      w={isMobile ? "100%" : 164}
       h={isMobile ? 60 : "100%"}
       direction={isMobile ? "row" : "column"}
       justify="center"
-      align="center"
-      gap={32} // controls spacing of icons on sidebar/navbar
+      align={isMobile ? "center" : "flex-start"}
+      p={8}
+      gap={16}
       {...(isMobile && { bottom: 0 })}
-      onMouseEnter={() => !isMobile && setHovered(true)}
-      onMouseLeave={() => !isMobile && setHovered(false)}
-      style={{
-        zIndex: 99999999,
-        transition: "width", // FIXME: make this smooth; when it expands icons do weird fuckery with size so this is bad
-        overflow: "hidden",
-      }}
+      style={{ zIndex: 99999999 }}
     >
       {navigation.map((item) => {
         const active = isActive(item);
         const href = getHref(item);
-        //Desktop notifications open a dropdown, mobile goes to /notifications
-        //
+
+        // Desktop notifications open a dropdown, mobile goes to /notifications
         if (!isMobile && item.href === "/notifications") {
           return (
             <NotificationsDropdown
               key={item.href}
-              hovered={hovered}
               active={active}
-              showLabel={showLabels}
+              isMobile={isMobile}
             />
           );
         }
 
-        const disabled = active;
-
         return (
-          !disabled ?
-            <Anchor
-              key={item.href}
-              href={href}
-              component={Link}
-              c={active ? "gray.0" : "navy.5"}
-              w="100%"
-              underline="never"
-              style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
-            >
-              <Flex {...hovered && { ml: 32 }} align="center" justify={hovered ? "flex-start" : "center"} gap={8}>
-                <item.icon size={28} />
-                {showLabels && item.label}
-              </Flex>
-            </Anchor> :
-            <Box
-              key={item.href}
-              c={active ? "gray.0" : "navy.5"}
-              w="100%"
-              style={{ transition: "color 0.2s", whiteSpace: "nowrap" }}
-            >
-              <Flex {...hovered && { ml: 32 }} align="center" justify={hovered ? "flex-start" : "center"} gap={8}>
-                <item.icon size={28} />
-                {showLabels && item.label}
-              </Flex>
-            </Box>
+          <Button
+            key={item.href}
+            href={href}
+            component={Link}
+            leftSection={<item.icon size={28} />}
+            c={active ? "gray.0" : "navy.5"}
+            variant="transparent"
+          >
+            {!isMobile && item.label}
+          </Button>
         );
       })}
-    </Flex >
+    </Flex>
   );
 }

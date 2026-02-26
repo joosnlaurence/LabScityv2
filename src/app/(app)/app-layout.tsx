@@ -9,15 +9,23 @@ const LSAppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <Flex direction={isMobile ? "column" : "row"}>
-      {!isMobile && <Space w={60} style={{ flexShrink: 0 }} />}
+      {/* space to make room for desktop navbar */}
+      {!isMobile && <Space w={164} style={{ flexShrink: 0 }} />}
+
       <Flex direction="column" flex={1} maw={isMobile ? "100%" : "calc(100vw - 60px)"}>
         <LSAppTopBar />
+
+        {/* space to make room for topbar */}
         <Space h={60} />
+
         <Box>
           {children}
         </Box>
-      </Flex>
 
+        {/* footer; only needed on mobile */}
+        {isMobile && <Space h={60} />}
+
+      </Flex>
     </Flex>
   )
 }
