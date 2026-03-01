@@ -36,6 +36,8 @@ export function LSSignupForm({
       firstName: "",
       lastName: "",
       email: "",
+      occupation: "",
+      workplace: "",
       password: "",
       confirmPassword: "",
     },
@@ -51,6 +53,8 @@ export function LSSignupForm({
       formData.append("password", data.password);
       formData.append("firstName", data.firstName);
       formData.append("lastName", data.lastName);
+      formData.append("occupation", data.occupation);
+      formData.append("workplace", data.workplace);
       formData.append("confirmPassword", data.confirmPassword);
 
       const result = await signupAction(formData);
@@ -145,6 +149,42 @@ export function LSSignupForm({
             <Text fz="md" fw={600} c="navy.7" lh={1.5}>Email</Text>
             <Controller
               name="email"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <TextInput
+                  {...field}
+                  styles={{ input: inputStyles, root: { width: "100%" } }}
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+          </Box>
+          <Box
+            w="100%"
+            maw="18.5rem"
+            style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}
+          >
+            <Text fz="md" fw={600} c="navy.7" lh={1.5}>Occupation</Text>
+            <Controller
+              name="occupation"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <TextInput
+                  {...field}
+                  styles={{ input: inputStyles, root: { width: "100%" } }}
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+          </Box>
+          <Box
+            w="100%"
+            maw="18.5rem"
+            style={{ display: "flex", flexDirection: "column", gap: "0.1rem", alignItems: "flex-start" }}
+          >
+            <Text fz="md" fw={600} c="navy.7" lh={1.5}>Workplace</Text>
+            <Controller
+              name="workplace"
               control={form.control}
               render={({ field, fieldState }) => (
                 <TextInput
