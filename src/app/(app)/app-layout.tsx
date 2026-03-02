@@ -1,29 +1,36 @@
 "use client"
 
-import { Box, Flex, Space } from "@mantine/core"
+import LSAppNavbar from "./app-navbar"
 import LSAppTopBar from "./app-topbar"
+import { Box, Flex, Space } from "@mantine/core"
 import { useIsMobile } from "../use-is-mobile"
 
-const LSAppLayout = ({ children }: { children: React.ReactNode }) => {
+const mobileNavbarHeight = 60
+const desktopNavbarWidth = 164
+
+const LSAppLayout = ({ userId, children }: { userId: string, children: React.ReactNode }) => {
   const isMobile = useIsMobile()
 
   return (
-    <Flex direction={isMobile ? "column" : "row"}>
-      {/* space to make room for desktop navbar */}
-      {!isMobile && <Space w={164} style={{ flexShrink: 0 }} />}
+    <Flex direction={isMobile ? "column" : "row"} w="100vw" h="100vh">
 
-      <Flex direction="column" flex={1} maw={isMobile ? "100%" : "calc(100vw - 60px)"}>
+      <LSAppNavbar
+        userId={userId}
+        desktopWidth={desktopNavbarWidth}
+        mobileHeight={mobileNavbarHeight}
+      />
+
+      {/* needed to make room for navbar; 164 is the navbar size */}
+      {!isMobile && <Space w={desktopNavbarWidth} />}
+      <Flex direction="column" w="100%">
         <LSAppTopBar />
-
-        {/* space to make room for topbar */}
-        <Space h={60} />
 
         <Box>
           {children}
         </Box>
 
         {/* footer; only needed on mobile */}
-        {isMobile && <Space h={60} />}
+        {isMobile && <Space h={mobileNavbarHeight} />}
 
       </Flex>
     </Flex>

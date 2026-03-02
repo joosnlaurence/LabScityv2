@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Stack, Text } from "@mantine/core";
+import { Button, Divider, Stack, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { PostCard } from "@/components/feed/post-card";
@@ -9,7 +9,7 @@ import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import type { HomeFeedProps } from "@/components/feed/home-feed.types";
-import classes from "./home-feed.module.css";
+import { TrendingWidget } from "../sidebar/trending-widget";
 
 export function HomeFeed(props: HomeFeedProps) {
   const {
@@ -40,46 +40,49 @@ export function HomeFeed(props: HomeFeedProps) {
         preview={
           reportTarget?.type === "post"
             ? posts
-                .filter((post) => post.id === reportTarget.postId)
-                .map((post) => (
-                  <PostCard
-                    key={post.id}
-                    userId={post.userId}
-                    userName={post.userName}
-                    field={post.scientificField}
-                    timeAgo={post.timeAgo}
-                    content={post.content}
-                    mediaUrl={post.mediaUrl ?? null}
-                    mediaLabel={post.mediaLabel ?? null}
-                    isLiked={post.isLiked ?? false}
-                    showMenu={false}
-                    showActions={false}
-                  />
-                ))
+              .filter((post) => post.id === reportTarget.postId)
+              .map((post) => (
+                <PostCard
+                  key={post.id}
+                  userId={post.userId}
+                  userName={post.userName}
+                  field={post.scientificField}
+                  timeAgo={post.timeAgo}
+                  content={post.content}
+                  mediaUrl={post.mediaUrl ?? null}
+                  mediaLabel={post.mediaLabel ?? null}
+                  isLiked={post.isLiked ?? false}
+                  showMenu={false}
+                  showActions={false}
+                />
+              ))
             : posts
-                .filter((post) => post.id === reportTarget?.postId)
-                .flatMap((post) => post.comments)
-                .filter((comment) => comment.id === reportTarget?.commentId)
-                .map((comment) => (
-                  <PostCommentCard
-                    key={comment.id}
-                    comment={comment}
-                    showMenu={false}
-                    showActions={false}
-                  />
-                ))
+              .filter((post) => post.id === reportTarget?.postId)
+              .flatMap((post) => post.comments)
+              .filter((comment) => comment.id === reportTarget?.commentId)
+              .map((comment) => (
+                <PostCommentCard
+                  key={comment.id}
+                  comment={comment}
+                  showMenu={false}
+                  showActions={false}
+                />
+              ))
         }
         onClose={() => setReportTarget(null)}
         onSubmit={onSubmitReport}
       />
 
+
+      {/* post composition */}
       <Button
-        className={classes.newPostButton}
         leftSection={<IconPlus size={14} />}
         radius="xl"
         variant="default"
         size="sm"
-        color="navy"
+        c="gray.0"
+        fw={700}
+        bg="navy.8"
         onClick={() => setIsComposerOpen((open) => !open)}
       >
         New Post
@@ -105,62 +108,58 @@ export function HomeFeed(props: HomeFeedProps) {
 
       <Stack gap="lg" w="100%">
         {posts.map((post) => (
-          <Stack key={post.id} className={classes.postStack} w="100%">
-            <PostCard
-              userId={post.userId}
-              userName={post.userName}
-              field={post.scientificField}
-              timeAgo={post.timeAgo}
-              content={post.content}
-              mediaUrl={post.mediaUrl ?? null}
-              mediaLabel={post.mediaLabel ?? null}
-              onCommentClick={() =>
-                setActiveCommentPostId((current) => (current === post.id ? null : post.id))
-              }
-              onLikeClick={() => handleTogglePostLike(post.id)}
-              isLiked={post.isLiked ?? false}
-              onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
-              audienceLabel={post.audienceLabel ?? null}
-              menuId={`post-menu-${post.id}`}
-            />
-
+          <PostCard
+            key={post.id}
+            userId={post.userId}
+            userName={post.userName}
+            field={post.scientificField}
+            timeAgo={post.timeAgo}
+            content={post.content}
+            mediaUrl={post.mediaUrl ?? null}
+            mediaLabel={post.mediaLabel ?? null}
+            onCommentClick={() =>
+              setActiveCommentPostId((current) => (current === post.id ? null : post.id))
+            }
+            onLikeClick={() => handleTogglePostLike(post.id)}
+            isLiked={post.isLiked ?? false}
+            onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
+            audienceLabel={post.audienceLabel ?? null}
+            menuId={`post-menu-${post.id}`}
+          >
             {activeCommentPostId === post.id || post.comments.length > 0 ? (
-              <Stack className={classes.commentSection} w="100%" align="stretch">
+              <Stack gap="md" w="100%">
                 {activeCommentPostId === post.id ? (
-                  <div className={classes.commentItem}>
-                    <div className={classes.commentCard}>
-                      <CommentComposer
-                        postId={post.id}
-                        onAddComment={handleAddComment}
-                        isSubmitting={createCommentMutation.isPending}
-                      />
-                    </div>
-                  </div>
+                  <>
+                    <CommentComposer
+                      postId={post.id}
+                      onAddComment={handleAddComment}
+                      isSubmitting={createCommentMutation.isPending}
+                    />
+                  </>
                 ) : null}
 
+                <Divider />
+
                 {post.comments.map((comment) => (
-                  <div key={comment.id} className={classes.commentItem}>
-                    <div className={classes.commentCard}>
-                      <PostCommentCard
-                        comment={comment}
-                        onLikeClick={(commentId) =>
-                          handleToggleCommentLike(post.id, commentId)
-                        }
-                        onReportClick={(commentId) =>
-                          setReportTarget({
-                            type: "comment",
-                            postId: post.id,
-                            commentId,
-                          })
-                        }
-                        menuId={`comment-menu-${comment.id}`}
-                      />
-                    </div>
-                  </div>
+                  <PostCommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onLikeClick={(commentId) =>
+                      handleToggleCommentLike(post.id, commentId)
+                    }
+                    onReportClick={(commentId) =>
+                      setReportTarget({
+                        type: "comment",
+                        postId: post.id,
+                        commentId,
+                      })
+                    }
+                    menuId={`comment-menu-${comment.id}`}
+                  />
                 ))}
               </Stack>
             ) : null}
-          </Stack>
+          </PostCard>
         ))}
       </Stack>
     </Stack>
