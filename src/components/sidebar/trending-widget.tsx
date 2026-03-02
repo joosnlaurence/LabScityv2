@@ -40,13 +40,14 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
     <Card
       bg="gray.0"
       p="md"
-      radius="lg"
+      radius="md"
       shadow="sm"
+      w="100%"
     >
       <Stack gap="md">
         <Text
-          c="navy.7"
-          fw={600}
+          c="gray.7"
+          fw="bold"
           fz="xl"
         >
           Trending
@@ -54,14 +55,16 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
         {/* the hashtags */}
         <Flex wrap="wrap" gap={6} justify="flex-start">
           {isLoading ? (
-            <LSSpinner />
+            <Flex justify="center" w="100%" py="sm">
+              <LSSpinner />
+            </Flex>
           ) : (
             hashtags.map((hashtag, index) => (
               <Badge
-                color="navy.7"
+                key={index}
+                color="gray.7"
                 fw="normal"
                 fz="sm"
-                key={index}
                 p={12}
                 tt="lowercase"
                 variant="outline"
@@ -72,6 +75,6 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
           )}
         </Flex>
       </Stack>
-    </Card>
+    </Card >
   );
 }

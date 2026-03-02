@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Group, Paper, Stack, Textarea, TextInput } from "@mantine/core";
+import { Button, Card, Group, Stack, Textarea } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -44,7 +44,7 @@ export function CommentComposer({
 	});
 
 	return (
-		<Paper radius="lg" shadow="xs" bg="gray.0" py="sm" px="md" w="100%">
+		<Card radius="md" shadow="sm" bg="gray.0" py="sm" px="md" w="100%">
 			<form onSubmit={onCommentSubmit}>
 				<Stack gap="sm">
 					<Textarea
@@ -65,6 +65,6 @@ export function CommentComposer({
 					</Group>
 				</Stack>
 			</form>
-		</Paper>
+		</Card>
 	);
 }

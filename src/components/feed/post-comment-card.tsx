@@ -28,7 +28,7 @@ export function PostCommentCard({
     .join("");
 
   return (
-    <Card radius="xl" bg="gray.0" shadow="sm" py="sm" px="md" w="100%">
+    <Card radius="md" bg="gray.0" shadow="sm" py="sm" px="md" w="100%">
       <Group justify="space-between" gap="sm">
         <Group gap="sm">
           <Avatar size={36} radius="xl" color="navy.7">

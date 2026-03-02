@@ -93,7 +93,7 @@ export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposer
   });
 
   return (
-    <Card radius="xl" shadow="sm" bg="gray.0" p="lg">
+    <Card radius="md" shadow="sm" bg="gray.0" p="lg">
       <form onSubmit={onSubmit}>
         <Stack gap="sm">
           <Controller

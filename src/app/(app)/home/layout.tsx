@@ -1,24 +1,37 @@
-import { Box, Stack } from "@mantine/core";
+"use client"; // NOTE: required for grid to work
+
+// this is fine because there's no datafetching here
+// aka no benefit to making server component
+
+import { Box, Flex } from "@mantine/core";
+import { useIsMobile } from "@/app/use-is-mobile";
 import { TrendingWidget } from "@/components/sidebar/trending-widget";
-import classes from "./layout.module.css";
+
 
 export default function HomeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const isMobile = useIsMobile()
+
   return (
-    <Box className={classes.container} bg="gray.0">
-      <Box className={classes.grid}>
-        <Box className={classes.feed}>
-          {children}
-        </Box>
-        <Box className={classes.rightSidebar}>
-          <Stack gap="md">
+    <Box mih="100vh" bg="gray.0">
+      <Box maw={1080} mx="auto" p="md">
+        <Flex direction={isMobile ? "column-reverse" : "row"} gap="lg" align="flex-start">
+
+          {/* new post button + posts */}
+          <Flex flex={6}>
+            {children}
+          </Flex>
+
+          {/* trending + sidecards */}
+          <Flex flex={4}>
             <TrendingWidget />
-          </Stack>
-        </Box>
+          </Flex>
+
+        </Flex>
       </Box>
-    </Box>
+    </Box >
   );
 }
