@@ -1,4 +1,4 @@
-import { ActionIcon, Avatar, Box, Group, Menu, Card, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Avatar, Box, Group, Menu, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import { IconDots, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { FeedCommentItem } from "@/lib/types/feed";
@@ -27,40 +27,46 @@ export function PostCommentCard({
     .slice(0, 2)
     .join("");
 
+  const nameNode = comment.userId ? (
+    <Link href={`/profile/${comment.userId}`} style={{ textDecoration: "none", color: "inherit" }}>
+      <Text component="span" fw="bold" c="navy.7" size="sm" style={{ cursor: "pointer" }}>
+        {comment.userName}
+      </Text>
+    </Link>
+  ) : (
+    <Text component="span" fw="bold" c="navy.7" size="sm">{comment.userName}</Text>
+  );
+
   return (
-    <Card radius="md" bg="gray.0" shadow="sm" py="sm" px="md" w="100%">
-      <Group justify="space-between" gap="sm">
-        <Group gap="sm">
-          <Avatar size={36} radius="xl" color="navy.7">
-            {initials}
-          </Avatar>
-          <Box>
-            {comment.userId ? (
-              <Link href={`/profile/${comment.userId}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
-                  {comment.userName}
-                </Text>
-              </Link>
-            ) : (
-              <Text fw={700} c="navy.7" lh={1.1}>{comment.userName}</Text>
-            )}
-          </Box>
-        </Group>
-        <Group gap="xs" align="center">
-          <Text size="xs" fw={600} c="navy.7" style={{ whiteSpace: "nowrap" }}>{comment.timeAgo}</Text>
+    <Group align="flex-start" gap="sm" w="100%" wrap="nowrap">
+      {/* avatar */}
+      <Avatar size={36} radius="xl" color="navy.7" style={{ flexShrink: 0 }}>
+        {initials}
+      </Avatar>
+
+      {/* right column */}
+      <Box style={{ flex: 1, minWidth: 0 }}>
+        {/* username inline with content */}
+        <Text size="sm" c="navy.7" fw="normal">
+          {nameNode}{" "}{comment.content}
+        </Text>
+
+        {/* timestamp + menu */}
+        <Group justify="flex-start" gap="xs" mt={4}>
+          <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{comment.timeAgo}</Text>
           {showMenu ? (
             <Menu
               withinPortal
               position="bottom-end"
               styles={{
                 dropdown: { padding: "6px" },
-                item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600 },
+                item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
               }}
               id={menuId}
             >
               <Menu.Target>
-                <ActionIcon variant="subtle" color="navy.7" aria-label="Comment options">
-                  <IconDots size={18} />
+                <ActionIcon variant="subtle" color="navy.6" aria-label="Comment options">
+                  <IconDots size={16} />
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
@@ -69,28 +75,21 @@ export function PostCommentCard({
             </Menu>
           ) : null}
         </Group>
-      </Group>
+      </Box>
 
-      <Text mt="xs" c="navy.7" fw={600} size="sm">{comment.content}</Text>
-
+      {/* like button */}
       {showActions ? (
-        <Group justify="center" gap="xs" mt="xs">
-          <UnstyledButton
-            c="navy.7"
-            fw={600}
-            fz="xs"
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "4px 8px", borderRadius: 999 }}
-            onClick={() => onLikeClick?.(comment.id)}
-          >
-            {comment.isLiked ? (
-              <IconHeartFilled size={16} style={{ color: "#e03131" }} />
-            ) : (
-              <IconHeart size={16} style={{ color: "var(--mantine-color-navy-7)" }} />
-            )}
-            <Text component="span">Like</Text>
-          </UnstyledButton>
-        </Group>
+        <UnstyledButton
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "4px", borderRadius: 999, flexShrink: 0 }}
+          onClick={() => onLikeClick?.(comment.id)}
+        >
+          {comment.isLiked ? (
+            <IconHeartFilled size={18} style={{ color: "#e03131" }} />
+          ) : (
+            <IconHeart size={18} style={{ color: "var(--mantine-color-navy-6)" }} />
+          )}
+        </UnstyledButton>
       ) : null}
-    </Card>
+    </Group>
   );
 }

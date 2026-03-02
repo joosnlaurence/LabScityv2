@@ -25,6 +25,7 @@ interface PostCardProps {
   showActions?: boolean;
   audienceLabel?: string | null;
   menuId?: string;
+  children?: React.ReactNode;
 }
 
 export function PostCard({
@@ -44,6 +45,7 @@ export function PostCard({
   showActions = true,
   audienceLabel = null,
   menuId,
+  children,
 }: PostCardProps) {
   const initials = userName
     .split(" ")
@@ -111,7 +113,7 @@ export function PostCard({
                   position="bottom-end"
                   styles={{
                     dropdown: { padding: "6px" },
-                    item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600 },
+                    item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
                   }}
                   id={menuId}
                 >
@@ -199,6 +201,8 @@ export function PostCard({
             </UnstyledButton>
           </SimpleGrid>
         ) : null}
+
+        {children}
 
       </Stack>
     </Card >

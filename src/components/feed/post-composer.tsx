@@ -108,6 +108,7 @@ export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposer
                 value={field.value}
                 onChange={field.onChange}
                 error={errors.scientificField?.message}
+                styles={{ label: { color: "var(--mantine-color-navy-7)" } }}
               />
             )}
           />
@@ -116,6 +117,7 @@ export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposer
             placeholder="Share an update with the community..."
             minRows={3}
             error={errors.content?.message}
+            styles={{ label: { color: "var(--mantine-color-navy-7)" } }}
             {...register("content")}
           />
           <Controller
@@ -129,6 +131,7 @@ export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposer
                 value={field.value ? (field.value as File) : null}
                 onChange={field.onChange}
                 error={errors.mediaFile?.message as string | undefined}
+                styles={{ label: { color: "var(--mantine-color-navy-7)" } }}
               />
             )}
           />

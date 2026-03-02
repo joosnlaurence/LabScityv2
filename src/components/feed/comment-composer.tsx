@@ -1,70 +1,68 @@
 "use client";
 
-import { Button, Card, Group, Stack, Textarea } from "@mantine/core";
+import { Button, Group, Stack, Textarea } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-	createCommentSchema,
-	type CreateCommentValues,
+  createCommentSchema,
+  type CreateCommentValues,
 } from "@/lib/validations/post";
 
 export interface CommentComposerProps {
-	postId: string;
-	onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
-	isSubmitting?: boolean;
+  postId: string;
+  onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
+  isSubmitting?: boolean;
 }
 
 export function CommentComposer({
-	postId,
-	onAddComment,
-	isSubmitting: isMutationPending = false,
+  postId,
+  onAddComment,
+  isSubmitting: isMutationPending = false,
 }: CommentComposerProps) {
-	const {
-		handleSubmit,
-		register,
-		reset,
-		formState: { errors, isSubmitting, isValid },
-	} = useForm<CreateCommentValues>({
-		resolver: zodResolver(createCommentSchema),
-		mode: "onChange",
-		defaultValues: {
-			content: "",
-		},
-	});
+  const {
+    handleSubmit,
+    register,
+    reset,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<CreateCommentValues>({
+    resolver: zodResolver(createCommentSchema),
+    mode: "onChange",
+    defaultValues: {
+      content: "",
+    },
+  });
 
-	const onCommentSubmit = handleSubmit(async (values) => {
-		try {
-			await onAddComment(postId, values);
-			reset({
-				content: "",
-			});
-		} catch {
-			// Hook's mutation onError already showed notification; don't reset form so user can retry.
-		}
-	});
+  const onCommentSubmit = handleSubmit(async (values) => {
+    try {
+      await onAddComment(postId, values);
+      reset({
+        content: "",
+      });
+    } catch {
+      // Hook's mutation onError already showed notification; don't reset form so user can retry.
+    }
+  });
 
-	return (
-		<Card radius="md" shadow="sm" bg="gray.0" py="sm" px="md" w="100%">
-			<form onSubmit={onCommentSubmit}>
-				<Stack gap="sm">
-					<Textarea
-						label="Comment"
-						placeholder="Share a thought..."
-						minRows={2}
-						error={errors.content?.message}
-						{...register("content")}
-					/>
-					<Group justify="flex-end">
-						<Button
-							type="submit"
-							disabled={!isValid || isSubmitting || isMutationPending}
-							loading={isMutationPending}
-						>
-							Comment
-						</Button>
-					</Group>
-				</Stack>
-			</form>
-		</Card>
-	);
+  return (
+    <form onSubmit={onCommentSubmit}>
+      <Stack gap="sm">
+        <Textarea
+          labelProps={{ fw: "bold" }}
+          placeholder="Share a thought..."
+          error={errors.content?.message}
+          styles={{ label: { color: "var(--mantine-color-navy-7)" } }}
+          {...register("content")}
+        />
+        <Group justify="flex-end">
+          <Button
+            type="submit"
+            disabled={!isValid || isSubmitting || isMutationPending}
+            loading={isMutationPending}
+          >
+            Comment
+          </Button>
+        </Group>
+      </Stack>
+    </form>
+  );
 }

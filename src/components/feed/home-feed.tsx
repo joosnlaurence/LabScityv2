@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Stack, Text } from "@mantine/core";
+import { Button, Divider, Stack, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { CommentComposer } from "@/components/feed/comment-composer";
 import { PostCard } from "@/components/feed/post-card";
@@ -108,88 +108,58 @@ export function HomeFeed(props: HomeFeedProps) {
 
       <Stack gap="lg" w="100%">
         {posts.map((post) => (
-          <Stack key={post.id} pos="relative" gap="md" w="100%">
-            <PostCard
-              userId={post.userId}
-              userName={post.userName}
-              field={post.scientificField}
-              timeAgo={post.timeAgo}
-              content={post.content}
-              mediaUrl={post.mediaUrl ?? null}
-              mediaLabel={post.mediaLabel ?? null}
-              onCommentClick={() =>
-                setActiveCommentPostId((current) => (current === post.id ? null : post.id))
-              }
-              onLikeClick={() => handleTogglePostLike(post.id)}
-              isLiked={post.isLiked ?? false}
-              onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
-              audienceLabel={post.audienceLabel ?? null}
-              menuId={`post-menu-${post.id}`}
-            />
-
+          <PostCard
+            key={post.id}
+            userId={post.userId}
+            userName={post.userName}
+            field={post.scientificField}
+            timeAgo={post.timeAgo}
+            content={post.content}
+            mediaUrl={post.mediaUrl ?? null}
+            mediaLabel={post.mediaLabel ?? null}
+            onCommentClick={() =>
+              setActiveCommentPostId((current) => (current === post.id ? null : post.id))
+            }
+            onLikeClick={() => handleTogglePostLike(post.id)}
+            isLiked={post.isLiked ?? false}
+            onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
+            audienceLabel={post.audienceLabel ?? null}
+            menuId={`post-menu-${post.id}`}
+          >
             {activeCommentPostId === post.id || post.comments.length > 0 ? (
-              <Box
-                pos="relative"
-                w="100%"
-                pl={22}
-                style={{ display: "flex", flexDirection: "column", gap: 12, alignSelf: "stretch", boxSizing: "border-box" }}
-              >
-                {/* Vertical thread line */}
-                <Box
-                  pos="absolute"
-                  style={{ left: 0, top: -14, bottom: 0, width: 2, background: "var(--mantine-color-navy-7)", borderRadius: 999 }}
-                />
-
+              <Stack gap="md" w="100%">
                 {activeCommentPostId === post.id ? (
-                  <Box pos="relative" w="100%" style={{ alignSelf: "stretch", display: "flex", boxSizing: "border-box" }}>
-                    {/* Horizontal connector */}
-                    <Box pos="absolute" style={{ left: -22, top: "50%", width: 18, height: 2, background: "var(--mantine-color-navy-7)", borderRadius: 999, transform: "translateY(-50%)" }} />
-                    {/* Cover tail of vertical line if this is the only item */}
-                    {post.comments.length === 0 && (
-                      <Box pos="absolute" style={{ left: -2, top: "50%", width: 4, height: "calc(50% + 20px)", background: "var(--mantine-color-gray-2)", borderRadius: 999 }} />
-                    )}
-                    <Box style={{ width: "calc(100% - 12px)" }}>
-                      <CommentComposer
-                        postId={post.id}
-                        onAddComment={handleAddComment}
-                        isSubmitting={createCommentMutation.isPending}
-                      />
-                    </Box>
-                  </Box>
+                  <>
+                    <CommentComposer
+                      postId={post.id}
+                      onAddComment={handleAddComment}
+                      isSubmitting={createCommentMutation.isPending}
+                    />
+                  </>
                 ) : null}
 
-                {post.comments.map((comment, index) => {
-                  const isLast = index === post.comments.length - 1;
-                  return (
-                    <Box key={comment.id} pos="relative" w="100%" style={{ alignSelf: "stretch", display: "flex", boxSizing: "border-box" }}>
-                      {/* Horizontal connector */}
-                      <Box pos="absolute" style={{ left: -22, top: "50%", width: 18, height: 2, background: "var(--mantine-color-navy-7)", borderRadius: 999, transform: "translateY(-50%)" }} />
-                      {/* Cover tail of vertical line on last comment */}
-                      {isLast && (
-                        <Box pos="absolute" style={{ left: -2, top: "50%", width: 4, height: "calc(50% + 20px)", background: "var(--mantine-color-gray-2)", borderRadius: 999 }} />
-                      )}
-                      <Box style={{ width: "calc(100% - 12px)" }}>
-                        <PostCommentCard
-                          comment={comment}
-                          onLikeClick={(commentId) =>
-                            handleToggleCommentLike(post.id, commentId)
-                          }
-                          onReportClick={(commentId) =>
-                            setReportTarget({
-                              type: "comment",
-                              postId: post.id,
-                              commentId,
-                            })
-                          }
-                          menuId={`comment-menu-${comment.id}`}
-                        />
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
+                <Divider />
+
+                {post.comments.map((comment) => (
+                  <PostCommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onLikeClick={(commentId) =>
+                      handleToggleCommentLike(post.id, commentId)
+                    }
+                    onReportClick={(commentId) =>
+                      setReportTarget({
+                        type: "comment",
+                        postId: post.id,
+                        commentId,
+                      })
+                    }
+                    menuId={`comment-menu-${comment.id}`}
+                  />
+                ))}
+              </Stack>
             ) : null}
-          </Stack>
+          </PostCard>
         ))}
       </Stack>
     </Stack>
