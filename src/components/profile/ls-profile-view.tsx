@@ -16,14 +16,18 @@ interface LSProfileViewProps {
 }
 
 const LSProfileMobileLayout = ({ userId }: { userId: string }) => {
-  const profile = useUserProfile(userId);
+  const profileQuery = useUserProfile(userId);
+  const profile = profileQuery.data;
   const username =
-    profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
-  const userPosts = useUserPosts(userId);
-  const following = useUserFollowing(userId);
-  const friends = useUserFriends(userId);
+    profile?.first_name + " " + profile?.last_name;
+  const userPostsQuery = useUserPosts(userId);
+  const userPosts = userPostsQuery.data;
+  const followingQuery = useUserFollowing(userId);
+  const following = followingQuery.data;
+  const friendsQuery = useUserFriends(userId);
+  const friends = friendsQuery.data;
 
-  const listPosts = userPosts.userPosts?.posts.map((post) => (
+  const listPosts = userPosts?.posts.map((post) => (
     <li key={post.post_id}>
       <LSPost
         posterName={username}
@@ -49,24 +53,28 @@ const LSProfileMobileLayout = ({ userId }: { userId: string }) => {
         profileHeaderImageURL="profileHeaderImageURL n/a"
       />
       {listPosts}
-      <LSMiniProfileList widgetTitle="Friends" profiles={friends.data} />
+      <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
       <LSMiniProfileList
         widgetTitle="Following"
-        profiles={following.data}
+        profiles={following ?? []}
       />
     </Stack>
   );
 };
 
 const LSProfileDesktopLayout = ({ userId }: { userId: string }) => {
-  const profile = useUserProfile(userId);
+  const profileQuery = useUserProfile(userId);
+  const profile = profileQuery.data;
   const username =
-    profile.userProfile?.first_name + " " + profile.userProfile?.last_name;
-  const userPosts = useUserPosts(userId);
-  const friends = useUserFriends(userId);
-  const following = useUserFollowing(userId);
+    profile?.first_name + " " + profile?.last_name;
+  const userPostsQuery = useUserPosts(userId);
+  const userPosts = userPostsQuery.data;
+  const friendsQuery = useUserFriends(userId);
+  const friends = friendsQuery.data;
+  const followingQuery = useUserFollowing(userId);
+  const following = followingQuery.data;
 
-  if (profile.status === "pending") {
+  if (profileQuery.status === "pending") {
     return (
       <Flex justify="center" align="center" h="calc(100vh - 120px)">
         <LSSpinner />
@@ -74,17 +82,17 @@ const LSProfileDesktopLayout = ({ userId }: { userId: string }) => {
     );
   }
 
-  if (profile.status === "error") {
+  if (profileQuery.status === "error") {
     return <div> Error loading Profile... </div>;
   }
 
-  const friendIds = new Set(friends.data?.map((friend) => friend.user_id));
+  const friendIds = new Set(friends?.map((friend) => friend.user_id));
 
-  const notFollowedBack = following.data?.filter(
+  const notFollowedBack = following?.filter(
     (user) => !friendIds.has(user.user_id),
   );
 
-  const listPosts = userPosts.userPosts?.posts.map((post) => (
+  const listPosts = userPosts?.posts.map((post) => (
     <li key={post.post_id}>
       <LSPost
         posterName={username}
@@ -114,7 +122,7 @@ const LSProfileDesktopLayout = ({ userId }: { userId: string }) => {
         </Box>
         <Flex flex={3} direction="column" gap={8}>
           <Box flex={3}>
-            <LSMiniProfileList widgetTitle="Friends" profiles={friends.data} />
+            <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
           </Box>
           <Box flex={5}>
             <LSMiniProfileList
