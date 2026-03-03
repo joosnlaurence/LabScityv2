@@ -1,12 +1,32 @@
 "use client"
 
-import { Button, Menu, Image, Flex, Box } from "@mantine/core"
+import { Button, Menu, Image, Flex, Modal, Stack, Switch, Text } from "@mantine/core"
 import { IconBell, IconBellFilled, IconLogout, IconSettings, IconSettingsFilled } from "@tabler/icons-react"
 import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/supabase/client"
 import { useIsMobile } from "../use-is-mobile"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import {
+  useSetNotificationPreference,
+} from "@/components/notifications/use-notifications"
+
+type NotificationType = "post_like" | "new_comment" | "new_message" | "group_invite"
+type NotificationPreferenceMap = Record<NotificationType, boolean>
+
+const defaultNotificationPreferences: NotificationPreferenceMap = {
+  post_like: true,
+  new_comment: true,
+  new_message: true,
+  group_invite: true,
+}
+
+const notificationOptions: Array<{ key: NotificationType; label: string }> = [
+  { key: "post_like", label: "Likes" },
+  { key: "new_comment", label: "Comments" },
+  { key: "new_message", label: "Messages" },
+  { key: "group_invite", label: "Group Invites" },
+]
 
 const LSAppTopBar = () => {
   const router = useRouter()
@@ -24,7 +44,72 @@ const LSAppTopBar = () => {
   const pathname = usePathname()
   const inNotificationsPage = pathname.startsWith("/notifications")
 
+  // Options menu state + local notification preference values
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false)
+  const [savingPreference, setSavingPreference] = useState<NotificationType | null>(null)
+  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferenceMap>(
+    defaultNotificationPreferences,
+  )
+  const setPreferenceMutation = useSetNotificationPreference()
+
+  // Load saved preferences when the user opens the Options modal
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!optionsOpen) return
+
+      setIsLoadingOptions(true)
+      const supabase = createClient()
+      const { data: authData } = await supabase.auth.getUser()
+
+      if (!authData.user) {
+        setIsLoadingOptions(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from("notification_preferences")
+        .select("notification_type, is_enabled")
+        .eq("user_id", authData.user.id)
+        .in("notification_type", ["post_like", "new_comment", "new_message", "group_invite"])
+
+      if (!error && data) {
+        const nextPreferences = { ...defaultNotificationPreferences }
+        for (const preference of data) {
+          const notificationType = preference.notification_type as NotificationType
+          if (notificationType in nextPreferences) {
+            nextPreferences[notificationType] = preference.is_enabled
+          }
+        }
+        setNotificationPreferences(nextPreferences)
+      }
+
+      setIsLoadingOptions(false)
+    }
+
+    void loadPreferences()
+  }, [optionsOpen])
+
+  // Save one preference at a time
+  const updateNotificationPreference = async (
+    notificationType: NotificationType,
+    newValue: boolean,
+  ) => {
+    setNotificationPreferences((current) => ({
+      ...current,
+      [notificationType]: newValue,
+    }))
+    setSavingPreference(notificationType)
+    try {
+      await setPreferenceMutation.mutateAsync({
+        newValue,
+        notificationType,
+      })
+    } finally {
+      setSavingPreference(null)
+    }
+  }
 
   return (
     <Flex
@@ -76,7 +161,15 @@ const LSAppTopBar = () => {
             />
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Label c="navy.6">Options</Menu.Label>
+            <Menu.Item
+              c="navy.6"
+              onClick={() => {
+                setOptionsOpen(true)
+                setSettingsOpen(false)
+              }}
+            >
+              Options
+            </Menu.Item>
 
             <Menu.Item
               c="red"
@@ -88,6 +181,30 @@ const LSAppTopBar = () => {
         </Menu>
 
       </Flex>
+      
+      <Modal
+        opened={optionsOpen}
+        onClose={() => setOptionsOpen(false)}
+        title="Notification Options"
+        centered
+      >
+        <Stack>
+          <Text size="sm" c="dimmed">
+            Choose which notifications you want to receive.
+          </Text>
+
+          {/* Render one switch per notification type from a simple config list */}
+          {notificationOptions.map((option) => (
+            <Switch
+              key={option.key}
+              label={option.label}
+              checked={notificationPreferences[option.key]}
+              disabled={isLoadingOptions || savingPreference === option.key}
+              onChange={(event) => void updateNotificationPreference(option.key, event.currentTarget.checked)}
+            />
+          ))}
+        </Stack>
+      </Modal>
     </Flex >
   )
 }
