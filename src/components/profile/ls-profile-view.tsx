@@ -4,7 +4,7 @@
 // for a given userId using TanStack Query hooks, with server actions
 // for posts (like, comment, report) threaded from the page.
 import { useState } from "react";
-import { Box, Divider, Flex, Stack } from "@mantine/core";
+import { Box, Button, Divider, Flex, Stack } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -204,6 +204,8 @@ const LSProfileMobileLayout = ({ userId, actions }: LSProfileMobileLayoutProps) 
 
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
 
+  const hasMore = userPosts?.pagination?.hasMore ?? false;
+
   const listPosts = userPosts?.posts.map((post) => {
     const postId = String(post.post_id);
 
@@ -249,6 +251,17 @@ const LSProfileMobileLayout = ({ userId, actions }: LSProfileMobileLayoutProps) 
         profileHeaderImageURL="profileHeaderImageURL n/a"
       />
       {listPosts}
+      {hasMore ? (
+        <Button
+          variant="subtle"
+          color="navy"
+          size="sm"
+          radius="xl"
+          disabled
+        >
+          More posts available (pagination coming soon)
+        </Button>
+      ) : null}
       <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
       <LSMiniProfileList
         widgetTitle="Following"
@@ -277,6 +290,8 @@ const LSProfileDesktopLayout = ({ userId, actions }: LSProfileDesktopLayoutProps
   const following = followingQuery.data;
 
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+
+  const hasMore = userPosts?.pagination?.hasMore ?? false;
 
   if (profileQuery.status === "pending") {
     return (
@@ -359,6 +374,17 @@ const LSProfileDesktopLayout = ({ userId, actions }: LSProfileDesktopLayoutProps
       <Divider my={20} color="navy.1" />
       <Stack mt={20} px="20%">
         {listPosts}
+        {hasMore ? (
+          <Button
+            variant="subtle"
+            color="navy"
+            size="sm"
+            radius="xl"
+            disabled
+          >
+            More posts available (pagination coming soon)
+          </Button>
+        ) : null}
       </Stack>
     </Box>
   );
