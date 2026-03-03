@@ -3,6 +3,13 @@ import {
   dehydrate,
   HydrationBoundary,
 } from "@tanstack/react-query";
+import { getUser, getUserPosts } from "@/lib/actions/data";
+import {
+  getUserFollowers,
+  getUserFollowing,
+  getUserFriends,
+} from "@/lib/actions/profile";
+import { profileKeys } from "@/lib/query-keys";
 import { LSProfileView } from "@/components/profile/ls-profile-view";
 
 // Server component for /profile/[user_id].
@@ -21,6 +28,60 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const userId = user_id;
 
   const queryClient = new QueryClient();
+
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: profileKeys.user(userId),
+      queryFn: async () => {
+        const result = await getUser(userId);
+        if (!result?.success || !result.data) {
+          throw new Error(result?.error ?? "Failed to fetch user profile");
+        }
+        return result.data;
+      },
+    }),
+    queryClient.prefetchQuery({
+      queryKey: profileKeys.posts(userId),
+      queryFn: async () => {
+        const result = await getUserPosts({ user_id: userId });
+        if (!result.success || !result.data) {
+          throw new Error(result.error ?? "Failed to fetch user posts");
+        }
+        return result.data;
+      },
+    }),
+    queryClient.prefetchQuery({
+      queryKey: profileKeys.followers(userId),
+      queryFn: async () => {
+        const result = await getUserFollowers(userId);
+        if (!result.success || !result.data) {
+          throw new Error(result.error ?? "Failed to fetch user followers");
+        }
+        return result.data;
+      },
+    }),
+    queryClient.prefetchQuery({
+      queryKey: profileKeys.following(userId),
+      queryFn: async () => {
+        const result = await getUserFollowing(userId);
+        if (!result.success || !result.data) {
+          throw new Error(result.error ?? "Failed to fetch user following");
+        }
+        return result.data;
+      },
+    }),
+    queryClient.prefetchQuery({
+      queryKey: profileKeys.friends(userId),
+      queryFn: async () => {
+        const result = await getUserFriends(userId);
+        if (!result.success || !result.data) {
+          throw new Error(result.error ?? "Failed to fetch user friends");
+        }
+        return result.data;
+      },
+    }),
+  ]);
+
   const dehydratedState = dehydrate(queryClient);
 
   return (
