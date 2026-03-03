@@ -1,5 +1,7 @@
 "use client";
 
+// Renders the full profile view (hero, posts, friends/following)
+// for a given userId using TanStack Query hooks.
 import { Box, Divider, Flex, Stack } from "@mantine/core";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import { useIsMobile } from "@/app/use-is-mobile";
