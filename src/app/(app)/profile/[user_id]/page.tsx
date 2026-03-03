@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
 import { LSProfileView } from "@/components/profile/ls-profile-view";
+import { createClient } from "@/supabase/server";
 
 // Server component for /profile/[user_id].
 // Uses the dynamic route param to decide which profile to show,
@@ -26,6 +27,11 @@ interface ProfilePageProps {
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { user_id } = await params;
   const userId = user_id;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isOwnProfile = user?.id === userId;
 
   const queryClient = new QueryClient();
 
@@ -86,7 +92,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <HydrationBoundary state={dehydratedState}>
-      <LSProfileView userId={userId} isOwnProfile={false} />
+      <LSProfileView userId={userId} isOwnProfile={isOwnProfile} />
     </HydrationBoundary>
   );
 }
