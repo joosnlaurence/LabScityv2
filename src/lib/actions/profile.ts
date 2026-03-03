@@ -7,7 +7,9 @@ import { createClient } from "@/supabase/server";
 import type { DataResponse } from "../types/data";
 
 const profilePictureBucket = "profile_pictures";
+const profileHeaderBucket = "profile_header";
 const maxProfilePictureBytes = 1024 * 1024;
+const maxProfileHeaderBytes = 2 * 1024 * 1024;
 const allowedProfilePictureTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 
 const contentTypeSchema = z
@@ -17,6 +19,7 @@ const contentTypeSchema = z
   });
 
 const profilePicPathSchema = z.string().min(1, "Profile picture path is required");
+const profileHeaderPathSchema = z.string().min(1, "Profile header path is required");
 
 function extensionFromMime(mimeType: string) {
   switch (mimeType) {
@@ -34,15 +37,14 @@ function extensionFromMime(mimeType: string) {
 }
 
 function mapUserWithAvatarUrl(user: User, supabase: SupabaseClient): User {
-  if (!user.profile_pic_path) {
-    return { ...user, avatar_url: null };
-  }
+  const avatarUrl = user.profile_pic_path
+    ? supabase.storage.from(profilePictureBucket).getPublicUrl(user.profile_pic_path).data.publicUrl
+    : null;
+  const profileHeaderUrl = user.profile_header_path
+    ? supabase.storage.from(profilePictureBucket).getPublicUrl(user.profile_header_path).data.publicUrl
+    : null;
 
-  const avatarUrl = supabase.storage
-    .from(profilePictureBucket)
-    .getPublicUrl(user.profile_pic_path).data.publicUrl;
-
-  return { ...user, avatar_url: avatarUrl };
+  return { ...user, avatar_url: avatarUrl, profile_header_url: profileHeaderUrl };
 }
 
 export async function createProfilePictureUploadUrl(contentType: string, supabaseClient?: SupabaseClient) {
@@ -158,6 +160,124 @@ export async function updateOwnProfilePicture(profilePicPath: string, supabaseCl
       return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
     return { success: false, error: "Failed to update profile picture" };
+  }
+}
+
+export async function createProfileHeaderUploadUrl(contentType: string, supabaseClient?: SupabaseClient) {
+  try {
+    const validatedContentType = contentTypeSchema.parse(contentType);
+    const supabase = supabaseClient || (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const extension = extensionFromMime(validatedContentType);
+    const path = `${authData.user.id}/header-${crypto.randomUUID()}.${extension}`;
+
+    const { data, error } = await supabase.storage
+      .from(profileHeaderBucket)
+      .createSignedUploadUrl(path);
+
+    if (error || !data) {
+      return { success: false, error: error?.message ?? "Failed to prepare profile header upload" };
+    }
+
+    return {
+      success: true,
+      data: {
+        bucket: profileHeaderBucket,
+        path,
+        token: data.token,
+        maxBytes: maxProfileHeaderBytes,
+      },
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message ?? "Invalid content type" };
+    }
+    return { success: false, error: "Failed to prepare profile header upload" };
+  }
+}
+
+export async function updateOwnProfileHeader(profileHeaderPath: string, supabaseClient?: SupabaseClient) {
+  try {
+    const validatedPath = profileHeaderPathSchema.parse(profileHeaderPath);
+    const supabase = supabaseClient || (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    if (!validatedPath.startsWith(`${authData.user.id}/`)) {
+      return { success: false, error: "Invalid profile header path" };
+    }
+
+    const { data: currentUser, error: currentUserError } = await supabase
+      .from("profile")
+      .select("header_pic_path")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (currentUserError) {
+      return { success: false, error: currentUserError.message };
+    }
+
+    if (!currentUser) {
+      return {
+        success: false,
+        error: "Profile row was not found in public.profile for the authenticated user",
+      };
+    }
+
+    const { error: updateError } = await supabase
+      .from("profile")
+      .update({ header_pic_path: validatedPath })
+      .eq("user_id", authData.user.id);
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    const { data: updatedUser, error: updatedUserError } = await supabase
+      .from("profile")
+      .select("header_pic_path")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (updatedUserError) {
+      return { success: false, error: updatedUserError.message };
+    }
+
+    if (!updatedUser || updatedUser.header_pic_path !== validatedPath) {
+      return {
+        success: false,
+        error: "Profile header path update did not persist to public.profile",
+      };
+    }
+
+    if (currentUser.header_pic_path && currentUser.header_pic_path !== validatedPath) {
+      await supabase.storage.from(profileHeaderBucket).remove([currentUser.header_pic_path]);
+    }
+
+    const profileHeaderUrl = supabase.storage
+      .from(profileHeaderBucket)
+      .getPublicUrl(validatedPath).data.publicUrl;
+
+    return {
+      success: true,
+      data: {
+        profileHeaderPath: validatedPath,
+        profileHeaderUrl,
+      },
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
+    }
+    return { success: false, error: "Failed to update profile header" };
   }
 }
 

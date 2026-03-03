@@ -17,7 +17,9 @@ import LSPost from "@/components/profile/ls-post";
 // TODO: FIGURE OUT THE OPENGRAPH docs for sharing across whole platform
 import LSProfileHero from "@/components/profile/ls-profile-hero";
 import {
+  createProfileHeaderUploadUrl,
   createProfilePictureUploadUrl,
+  updateOwnProfileHeader,
   updateOwnProfilePicture,
 } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
@@ -30,6 +32,7 @@ import {
 } from "@/components/profile/use-profile";
 
 const maxProfilePictureBytes = 1024 * 1024;
+const maxProfileHeaderBytes = 2 * 1024 * 1024;
 const allowedProfilePictureMimeTypes = new Set([
   "image/jpeg",
   "image/png",
@@ -102,9 +105,64 @@ const LSProfileMobileLayout = () => {
     },
   });
 
+  const uploadProfileHeaderMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!isOwnProfile) {
+        throw new Error("You can only update your own profile header");
+      }
+
+      if (!allowedProfilePictureMimeTypes.has(file.type)) {
+        throw new Error("Only JPG, PNG, WEBP, and GIF images are allowed");
+      }
+
+      if (file.size > maxProfileHeaderBytes) {
+        throw new Error("Profile header must be 2MB or smaller");
+      }
+
+      const uploadInfo = await createProfileHeaderUploadUrl(file.type);
+      if (!uploadInfo.success || !uploadInfo.data) {
+        throw new Error(uploadInfo.error ?? "Failed to prepare profile header upload");
+      }
+
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from(uploadInfo.data.bucket)
+        .uploadToSignedUrl(uploadInfo.data.path, uploadInfo.data.token, file);
+
+      if (uploadError) {
+        throw new Error(uploadError.message || "Profile header upload failed");
+      }
+
+      const updateResult = await updateOwnProfileHeader(uploadInfo.data.path);
+      if (!updateResult.success) {
+        throw new Error(updateResult.error ?? "Failed to save profile header");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.user(params.user_id) });
+      notifications.show({
+        title: "Profile header updated",
+        message: "Your new profile header is now live.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: "Could not update profile header",
+        message: error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
+
   const handleProfilePicSelect = (file: File | null) => {
     if (!file) return;
     uploadProfilePictureMutation.mutate(file);
+  };
+
+  const handleProfileHeaderSelect = (file: File | null) => {
+    if (!file) return;
+    uploadProfileHeaderMutation.mutate(file);
   };
 
   const listPosts = userPosts.userPosts?.posts.map((post) => (
@@ -130,10 +188,12 @@ const LSProfileMobileLayout = () => {
         profileAbout="profileAbout n/a"
         profileSkills={["profileSkills n/a"]}
         profilePicURL={profile.userProfile?.avatar_url ?? undefined}
-        profileHeaderImageURL={undefined}
+        profileHeaderImageURL={profile.userProfile?.profile_header_url ?? undefined}
         isOwnProfile={isOwnProfile}
         isUploadingProfilePic={uploadProfilePictureMutation.isPending}
         onProfilePicSelect={handleProfilePicSelect}
+        isUploadingProfileHeader={uploadProfileHeaderMutation.isPending}
+        onProfileHeaderSelect={handleProfileHeaderSelect}
       />
       {listPosts}
       <LSMiniProfileList widgetTitle="Friends" profiles={friends.data} />
@@ -210,9 +270,64 @@ const LSProfileDesktopLayout = () => {
     },
   });
 
+  const uploadProfileHeaderMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!isOwnProfile) {
+        throw new Error("You can only update your own profile header");
+      }
+
+      if (!allowedProfilePictureMimeTypes.has(file.type)) {
+        throw new Error("Only JPG, PNG, WEBP, and GIF images are allowed");
+      }
+
+      if (file.size > maxProfileHeaderBytes) {
+        throw new Error("Profile header must be 2MB or smaller");
+      }
+
+      const uploadInfo = await createProfileHeaderUploadUrl(file.type);
+      if (!uploadInfo.success || !uploadInfo.data) {
+        throw new Error(uploadInfo.error ?? "Failed to prepare profile header upload");
+      }
+
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from(uploadInfo.data.bucket)
+        .uploadToSignedUrl(uploadInfo.data.path, uploadInfo.data.token, file);
+
+      if (uploadError) {
+        throw new Error(uploadError.message || "Profile header upload failed");
+      }
+
+      const updateResult = await updateOwnProfileHeader(uploadInfo.data.path);
+      if (!updateResult.success) {
+        throw new Error(updateResult.error ?? "Failed to save profile header");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.user(params.user_id) });
+      notifications.show({
+        title: "Profile header updated",
+        message: "Your new profile header is now live.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: "Could not update profile header",
+        message: error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
+
   const handleProfilePicSelect = (file: File | null) => {
     if (!file) return;
     uploadProfilePictureMutation.mutate(file);
+  };
+
+  const handleProfileHeaderSelect = (file: File | null) => {
+    if (!file) return;
+    uploadProfileHeaderMutation.mutate(file);
   };
 
 
@@ -259,10 +374,12 @@ const LSProfileDesktopLayout = () => {
             profileAbout="profileAbout n/a"
             profileSkills={["profileSkills n/a"]}
             profilePicURL={profile.userProfile?.avatar_url ?? undefined}
-            profileHeaderImageURL={undefined}
+            profileHeaderImageURL={profile.userProfile?.profile_header_url ?? undefined}
             isOwnProfile={isOwnProfile}
             isUploadingProfilePic={uploadProfilePictureMutation.isPending}
             onProfilePicSelect={handleProfilePicSelect}
+            isUploadingProfileHeader={uploadProfileHeaderMutation.isPending}
+            onProfileHeaderSelect={handleProfileHeaderSelect}
           />
         </Box>
         <Flex flex={3} direction="column" gap={8}>

@@ -6,6 +6,8 @@ import { useDisclosure } from '@mantine/hooks';
 import { Modal } from '@mantine/core';
 import { useForm } from "@mantine/form"
 
+const profileHeaderHeight = 164;
+
 const LSEditProfilePopover = () => {
   const [opened, { open, close }] = useDisclosure(false) // TODO: what is this doing?
 
@@ -102,6 +104,8 @@ interface LSProfileHeroProps {
   isOwnProfile?: boolean,
   onProfilePicSelect?: (file: File | null) => void,
   isUploadingProfilePic?: boolean,
+  onProfileHeaderSelect?: (file: File | null) => void,
+  isUploadingProfileHeader?: boolean,
 }
 
 {/*Needs to be refactored if we want conditional rendering of the hero based on the status of the query if we don't want to wrap it in an another component*/ }
@@ -117,22 +121,75 @@ export default function LSProfileHero({
   isOwnProfile = false,
   onProfilePicSelect,
   isUploadingProfilePic = false,
+  onProfileHeaderSelect,
+  isUploadingProfileHeader = false,
 }: LSProfileHeroProps) {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   return (
     <Card shadow="sm" padding="none" radius="md">
 
-      <Image
-        bg="gray"
-        w="100%"
-        h={100}
-        mb={-64}
-        src={profileHeaderImageURL}
-        fallbackSrc="https://placehold.co/600x100?text=Header"
-      />
+      <Box mb={-64} pos="relative" style={{ zIndex: 110 }}>
+        {isOwnProfile && onProfileHeaderSelect ? (
+          <FileButton onChange={onProfileHeaderSelect} accept="image/jpeg,image/png,image/webp,image/gif">
+            {(props) => (
+              <button
+                type="button"
+                {...props}
+                onMouseEnter={() => setIsHeaderHovered(true)}
+                onMouseLeave={() => setIsHeaderHovered(false)}
+                style={{
+                  border: "none",
+                  padding: 0,
+                  background: "transparent",
+                  width: "100%",
+                  display: "block",
+                  cursor: "pointer",
+                  position: "relative",
+                  overflow: "hidden",
+                  lineHeight: 0,
+                }}
+              >
+                <Image
+                  bg="gray"
+                  w="100%"
+                  h={profileHeaderHeight}
+                  src={profileHeaderImageURL}
+                  fallbackSrc="https://placehold.co/600x100?text=Header"
+                />
+                {(isHeaderHovered || isUploadingProfileHeader) ? (
+                  <Box
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.35)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {isUploadingProfileHeader ? <Loader size="xs" color="white" /> : "Change header"}
+                  </Box>
+                ) : null}
+              </button>
+            )}
+          </FileButton>
+        ) : (
+          <Image
+            bg="gray"
+            w="100%"
+            h={profileHeaderHeight}
+            src={profileHeaderImageURL}
+            fallbackSrc="https://placehold.co/600x100?text=Header"
+          />
+        )}
+      </Box>
 
-      <Box p="lg" pos="relative" style={{ zIndex: 99 }}>
+      <Box p="lg" pos="relative">
         <Box
           style={{
             display: "flex",
@@ -159,6 +216,7 @@ export default function LSProfileHero({
                     background: "transparent",
                     cursor: "pointer",
                     position: "relative",
+                    zIndex: 120,
                     width: 80,
                     height: 80,
                     borderRadius: "50%",
@@ -199,6 +257,7 @@ export default function LSProfileHero({
               w={80}
               h={80}
               radius="50%"
+              style={{ position: "relative", zIndex: 120 }}
             />
           )}
           <Stack gap="0">

@@ -15,7 +15,9 @@ export interface User {
   email: string;
   research_interests?: string[];
   profile_pic_path?: string | null;
+  profile_header_path?: string | null;
   avatar_url?: string | null;
+  profile_header_url?: string | null;
 }
 
 /**

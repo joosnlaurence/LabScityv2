@@ -345,15 +345,30 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
 
 
     const user = data[0];
+    const { data: profileData, error: profileError } = await supabase
+      .from("profile")
+      .select("header_pic_path")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (profileError) {
+      return { success: false, error: `Error in getUser profile lookup ${profileError.message}` };
+    }
+
     const avatarUrl = user.profile_pic_path
       ? supabase.storage.from("profile_pictures").getPublicUrl(user.profile_pic_path).data.publicUrl
+      : null;
+    const profileHeaderUrl = profileData?.header_pic_path
+      ? supabase.storage.from("profile_header").getPublicUrl(profileData.header_pic_path).data.publicUrl
       : null;
 
     return {
       success: true,
       data: {
         ...user,
+        profile_header_path: profileData?.header_pic_path ?? null,
         avatar_url: avatarUrl,
+        profile_header_url: profileHeaderUrl,
       },
     }
 
