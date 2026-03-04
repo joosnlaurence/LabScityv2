@@ -5,6 +5,10 @@ import { z } from "zod";
 import type { User } from "@/lib/types/feed";
 import { createClient } from "@/supabase/server";
 import type { DataResponse } from "../types/data";
+import {
+  updateProfileSchema,
+  type UpdateProfileValues,
+} from "@/lib/validations/profile";
 
 const profilePictureBucket = "profile_pictures";
 const profileHeaderBucket = "profile_header";
@@ -278,6 +282,76 @@ export async function updateOwnProfileHeader(profileHeaderPath: string, supabase
       return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
     }
     return { success: false, error: "Failed to update profile header" };
+  }
+}
+
+/** Normalize optional string to null when empty for DB storage. */
+function emptyToNull(s: string | undefined): string | null {
+  if (s === undefined || s === "") return null;
+  return s;
+}
+
+/**
+ * Updates the authenticated user's profile (public.profile) and name (public.users).
+ * Validates input with updateProfileSchema and returns a consistent result shape.
+ */
+export async function updateProfileAction(
+  input: UpdateProfileValues,
+  supabaseClient?: SupabaseClient,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const validated = updateProfileSchema.parse(input);
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const userId = authData.user.id;
+
+    const profilePayload = {
+      user_id: userId,
+      about: emptyToNull(validated.about),
+      workplace: emptyToNull(validated.workplace),
+      occupation: emptyToNull(validated.occupation),
+      field_of_interest: emptyToNull(validated.fieldOfInterest),
+      skills: validated.skills?.length ? validated.skills : null,
+    };
+
+    const { error: profileError } = await supabase
+      .from("profile")
+      .upsert(profilePayload, { onConflict: "user_id" });
+
+    if (profileError) {
+      return { success: false, error: profileError.message };
+    }
+
+    const { error: usersError } = await supabase
+      .from("users")
+      .update({
+        first_name: validated.firstName.trim(),
+        last_name: validated.lastName.trim(),
+      })
+      .eq("user_id", userId);
+
+    if (usersError) {
+      return { success: false, error: usersError.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const first = err.issues[0];
+      return {
+        success: false,
+        error: first?.message ?? "Validation failed",
+      };
+    }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update profile",
+    };
   }
 }
 
