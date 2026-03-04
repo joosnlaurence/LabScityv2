@@ -272,6 +272,7 @@ const LSProfileMobileLayout = ({ userId, isOwnProfile, actions, editProfile, fol
           field={post.category ?? "—"}
           timeAgo={new Date(post.created_at).toLocaleString()}
           content={post.text ?? ""}
+          mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
             setActiveCommentPostId((current) =>
@@ -394,6 +395,7 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
           field={post.category ?? "—"}
           timeAgo={new Date(post.created_at).toLocaleString()}
           content={post.text ?? ""}
+          mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
             setActiveCommentPostId((current) =>
