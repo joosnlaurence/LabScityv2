@@ -1,15 +1,22 @@
 import { Text, Box, Avatar } from "@mantine/core";
+import Link from "next/link";
+import linkClasses from "@/components/feed/user-name-link.module.css";
 
 // TODO: It needs to show the name and email. We don't want usernames, but user needs a way to differentiate profiles.
 export interface LSMiniProfileProps {
-  // key: number,
-  posterName: string,
-  posterEmail: string,
-  posterResearchInterest: string,
-  posterProfilePicURL?: string,
+  posterName: string;
+  posterEmail: string;
+  posterResearchInterest: string;
+  posterProfilePicURL?: string;
+  userId?: string;
 }
 
-export default function LSMiniProfile({ posterName, posterResearchInterest, posterProfilePicURL }: LSMiniProfileProps) {
+export default function LSMiniProfile({
+  posterName,
+  posterResearchInterest,
+  posterProfilePicURL,
+  userId,
+}: LSMiniProfileProps) {
   const initials = posterName
     .split(" ")
     .filter(Boolean)
@@ -23,13 +30,25 @@ export default function LSMiniProfile({ posterName, posterResearchInterest, post
         {initials}
       </Avatar>
       <Box>
-        <Text c="navy.7" size="md" fw={600}>
-          {posterName}
-        </Text>
+        {userId ? (
+          <Link
+            href={`/profile/${userId}`}
+            className={linkClasses.nameLink}
+            style={{ color: "inherit" }}
+          >
+            <Text component="span" c="navy.7" size="md" fw={600} style={{ cursor: "pointer" }}>
+              {posterName}
+            </Text>
+          </Link>
+        ) : (
+          <Text c="navy.7" size="md" fw={600}>
+            {posterName}
+          </Text>
+        )}
         <Text c="navy.7" size="sm" mt={-4}>
           {posterResearchInterest}
         </Text>
       </Box>
     </Box>
   );
-};
+}

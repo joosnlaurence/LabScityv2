@@ -11,17 +11,18 @@ export interface LSMiniProfileListProps {
 export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfileListProps) {
 
 
-  const listUsers = profiles?.map(profile =>
+  const listUsers = profiles?.map(profile => (
     <li key={profile.user_id}>
       <LSMiniProfile
         key={profile.user_id}
+        userId={profile.user_id}
         posterEmail={profile.email}
         posterName={profile.first_name + " " + profile.last_name}
         posterResearchInterest={profile.research_interests?.at(0) || ""}
         posterProfilePicURL={profile.avatar_url || undefined}
       />
     </li>
-  )
+  ));
 
   return (
     <Card shadow="sm" padding="lg" radius="md" h="100%">

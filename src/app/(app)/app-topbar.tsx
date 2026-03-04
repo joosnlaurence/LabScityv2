@@ -36,7 +36,7 @@ const LSAppTopBar = () => {
       w={"100%"}
       justify="center"
       align="center"
-      style={{ borderBottom: "1px solid var(--mantine-color-gray-3)", zIndex: 100 }}
+      style={{ borderBottom: "1px solid var(--mantine-color-gray-3)", zIndex: 200 }}
     >
       <Image src="/logo-lightgray.png" w="auto" h="64%" />
 
