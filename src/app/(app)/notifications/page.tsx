@@ -25,7 +25,10 @@ import { useIsMobile } from "@/app/use-is-mobile";
 import { useMarkNotificationAsRead } from "@/components/notifications/use-notifications";
 import { useNotificationStore } from "@/store/notificationStore";
 
-const LAST_VISITED_NOTIFICATIONS_KEY = "labscity:last-visited-notifications-at";
+const LAST_VISITED_NOTIFICATIONS_KEY =
+  "labscity:last-notifications-page-seen-at";
+const PENDING_VISIT_START_KEY =
+  "labscity:pending-notifications-page-visit-start-at";
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -238,24 +241,44 @@ export default function NotificationsPage() {
   const [previousVisitAtMs, setPreviousVisitAtMs] = useState<number | null>(
     null,
   );
-  const [visitStartedAtMs, setVisitStartedAtMs] = useState<number | null>(null);
 
   useEffect(() => {
     const currentVisitStartedAtMs = Date.now();
-    setVisitStartedAtMs(currentVisitStartedAtMs);
 
-    const previousVisitedAtRaw = window.localStorage.getItem(
+    const committedSeenAtRaw = window.localStorage.getItem(
       LAST_VISITED_NOTIFICATIONS_KEY,
     );
-    const parsedPreviousVisitAtMs = previousVisitedAtRaw
-      ? Number.parseInt(previousVisitedAtRaw, 10)
+    const pendingVisitStartRaw = window.localStorage.getItem(
+      PENDING_VISIT_START_KEY,
+    );
+
+    const parsedCommittedSeenAtMs = committedSeenAtRaw
+      ? Number.parseInt(committedSeenAtRaw, 10)
       : Number.NaN;
+    const parsedPendingVisitStartMs = pendingVisitStartRaw
+      ? Number.parseInt(pendingVisitStartRaw, 10)
+      : Number.NaN;
+
+    const effectivePreviousVisitAtMs = Number.isFinite(parsedPendingVisitStartMs)
+      ? parsedPendingVisitStartMs
+      : Number.isFinite(parsedCommittedSeenAtMs)
+        ? parsedCommittedSeenAtMs
+        : null;
+
     setPreviousVisitAtMs(
-      Number.isFinite(parsedPreviousVisitAtMs) ? parsedPreviousVisitAtMs : null,
+      effectivePreviousVisitAtMs,
     );
 
+    if (Number.isFinite(parsedPendingVisitStartMs)) {
+      window.localStorage.setItem(
+        LAST_VISITED_NOTIFICATIONS_KEY,
+        String(parsedPendingVisitStartMs),
+      );
+    }
+
+    // Mark this visit as pending; it becomes "seen" on a future visit.
     window.localStorage.setItem(
-      LAST_VISITED_NOTIFICATIONS_KEY,
+      PENDING_VISIT_START_KEY,
       String(currentVisitStartedAtMs),
     );
   }, []);
@@ -267,20 +290,13 @@ export default function NotificationsPage() {
         return false;
       }
 
-      if (
-        visitStartedAtMs !== null &&
-        notificationCreatedAtMs > visitStartedAtMs
-      ) {
-        return false;
-      }
-
       if (previousVisitAtMs === null) {
         return true;
       }
 
       return notificationCreatedAtMs > previousVisitAtMs;
     },
-    [previousVisitAtMs, visitStartedAtMs],
+    [previousVisitAtMs],
   );
 
   return isMobile ? (

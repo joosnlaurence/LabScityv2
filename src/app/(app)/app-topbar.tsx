@@ -194,10 +194,20 @@ const LSAppTopBar = () => {
           component={Link}
           variant="transparent"
           size="compact-sm"
+          styles={{
+            root: { overflow: "visible" },
+            inner: { overflow: "visible" },
+            section: { overflow: "visible" },
+          }}
           // fill icons if they are active; also shade them darker
 
           leftSection={
-            <Box pos="relative">
+            <Box
+              pos="relative"
+              w={28}
+              h={24}
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
               {hasNewNotifications ? (
                 <IconBell color="var(--mantine-color-blue-6)" />
               ) : inNotificationsPage ? (
@@ -208,8 +218,8 @@ const LSAppTopBar = () => {
               {hasNewNotifications && (
                 <Box
                   pos="absolute"
-                  bottom={-4}
-                  right={-10}
+                  bottom={0}
+                  right={0}
                   bg="blue.6"
                   c="white"
                   px={4}
