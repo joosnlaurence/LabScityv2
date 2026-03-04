@@ -40,3 +40,9 @@ export const updateProfileSchema = z.object({
 
 export type UpdateProfileValues = z.infer<typeof updateProfileSchema>;
 
+export const toggleFollowSchema = z.object({
+  targetUserId: z.string().min(1, { message: "Target user is required" }),
+});
+
+export type ToggleFollowValues = z.infer<typeof toggleFollowSchema>;
+

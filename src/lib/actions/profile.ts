@@ -7,7 +7,9 @@ import { createClient } from "@/supabase/server";
 import type { DataResponse } from "../types/data";
 import {
   updateProfileSchema,
+  toggleFollowSchema,
   type UpdateProfileValues,
+  type ToggleFollowValues,
 } from "@/lib/validations/profile";
 
 const profilePictureBucket = "profile_pictures";
@@ -351,6 +353,81 @@ export async function updateProfileAction(
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to update profile",
+    };
+  }
+}
+
+/**
+ * Toggles follow state: if the current user follows targetUserId, unfollows;
+ * otherwise follows. Returns the new isFollowing state.
+ */
+export async function toggleFollowAction(
+  input: ToggleFollowValues,
+  supabaseClient?: SupabaseClient,
+): Promise<
+  | { success: true; data: { isFollowing: boolean } }
+  | { success: false; error: string }
+> {
+  try {
+    const validated = toggleFollowSchema.parse(input);
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const currentUserId = authData.user.id;
+    const targetUserId = validated.targetUserId;
+
+    if (currentUserId === targetUserId) {
+      return { success: false, error: "You cannot follow yourself" };
+    }
+
+    const { data: existing, error: selectError } = await supabase
+      .from("follows")
+      .select("follower_id")
+      .eq("follower_id", currentUserId)
+      .eq("following_id", targetUserId)
+      .maybeSingle();
+
+    if (selectError) {
+      return { success: false, error: selectError.message };
+    }
+
+    if (existing) {
+      const { error: deleteError } = await supabase
+        .from("follows")
+        .delete()
+        .eq("follower_id", currentUserId)
+        .eq("following_id", targetUserId);
+
+      if (deleteError) {
+        return { success: false, error: deleteError.message };
+      }
+      return { success: true, data: { isFollowing: false } };
+    }
+
+    const { error: insertError } = await supabase.from("follows").insert({
+      follower_id: currentUserId,
+      following_id: targetUserId,
+    });
+
+    if (insertError) {
+      return { success: false, error: insertError.message };
+    }
+    return { success: true, data: { isFollowing: true } };
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const first = err.issues[0];
+      return {
+        success: false,
+        error: first?.message ?? "Validation failed",
+      };
+    }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update follow state",
     };
   }
 }
