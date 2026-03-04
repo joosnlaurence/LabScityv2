@@ -10,9 +10,18 @@ export interface LSMiniProfileProps {
 }
 
 export default function LSMiniProfile({ posterName, posterResearchInterest, posterProfilePicURL }: LSMiniProfileProps) {
+  const initials = posterName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("");
+
   return (
     <Box style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <Avatar src={posterProfilePicURL} radius="xl" />
+      <Avatar size="md" radius="xl" color="navy.7" src={posterProfilePicURL || undefined}>
+        {initials}
+      </Avatar>
       <Box>
         <Text c="navy.7" size="md" fw={600}>
           {posterName}

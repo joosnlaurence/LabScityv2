@@ -4,6 +4,7 @@ import {
   Button,
   Text,
   Image,
+  Avatar,
   Card,
   Box,
   Modal,
@@ -233,6 +234,13 @@ export default function LSProfileHero({
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
+  const avatarInitials = profileName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("");
+
   return (
     <Card shadow="sm" padding="none" radius="md">
 
@@ -305,9 +313,7 @@ export default function LSProfileHero({
           }}
           mb={12}
         >
-          {/* use custom placeholder images for header + avatar
-              default avatar icon from mantine fucks up z ordering
-              this approach ensures image is atop header even if supplied url is bad */}
+          {/* Avatar shows profile image or initials when missing; z-index keeps it atop header */}
           {isOwnProfile && onProfilePicSelect ? (
             <FileButton onChange={onProfilePicSelect} accept="image/jpeg,image/png,image/webp,image/gif">
               {(props) => (
@@ -329,13 +335,15 @@ export default function LSProfileHero({
                     overflow: "hidden",
                   }}
                 >
-                  <Image
-                    src={profilePicURL}
-                    fallbackSrc="https://placehold.co/100x100?text=PFP"
-                    w={80}
-                    h={80}
-                    radius="50%"
-                  />
+                  <Avatar
+                    src={profilePicURL || undefined}
+                    size={80}
+                    radius="xl"
+                    color="navy.7"
+                    style={{ position: "relative", zIndex: 120 }}
+                  >
+                    {avatarInitials}
+                  </Avatar>
                   {(isAvatarHovered || isUploadingProfilePic) ? (
                     <Box
                       style={{
@@ -357,14 +365,15 @@ export default function LSProfileHero({
               )}
             </FileButton>
           ) : (
-            <Image
-              src={profilePicURL}
-              fallbackSrc="https://placehold.co/100x100?text=PFP"
-              w={80}
-              h={80}
-              radius="50%"
+            <Avatar
+              src={profilePicURL || undefined}
+              size={80}
+              radius="xl"
+              color="navy.7"
               style={{ position: "relative", zIndex: 120 }}
-            />
+            >
+              {avatarInitials}
+            </Avatar>
           )}
           <Stack gap="0">
             <Text c="navy.7" size="xl" fw={600}>{profileName}</Text>
