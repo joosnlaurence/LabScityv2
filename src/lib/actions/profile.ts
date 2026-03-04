@@ -312,13 +312,13 @@ export async function updateProfileAction(
 
     const userId = authData.user.id;
 
+    // profile table columns (per schema): about, workplace, occupation, skill (not skills), no field_of_interest
     const profilePayload = {
       user_id: userId,
       about: emptyToNull(validated.about),
       workplace: emptyToNull(validated.workplace),
       occupation: emptyToNull(validated.occupation),
-      field_of_interest: emptyToNull(validated.fieldOfInterest),
-      skills: validated.skills?.length ? validated.skills : null,
+      skill: validated.skills?.length ? validated.skills : null,
     };
 
     const { error: profileError } = await supabase
