@@ -115,7 +115,7 @@ function NotificationCard({
           <Text size="sm">
             {notification.link ? (
               <Link href={notification.link} style={{ textDecoration: "none" }}>
-                <Text span fw={600} style={{ cursor: "pointer" }}>
+                <Text span fw={600} c="navy.7" style={{ cursor: "pointer" }}>
                   {notification.title}
                   {notification.bundleCount && notification.bundleCount > 1 && (
                     <Text span c="dimmed">
