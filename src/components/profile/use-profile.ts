@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getUser, getUserPosts } from "@/lib/actions/data";
 import { profileKeys } from "@/lib/query-keys";
 import { getUserFollowers, getUserFollowing, getUserFriends } from "@/lib/actions/profile";
@@ -19,16 +19,24 @@ export function useUserProfile(user_id: string, options?: { enabled?: boolean })
   });
 }
 
+const PROFILE_POSTS_PAGE_SIZE = 10;
+
 export function useUserPosts(user_id: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: profileKeys.posts(user_id),
-    queryFn: async () => {
-      const result = await getUserPosts({ user_id });
+    queryFn: async ({ pageParam }) => {
+      const result = await getUserPosts({
+        user_id,
+        cursor: pageParam,
+        limit: PROFILE_POSTS_PAGE_SIZE,
+      });
       if (!result.success || !result.data) {
         throw new Error(result.error ?? "Failed to fetch user posts");
       }
       return result.data;
     },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor ?? undefined,
   });
 }
 

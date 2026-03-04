@@ -249,7 +249,7 @@ const LSProfileMobileLayout = ({ userId, isOwnProfile, actions, editProfile, fol
   const username =
     profile?.first_name + " " + profile?.last_name;
   const userPostsQuery = useUserPosts(userId);
-  const userPosts = userPostsQuery.data;
+  const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const followingQuery = useUserFollowing(userId);
   const following = followingQuery.data;
   const friendsQuery = useUserFriends(userId);
@@ -257,9 +257,10 @@ const LSProfileMobileLayout = ({ userId, isOwnProfile, actions, editProfile, fol
 
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
 
-  const hasMore = userPosts?.pagination?.hasMore ?? false;
+  const hasNextPage = userPostsQuery.hasNextPage ?? false;
+  const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
 
-  const listPosts = userPosts?.posts.map((post) => {
+  const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
 
     return (
@@ -267,6 +268,7 @@ const LSProfileMobileLayout = ({ userId, isOwnProfile, actions, editProfile, fol
         <PostCard
           userId={post.user_id}
           userName={username ?? "Unknown User"}
+          avatarUrl={profile?.avatar_url ?? undefined}
           field={post.category ?? "—"}
           timeAgo={new Date(post.created_at).toLocaleString()}
           content={post.text ?? ""}
@@ -315,15 +317,16 @@ const LSProfileMobileLayout = ({ userId, isOwnProfile, actions, editProfile, fol
       <Box component="ul" style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}>
         {listPosts}
       </Box>
-      {hasMore ? (
+      {hasNextPage ? (
         <Button
           variant="subtle"
           color="navy"
           size="sm"
           radius="xl"
-          disabled
+          onClick={() => userPostsQuery.fetchNextPage()}
+          loading={isFetchingNextPage}
         >
-          More posts available (pagination coming soon)
+          Load more posts
         </Button>
       ) : null}
       <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
@@ -350,7 +353,7 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
   const username =
     profile?.first_name + " " + profile?.last_name;
   const userPostsQuery = useUserPosts(userId);
-  const userPosts = userPostsQuery.data;
+  const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const friendsQuery = useUserFriends(userId);
   const friends = friendsQuery.data;
   const followingQuery = useUserFollowing(userId);
@@ -358,7 +361,8 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
 
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
 
-  const hasMore = userPosts?.pagination?.hasMore ?? false;
+  const hasNextPage = userPostsQuery.hasNextPage ?? false;
+  const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
 
   if (profileQuery.status === "pending") {
     return (
@@ -378,7 +382,7 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
     (user) => !friendIds.has(user.user_id),
   );
 
-  const listPosts = userPosts?.posts.map((post) => {
+  const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
 
     return (
@@ -386,6 +390,7 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
         <PostCard
           userId={post.user_id}
           userName={username ?? "Unknown User"}
+          avatarUrl={profile?.avatar_url ?? undefined}
           field={post.category ?? "—"}
           timeAgo={new Date(post.created_at).toLocaleString()}
           content={post.text ?? ""}
@@ -452,15 +457,16 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
         <Box component="ul" style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}>
           {listPosts}
         </Box>
-        {hasMore ? (
+        {hasNextPage ? (
           <Button
             variant="subtle"
             color="navy"
             size="sm"
             radius="xl"
-            disabled
+            onClick={() => userPostsQuery.fetchNextPage()}
+            loading={isFetchingNextPage}
           >
-            More posts available (pagination coming soon)
+            Load more posts
           </Button>
         ) : null}
       </Stack>

@@ -4,6 +4,7 @@ import {
   HydrationBoundary,
 } from "@tanstack/react-query";
 import { getUser, getUserPosts } from "@/lib/actions/data";
+import type { UserPostsResponse } from "@/lib/types/data";
 import {
   getUserFollowers,
   getUserFollowing,
@@ -56,15 +57,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         return result.data;
       },
     }),
-    queryClient.prefetchQuery({
+    queryClient.prefetchInfiniteQuery({
       queryKey: profileKeys.posts(userId),
-      queryFn: async () => {
-        const result = await getUserPosts({ user_id: userId });
+      queryFn: async ({ pageParam }) => {
+        const result = await getUserPosts({
+          user_id: userId,
+          cursor: pageParam,
+          limit: 10,
+        });
         if (!result.success || !result.data) {
           throw new Error(result.error ?? "Failed to fetch user posts");
         }
         return result.data;
       },
+      initialPageParam: undefined as string | undefined,
+      getNextPageParam: (lastPage: UserPostsResponse) =>
+        lastPage.pagination.nextCursor ?? undefined,
     }),
     queryClient.prefetchQuery({
       queryKey: profileKeys.followers(userId),
