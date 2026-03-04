@@ -20,10 +20,6 @@ import { profileKeys } from "@/lib/query-keys";
 import { LSProfileView } from "@/components/profile/ls-profile-view";
 import { createClient } from "@/supabase/server";
 
-// Server component for /profile/[user_id].
-// Uses the dynamic route param to decide which profile to show,
-// then hydrates TanStack Query cache for the client LSProfileView.
-
 interface ProfilePageProps {
   // In React 19 / latest Next, params is passed as a Promise
   // and must be awaited before accessing its properties.
@@ -35,6 +31,7 @@ interface ProfilePageProps {
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { user_id } = await params;
   const userId = user_id;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -112,3 +109,4 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     </HydrationBoundary>
   );
 }
+

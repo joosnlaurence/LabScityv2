@@ -14,6 +14,8 @@ export interface User {
   last_name: string;
   email: string;
   research_interests?: string[];
+  profile_pic_path?: string | null;
+  profile_header_path?: string | null;
   avatar_url?: string | null;
   // Extended profile fields (from public.profile), all optional so callers
   // can safely consume them even if the current query doesn't join profile.
@@ -22,6 +24,7 @@ export interface User {
   workplace?: string | null;
   skills?: string[] | null;
   banner_pic_url?: string | null;
+  profile_header_url?: string | null;
 }
 
 /**
@@ -77,6 +80,7 @@ export interface FeedPostItem {
   id: string;
   userId: string;
   userName: string;
+  avatarUrl?: string | null;
   scientificField: string;
   content: string;
   timeAgo: string;
@@ -91,6 +95,7 @@ export interface FeedCommentItem {
   id: string;
   userId: string;
   userName: string;
+  avatarUrl?: string | null;
   content: string;
   timeAgo: string;
   isLiked?: boolean;
