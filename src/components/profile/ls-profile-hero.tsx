@@ -206,6 +206,7 @@ export interface LSProfileHeroProps {
   /** When others' profile: follow state and toggle. */
   isFollowing?: boolean;
   onToggleFollow?: () => void;
+  isTogglePending?: boolean;
 }
 
 export default function LSProfileHero({
@@ -230,6 +231,7 @@ export default function LSProfileHero({
   isEditSubmitting = false,
   isFollowing = false,
   onToggleFollow,
+  isTogglePending = false,
 }: LSProfileHeroProps) {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -443,6 +445,7 @@ export default function LSProfileHero({
                   variant={isFollowing ? "outline" : "filled"}
                   color="navy.6"
                   onClick={onToggleFollow}
+                  loading={isTogglePending}
                 >
                   {isFollowing ? "Unfollow" : "Follow"}
                 </Button>

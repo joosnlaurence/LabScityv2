@@ -396,14 +396,21 @@ export async function toggleFollowAction(
     }
 
     if (existing) {
-      const { error: deleteError } = await supabase
+      const { data: deleted, error: deleteError } = await supabase
         .from("follows")
         .delete()
         .eq("follower_id", currentUserId)
-        .eq("following_id", targetUserId);
+        .eq("following_id", targetUserId)
+        .select("follower_id");
 
       if (deleteError) {
         return { success: false, error: deleteError.message };
+      }
+      if (!deleted?.length) {
+        return {
+          success: false,
+          error: "Could not unfollow; the follow relationship may be protected.",
+        };
       }
       return { success: true, data: { isFollowing: false } };
     }

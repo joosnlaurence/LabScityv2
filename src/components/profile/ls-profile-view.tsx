@@ -232,6 +232,7 @@ interface EditProfileHeroProps {
 interface FollowProfileHeroProps {
   isFollowing: boolean;
   onToggleFollow: () => void;
+  isTogglePending?: boolean;
 }
 
 // Mobile layout: stacks hero, posts, and relationship widgets in a column.
@@ -314,6 +315,7 @@ const LSProfileMobileLayout = ({ userId, isOwnProfile, actions, editProfile, fol
         isEditSubmitting={editProfile.isEditSubmitting}
         isFollowing={followProfile?.isFollowing}
         onToggleFollow={followProfile?.onToggleFollow}
+        isTogglePending={followProfile?.isTogglePending}
       />
       <Box component="ul" style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}>
         {listPosts}
@@ -439,6 +441,7 @@ const LSProfileDesktopLayout = ({ userId, isOwnProfile, actions, editProfile, fo
             isEditSubmitting={editProfile.isEditSubmitting}
             isFollowing={followProfile?.isFollowing}
             onToggleFollow={followProfile?.onToggleFollow}
+            isTogglePending={followProfile?.isTogglePending}
           />
         </Box>
         <Flex flex={3} direction="column" gap={8}>
@@ -535,6 +538,13 @@ export function LSProfileView({
       return result;
     },
     onSuccess: (data) => {
+      if (data.data?.isFollowing === false && currentUserId) {
+        queryClient.setQueryData(
+          profileKeys.followers(userId),
+          (old: Array<{ user_id: string }> | undefined) =>
+            old ? old.filter((f) => f.user_id !== currentUserId) : old,
+        );
+      }
       queryClient.invalidateQueries({
         queryKey: profileKeys.followers(userId),
       });
@@ -575,6 +585,7 @@ export function LSProfileView({
       ? {
           isFollowing,
           onToggleFollow: () => toggleFollowMutation.mutate(),
+          isTogglePending: toggleFollowMutation.isPending,
         }
       : undefined;
 
