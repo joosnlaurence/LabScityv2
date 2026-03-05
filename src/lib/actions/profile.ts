@@ -299,8 +299,17 @@ function emptyToNull(s: string | undefined): string | null {
 }
 
 /**
- * Updates the authenticated user's profile (public.profile) and name (public.users).
- * Validates input with updateProfileSchema and returns a consistent result shape.
+ * Updates the authenticated user's profile and display name.
+ *
+ * 1. Validates `input` against `updateProfileSchema`.
+ * 2. Checks authentication via `supabase.auth.getUser()`.
+ * 3. Upserts `about`, `workplace`, `occupation`, and `skill` into `public.profile`
+ *    (keyed on `user_id`). Empty strings are normalised to `null`.
+ * 4. Updates `first_name` and `last_name` in `public.users`.
+ *
+ * @param input           - Form values conforming to {@link UpdateProfileValues}.
+ * @param supabaseClient  - Optional pre-built Supabase client (used in tests).
+ * @returns `{ success: true }` on success, or `{ success: false, error: string }`.
  */
 export async function updateProfileAction(
   input: UpdateProfileValues,
@@ -362,8 +371,20 @@ export async function updateProfileAction(
 }
 
 /**
- * Toggles follow state: if the current user follows targetUserId, unfollows;
- * otherwise follows. Returns the new isFollowing state.
+ * Toggles the follow relationship between the authenticated user and
+ * `targetUserId` in `public.follows`.
+ *
+ * - If a row `(follower_id = currentUser, following_id = target)` exists,
+ *   it is deleted (unfollow).
+ * - Otherwise a new row is inserted (follow).
+ *
+ * The client uses optimistic cache updates; on success the returned
+ * `isFollowing` flag tells the UI the authoritative state.
+ *
+ * @param input           - `{ targetUserId }` validated by `toggleFollowSchema`.
+ * @param supabaseClient  - Optional pre-built Supabase client (used in tests).
+ * @returns `{ success: true, data: { isFollowing: boolean } }` on success,
+ *          or `{ success: false, error: string }`.
  */
 export async function toggleFollowAction(
   input: ToggleFollowValues,

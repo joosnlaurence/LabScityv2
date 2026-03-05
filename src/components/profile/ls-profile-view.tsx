@@ -58,6 +58,16 @@ interface LSProfileMobileLayoutProps {
   followProfile?: FollowProfileHeroProps;
 }
 
+/**
+ * Mobile profile layout — stacks hero, post feed, and relationship widgets
+ * (friends / following) in a single column.
+ *
+ * @param userId        - Profile owner's user ID (drives all data queries).
+ * @param isOwnProfile  - Whether the viewer owns this profile (controls edit UI).
+ * @param actions       - Post-related mutation handlers (like, comment, report).
+ * @param editProfile   - Edit-modal state & callbacks for the hero section.
+ * @param followProfile - Follow/unfollow state & callback (omitted for own profile).
+ */
 const LSProfileMobileLayout = ({
   userId,
   isOwnProfile,
@@ -170,6 +180,16 @@ interface LSProfileDesktopLayoutProps {
   followProfile?: FollowProfileHeroProps;
 }
 
+/**
+ * Desktop profile layout — hero and side widgets (friends / following) sit in
+ * a horizontal row; the post feed renders below a divider at a narrower width.
+ *
+ * @param userId        - Profile owner's user ID (drives all data queries).
+ * @param isOwnProfile  - Whether the viewer owns this profile (controls edit UI).
+ * @param actions       - Post-related mutation handlers (like, comment, report).
+ * @param editProfile   - Edit-modal state & callbacks for the hero section.
+ * @param followProfile - Follow/unfollow state & callback (omitted for own profile).
+ */
 const LSProfileDesktopLayout = ({
   userId,
   isOwnProfile,
