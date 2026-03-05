@@ -76,7 +76,7 @@ function profileToEditInitialValues(profile: {
     workplace: profile.workplace ?? "",
     occupation: profile.occupation ?? "",
     fieldOfInterest: profile.research_interests?.[0] ?? "",
-    skills: profile.skills ?? [],
+    skill: profile.skills ?? [],
   };
 }
 

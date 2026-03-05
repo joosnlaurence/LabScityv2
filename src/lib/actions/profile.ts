@@ -42,6 +42,11 @@ function extensionFromMime(mimeType: string) {
   }
 }
 
+/** Shape returned by Supabase join queries on follows/friends with `users:... (*)`. */
+interface UserJoinResult {
+  users: User | null;
+}
+
 function mapUserWithAvatarUrl(user: User, supabase: SupabaseClient): User {
   const avatarUrl = user.profile_pic_path
     ? supabase.storage.from(profilePictureBucket).getPublicUrl(user.profile_pic_path).data.publicUrl
@@ -312,13 +317,12 @@ export async function updateProfileAction(
 
     const userId = authData.user.id;
 
-    // profile table columns (per schema): about, workplace, occupation, skill (not skills), no field_of_interest
     const profilePayload = {
       user_id: userId,
       about: emptyToNull(validated.about),
       workplace: emptyToNull(validated.workplace),
       occupation: emptyToNull(validated.occupation),
-      skill: validated.skills?.length ? validated.skills : null,
+      skill: validated.skill.length ? validated.skill : null,
     };
 
     const { error: profileError } = await supabase
@@ -448,25 +452,23 @@ export async function getUserFollowers(
 
     const { data, error } = await supabase
       .from("follows")
-      // TODO: remove the * when table is finalized
       .select(`
     users:follower_id (
           *
     )
   `)
       .eq("following_id", user_id)
-      .overrideTypes<User[]>();
+      .overrideTypes<UserJoinResult[]>();
 
     if (error) {
       return { success: false, error: error.message };
     }
     return {
       success: true,
-      data:
-        (data as unknown as { users: User }[])
-          .map((row) => row.users)
-          .map((user) => mapUserWithAvatarUrl(user, supabase))
-          .filter(Boolean) || [],
+      data: data
+        .map((row) => row.users)
+        .filter((u): u is User => u !== null)
+        .map((user) => mapUserWithAvatarUrl(user, supabase)),
     };
   } catch (error) {
     console.error(`error in getfollowers ${error}`);
@@ -486,25 +488,23 @@ export async function getUserFollowing(
   try {
     const { data, error } = await supabase
       .from("follows")
-      // TODO: remove the * when table is finalized
       .select(`
     users:following_id (
           *
     )
   `)
       .eq("follower_id", user_id)
-      .overrideTypes<User[]>();
+      .overrideTypes<UserJoinResult[]>();
 
     if (error) {
       return { success: false, error: error.message };
     }
     return {
       success: true,
-      data:
-        (data as unknown as { users: User }[])
-          .map((row) => row.users)
-          .map((user) => mapUserWithAvatarUrl(user, supabase))
-          .filter(Boolean) || [],
+      data: data
+        .map((row) => row.users)
+        .filter((u): u is User => u !== null)
+        .map((user) => mapUserWithAvatarUrl(user, supabase)),
     };
   } catch (error) {
     console.error(`error in getfollowers ${error}`);
@@ -524,20 +524,22 @@ export async function getUserFriends(
 
   try {
     const { data, error } = await supabase
-      // TODO: remove the * when table is finalized
-      .from('friends').select(` friend_id, users:friend_id (*) `).eq('user_id', user_id);
+      .from('friends')
+      .select(` friend_id, users:friend_id (*) `)
+      .eq('user_id', user_id)
+      .overrideTypes<UserJoinResult[]>();
+
     if (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     }
 
     return {
       success: true,
-      data:
-        (data as unknown as { users: User }[])
-          .map((row) => row.users)
-          .map((user) => mapUserWithAvatarUrl(user, supabase))
-          .filter(Boolean) || [],
-    }
+      data: data
+        .map((row) => row.users)
+        .filter((u): u is User => u !== null)
+        .map((user) => mapUserWithAvatarUrl(user, supabase)),
+    };
 
   } catch (error) {
     console.error(`error in getUserFriends ${error}`)

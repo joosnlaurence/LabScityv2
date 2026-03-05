@@ -29,9 +29,9 @@ import {
 
 const profileHeaderHeight = 164;
 
-/** Form values: skills always an array (schema default). */
-type EditProfileFormValues = Omit<UpdateProfileValues, "skills"> & {
-  skills: string[];
+/** Form values: skill always an array (schema default). */
+type EditProfileFormValues = Omit<UpdateProfileValues, "skill"> & {
+  skill: string[];
 };
 
 /** Default values when parent has not yet wired edit form (e.g. before Commit 4). */
@@ -42,7 +42,7 @@ const defaultEditValues: EditProfileFormValues = {
   workplace: "",
   occupation: "",
   fieldOfInterest: "",
-  skills: [],
+  skill: [],
 };
 
 /**
@@ -57,9 +57,9 @@ export interface LSEditProfileModalProps {
   isSubmitting?: boolean;
 }
 
-/** Normalize so skills is always an array for form default/reset. */
+/** Normalize so skill is always an array for form default/reset. */
 function toFormDefaults(v: UpdateProfileValues): EditProfileFormValues {
-  return { ...v, skills: v.skills ?? [] };
+  return { ...v, skill: v.skill ?? [] };
 }
 
 export function LSEditProfileModal({
@@ -159,7 +159,7 @@ export function LSEditProfileModal({
             )}
           />
           <Controller
-            name="skills"
+            name="skill"
             control={control}
             render={({ field, fieldState }) => (
               <MultiSelect
@@ -184,7 +184,7 @@ export interface LSProfileHeroProps {
   profileName: string;
   profileResearchInterest: string;
   profileAbout?: string;
-  profileSkills?: string[];
+  profileSkill?: string[];
   profileHeaderImageURL?: string;
   profilePicURL?: string;
   /** Replaces legacy profileRole / profileInstitution. */
@@ -213,7 +213,7 @@ export default function LSProfileHero({
   profileName,
   profileResearchInterest,
   profileAbout,
-  profileSkills,
+  profileSkill,
   profileHeaderImageURL,
   profilePicURL,
   occupation,
@@ -394,13 +394,13 @@ export default function LSProfileHero({
               <Text c="navy.7">{profileAbout}</Text>
             </Box>
           }
-          {(profileSkills && profileSkills.length > 0) &&
+          {(profileSkill && profileSkill.length > 0) &&
             <Box mb={12}>
               <Text c="navy.7" fw={600} mb={8}>
                 Skills
               </Text>
               <Group gap={8}>
-                {(profileSkills.map((skill, i) => {
+                {(profileSkill.map((skill, i) => {
                   return (
                     <Badge key={i} color="navy.6" variant="light">
                       {skill}
