@@ -9,7 +9,6 @@ import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import type { HomeFeedProps } from "@/components/feed/home-feed.types";
-import { TrendingWidget } from "../sidebar/trending-widget";
 
 export function HomeFeed(props: HomeFeedProps) {
   const {
