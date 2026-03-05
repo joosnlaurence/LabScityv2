@@ -4,6 +4,11 @@ import { z } from "zod";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
 import { createClient } from "@/supabase/server";
 
+/**
+ * Server action: signs in the user with email and password. Validates with loginSchema, then calls Supabase signInWithPassword.
+ * @param formData - Form data containing "email" and "password"
+ * @returns Promise of { success: true, data } or { success: false, error: string }
+ */
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -38,11 +43,18 @@ export async function loginAction(formData: FormData) {
   }
 }
 
+/**
+ * Server action: creates a new account with email and password. Validates with signupSchema, then calls Supabase signUp.
+ * @param formData - Form data containing "email", "password", "confirmPassword", "firstName", "lastName"
+ * @returns Promise of { success: true, data } or { success: false, error: string }
+ */
 export async function signupAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const firstName = formData.get("firstName") as string;
   const lastName = formData.get("lastName") as string;
+  const occupation = formData.get("occupation") as string;
+  const workplace = formData.get("workplace") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
   const supabase = await createClient();
 
@@ -54,6 +66,8 @@ export async function signupAction(formData: FormData) {
       confirmPassword: confirmPassword,
       firstName,
       lastName,
+      occupation,
+      workplace,
     });
 
     const { data, error } = await supabase.auth.signUp({
@@ -63,6 +77,8 @@ export async function signupAction(formData: FormData) {
         data: {
           first_name: parsed.firstName,
           last_name: parsed.lastName,
+          occupation: parsed.occupation,
+          workplace: parsed.workplace,
         },
       },
     });
