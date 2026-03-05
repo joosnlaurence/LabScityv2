@@ -5,8 +5,8 @@ import { Box, Button, Divider, Flex, Stack } from "@mantine/core";
 import { useIsMobile } from "@/app/use-is-mobile";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
 import LSProfileHero from "@/components/profile/ls-profile-hero";
-import { PostCard } from "@/components/feed/post-card";
-import { CommentComposer } from "@/components/feed/comment-composer";
+import { LSPostCard } from "@/components/feed/ls-post-card";
+import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import {
   useUserFollowing,
@@ -87,7 +87,7 @@ const LSProfileMobileLayout = ({
 
     return (
       <li key={postId}>
-        <PostCard
+        <LSPostCard
           userId={post.user_id}
           userName={username ?? "Unknown User"}
           avatarUrl={profile?.avatar_url ?? undefined}
@@ -105,13 +105,13 @@ const LSProfileMobileLayout = ({
           showMenu={false}
         >
           {activeCommentPostId === postId ? (
-            <CommentComposer
+            <LSCommentComposer
               postId={postId}
               onAddComment={actions.handleAddComment}
               isSubmitting={false}
             />
           ) : null}
-        </PostCard>
+        </LSPostCard>
       </li>
     );
   });
@@ -217,7 +217,7 @@ const LSProfileDesktopLayout = ({
 
     return (
       <li key={postId}>
-        <PostCard
+        <LSPostCard
           userId={post.user_id}
           userName={username ?? "Unknown User"}
           avatarUrl={profile?.avatar_url ?? undefined}
@@ -235,13 +235,13 @@ const LSProfileDesktopLayout = ({
           showMenu={false}
         >
           {activeCommentPostId === postId ? (
-            <CommentComposer
+            <LSCommentComposer
               postId={postId}
               onAddComment={actions.handleAddComment}
               isSubmitting={false}
             />
           ) : null}
-        </PostCard>
+        </LSPostCard>
       </li>
     );
   });

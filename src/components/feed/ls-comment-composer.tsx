@@ -8,17 +8,17 @@ import {
   type CreateCommentValues,
 } from "@/lib/validations/post";
 
-export interface CommentComposerProps {
+export interface LSCommentComposerProps {
   postId: string;
   onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
   isSubmitting?: boolean;
 }
 
-export function CommentComposer({
+export function LSCommentComposer({
   postId,
   onAddComment,
   isSubmitting: isMutationPending = false,
-}: CommentComposerProps) {
+}: LSCommentComposerProps) {
   const {
     handleSubmit,
     register,

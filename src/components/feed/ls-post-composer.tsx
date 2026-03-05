@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, FileInput, Group, Paper, Select, Stack, TextInput, Textarea } from "@mantine/core";
+import { Button, Card, FileInput, Group, Select, Stack, Textarea } from "@mantine/core";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,12 +14,12 @@ const postComposerSchema = createPostSchema.extend({
   mediaFile: z.any().optional().nullable(),
 });
 
-export interface PostComposerProps {
+export interface LSPostComposerProps {
   onSubmit: (values: CreatePostValues & { mediaFile?: File | null }) => void | Promise<void>;
   isPending: boolean;
 }
 
-export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposerProps) {
+export function LSPostComposer({ onSubmit: onSubmitProp, isPending }: LSPostComposerProps) {
   const {
     control,
     handleSubmit,
