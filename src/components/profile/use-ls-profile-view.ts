@@ -68,6 +68,7 @@ function profileToEditInitialValues(profile: {
   occupation?: string | null;
   research_interests?: string[] | null;
   skills?: string[] | null;
+  articles?: { title: string; url: string }[] | null;
 }): UpdateProfileValues {
   return {
     firstName: profile.first_name ?? "",
@@ -77,6 +78,7 @@ function profileToEditInitialValues(profile: {
     occupation: profile.occupation ?? "",
     fieldOfInterest: profile.research_interests?.[0] ?? "",
     skill: profile.skills ?? [],
+    articles: profile.articles ?? [],
   };
 }
 

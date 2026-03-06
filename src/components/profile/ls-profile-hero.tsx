@@ -13,13 +13,15 @@ import {
   TagsInput,
   Textarea,
   Stack,
+  Anchor,
+  ActionIcon,
   FileButton,
   Loader,
 } from "@mantine/core";
-import { IconPencil } from "@tabler/icons-react";
+import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import type { Resolver } from "react-hook-form";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SCIENCE_CATEGORIES, SKILL_OPTIONS } from "@/lib/constants/options";
 import {
@@ -29,12 +31,12 @@ import {
 
 const profileHeaderHeight = 164;
 
-/** Form values: skill always an array (schema default). */
-type EditProfileFormValues = Omit<UpdateProfileValues, "skill"> & {
+/** Form values: skill and articles always arrays (schema defaults). */
+type EditProfileFormValues = Omit<UpdateProfileValues, "skill" | "articles"> & {
   skill: string[];
+  articles: { title: string; url: string }[];
 };
 
-/** Default values when parent has not yet wired edit form (e.g. before Commit 4). */
 const defaultEditValues: EditProfileFormValues = {
   firstName: "",
   lastName: "",
@@ -43,6 +45,7 @@ const defaultEditValues: EditProfileFormValues = {
   occupation: "",
   fieldOfInterest: "",
   skill: [],
+  articles: [],
 };
 
 /**
@@ -57,9 +60,9 @@ export interface LSEditProfileModalProps {
   isSubmitting?: boolean;
 }
 
-/** Normalize so skill is always an array for form default/reset. */
+/** Normalize so skill and articles are always arrays for form default/reset. */
 function toFormDefaults(v: UpdateProfileValues): EditProfileFormValues {
-  return { ...v, skill: v.skill ?? [] };
+  return { ...v, skill: v.skill ?? [], articles: v.articles ?? [] };
 }
 
 export function LSEditProfileModal({
@@ -93,6 +96,11 @@ export function LSEditProfileModal({
     formState: { errors },
     handleSubmit,
   } = form;
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "articles",
+  });
 
   return (
     <Modal opened={opened} onClose={onClose} title="Edit Profile">
@@ -171,6 +179,49 @@ export function LSEditProfileModal({
               />
             )}
           />
+
+          <Text fw={600} size="sm">
+            Articles
+          </Text>
+          {fields.map((field, index) => (
+            <Group key={field.id} align="flex-start" wrap="nowrap">
+              <TextInput
+                placeholder="Title"
+                style={{ flex: 1 }}
+                error={errors.articles?.[index]?.title?.message}
+                {...register(`articles.${index}.title`)}
+              />
+              <TextInput
+                placeholder="https://..."
+                style={{ flex: 1 }}
+                error={errors.articles?.[index]?.url?.message}
+                {...register(`articles.${index}.url`)}
+              />
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                mt={4}
+                onClick={() => remove(index)}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+          ))}
+          {errors.articles?.root?.message && (
+            <Text c="red" size="xs">
+              {errors.articles.root.message}
+            </Text>
+          )}
+          <Button
+            variant="light"
+            color="navy"
+            size="xs"
+            onClick={() => append({ title: "", url: "" })}
+            disabled={fields.length >= 30}
+          >
+            Add Article
+          </Button>
+
           <Button type="submit" loading={isSubmitting}>
             Save
           </Button>
@@ -185,6 +236,7 @@ export interface LSProfileHeroProps {
   profileResearchInterest: string;
   profileAbout?: string;
   profileSkill?: string[];
+  profileArticles?: { title: string; url: string }[];
   profileHeaderImageURL?: string;
   profilePicURL?: string;
   /** Replaces legacy profileRole / profileInstitution. */
@@ -214,6 +266,7 @@ export default function LSProfileHero({
   profileResearchInterest,
   profileAbout,
   profileSkill,
+  profileArticles,
   profileHeaderImageURL,
   profilePicURL,
   occupation,
@@ -235,6 +288,7 @@ export default function LSProfileHero({
 }: LSProfileHeroProps) {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  const [isArticlesExpanded, setIsArticlesExpanded] = useState(false);
 
   const avatarInitials = profileName
     .split(" ")
@@ -410,6 +464,44 @@ export default function LSProfileHero({
               </Group>
             </Box>
           }
+          {(profileArticles && profileArticles.length > 0) && (
+            <Box mb={12}>
+              <Text c="navy.7" fw={600} mb={8}>
+                Articles
+              </Text>
+              <Stack gap={6}>
+                {(isArticlesExpanded
+                  ? profileArticles
+                  : profileArticles.slice(0, 3)
+                ).map((article, i) => (
+                  <Anchor
+                    key={i}
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    c="navy.6"
+                    size="sm"
+                    underline="hover"
+                  >
+                    {article.title}
+                  </Anchor>
+                ))}
+              </Stack>
+              {profileArticles.length > 3 && (
+                <Button
+                  variant="subtle"
+                  color="navy"
+                  size="xs"
+                  mt={4}
+                  onClick={() => setIsArticlesExpanded((prev) => !prev)}
+                >
+                  {isArticlesExpanded
+                    ? "Show less"
+                    : `Show all ${profileArticles.length} articles`}
+                </Button>
+              )}
+            </Box>
+          )}
           <Box
             mt={24}
             mb={12}
