@@ -6,9 +6,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { CommentComposer } from "@/components/feed/comment-composer";
-import { PostCard } from "@/components/feed/post-card";
-import { PostCommentCard } from "@/components/feed/post-comment-card";
+import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
+import { LSPostCard } from "@/components/feed/ls-post-card";
+import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import { usePostDetail } from "@/components/feed/use-post-detail";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { LSSpinner } from "@/components/ui/ls-spinner";
@@ -165,7 +165,7 @@ export default function PostDetailPage() {
         preview={
           reportTarget?.type === "post"
             ? (
-              <PostCard
+              <LSPostCard
                 userId={post.userId}
                 userName={post.userName}
                 avatarUrl={post.avatarUrl ?? null}
@@ -180,7 +180,7 @@ export default function PostDetailPage() {
             : post.comments
               .filter((c) => c.id === reportTarget?.commentId)
               .map((c) => (
-                <PostCommentCard
+                <LSPostCommentCard
                   key={c.id}
                   comment={c}
                   showMenu={false}
@@ -192,7 +192,7 @@ export default function PostDetailPage() {
         onSubmit={onSubmitReport}
       />
 
-      <PostCard
+      <LSPostCard
         userId={post.userId}
         userName={post.userName}
         avatarUrl={post.avatarUrl ?? null}
@@ -208,7 +208,7 @@ export default function PostDetailPage() {
         menuId={`post-menu-${post.id}`}
       >
         <Stack gap="md" w="100%">
-          <CommentComposer
+          <LSCommentComposer
             postId={post.id}
             onAddComment={handleAddComment}
             isSubmitting={createCommentMutation.isPending}
@@ -218,7 +218,7 @@ export default function PostDetailPage() {
             <>
               <Divider />
               {post.comments.map((comment) => (
-                <PostCommentCard
+                <LSPostCommentCard
                   key={comment.id}
                   comment={comment}
                   onLikeClick={(commentId) => likeCommentMutation.mutate(commentId)}
@@ -231,7 +231,7 @@ export default function PostDetailPage() {
             </>
           ) : null}
         </Stack>
-      </PostCard>
+      </LSPostCard>
     </Stack>
   );
 }
