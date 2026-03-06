@@ -1,6 +1,15 @@
 import { Text, Box, Avatar, Anchor } from "@mantine/core";
 import Link from "next/link";
 
+/**
+ * Props for LSMiniProfile.
+ *
+ * @param posterName - Display name (used for avatar initials when posterProfilePicURL missing).
+ * @param posterEmail - Email (reserved for future use; see TODO below).
+ * @param posterResearchInterest - Subtitle line (e.g. first research interest).
+ * @param posterProfilePicURL - Optional avatar URL.
+ * @param userId - When set, name is rendered as a link to /profile/[userId]; otherwise plain text.
+ */
 // TODO: It needs to show the name and email. We don't want usernames, but user needs a way to differentiate profiles.
 export interface LSMiniProfileProps {
   posterName: string;
@@ -10,6 +19,10 @@ export interface LSMiniProfileProps {
   userId?: string;
 }
 
+/**
+ * Compact user card: avatar (or initials), name, and research interest.
+ * Used in Friends/Following lists; when userId is provided, the name links to that user's profile.
+ */
 export default function LSMiniProfile({
   posterName,
   posterResearchInterest,

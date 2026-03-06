@@ -5,6 +5,16 @@ import Link from "next/link";
 import { IconDots, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { FeedCommentItem } from "@/lib/types/feed";
 
+/**
+ * Props for LSPostCommentCard.
+ *
+ * @param comment - FeedCommentItem (userName, userId, content, timeAgo, avatarUrl, isLiked, id).
+ * @param onLikeClick - Called with comment id when like is clicked.
+ * @param onReportClick - Called with comment id when Report is chosen from menu.
+ * @param showMenu - Whether to show the options menu (Report).
+ * @param showActions - Whether to show the like button.
+ * @param menuId - Optional id for the menu (accessibility).
+ */
 interface LSPostCommentCardProps {
   comment: FeedCommentItem;
   onLikeClick?: (commentId: string) => void;
@@ -14,6 +24,10 @@ interface LSPostCommentCardProps {
   menuId?: string;
 }
 
+/**
+ * Compact comment row: avatar, author name (link to profile when userId set), content,
+ * time, optional like button, and optional menu (Report). Used below posts in feed and post detail.
+ */
 export function LSPostCommentCard({
   comment,
   onLikeClick,

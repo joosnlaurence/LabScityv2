@@ -5,6 +5,14 @@ import { getUserFollowers, getUserFollowing, getUserFriends } from "@/lib/action
 
 // NOTE: Profile hooks now return the full React Query result objects
 // so server prefetch and client usage share the same data shape.
+
+/**
+ * Fetches a single user profile. Uses profileKeys.user(user_id); same key as server prefetch.
+ *
+ * @param user_id - Profile owner's user ID.
+ * @param options - Optional { enabled } to pause the query.
+ * @returns Full React Query result (data, status, error, etc.).
+ */
 export function useUserProfile(user_id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: profileKeys.user(user_id),
@@ -21,6 +29,12 @@ export function useUserProfile(user_id: string, options?: { enabled?: boolean })
 
 const PROFILE_POSTS_PAGE_SIZE = 10;
 
+/**
+ * Fetches profile posts with cursor-based pagination. Uses profileKeys.posts(user_id).
+ *
+ * @param user_id - Profile owner's user ID.
+ * @returns Infinite query result (data.pages, hasNextPage, fetchNextPage, etc.).
+ */
 export function useUserPosts(user_id: string) {
   return useInfiniteQuery({
     queryKey: profileKeys.posts(user_id),
@@ -40,6 +54,12 @@ export function useUserPosts(user_id: string) {
   });
 }
 
+/**
+ * Fetches the list of users who follow the given user. Uses profileKeys.followers(user_id).
+ *
+ * @param user_id - Profile owner's user ID.
+ * @returns Full React Query result with User[] on success.
+ */
 export function useUserFollowers(user_id: string) {
   return useQuery({
     queryKey: profileKeys.followers(user_id),
@@ -53,6 +73,12 @@ export function useUserFollowers(user_id: string) {
   });
 }
 
+/**
+ * Fetches the list of users that the given user follows. Uses profileKeys.following(user_id).
+ *
+ * @param user_id - Profile owner's user ID.
+ * @returns Full React Query result with User[] on success.
+ */
 export function useUserFollowing(user_id: string) {
   return useQuery({
     queryKey: profileKeys.following(user_id),
@@ -66,6 +92,12 @@ export function useUserFollowing(user_id: string) {
   });
 }
 
+/**
+ * Fetches the given user's friends list. Uses profileKeys.friends(user_id).
+ *
+ * @param user_id - Profile owner's user ID.
+ * @returns Full React Query result with User[] on success.
+ */
 export function useUserFriends(user_id: string) {
   return useQuery({
     queryKey: profileKeys.friends(user_id),

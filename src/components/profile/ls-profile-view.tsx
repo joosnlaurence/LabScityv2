@@ -11,6 +11,12 @@ import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 
+/**
+ * Formats a date string as a relative time for post/comment display.
+ *
+ * @param date - ISO date string or parseable date.
+ * @returns "just now", "5m ago", "3h ago", "2d ago", or toLocaleDateString() for older dates.
+ */
 function getTimeAgo(date: string): string {
   const now = new Date();
   const postDate = new Date(date);
@@ -434,10 +440,9 @@ const LSProfileDesktopLayout = ({
 };
 
 /**
- * Full profile page view — client component that renders hero, posts, and relationship widgets.
- *
- * Delegates all TanStack Query mutation logic (edit, follow, media upload, post actions)
- * to `useLSProfileView`. Chooses mobile or desktop layout based on `useIsMobile()`.
+ * Full profile page view: hero, friends/following widgets, and post feed.
+ * Client component; all data and mutation logic comes from useLSProfileView.
+ * Renders LSProfileMobileLayout or LSProfileDesktopLayout based on useIsMobile().
  */
 export function LSProfileView(props: LSProfileViewProps) {
   const isMobile = useIsMobile();

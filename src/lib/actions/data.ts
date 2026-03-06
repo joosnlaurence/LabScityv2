@@ -383,6 +383,15 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
   }
 }
 
+/**
+ * Fetches a single user by id, joining public.users with public.profile.
+ * Resolves avatar_url and profile_header_url from storage (profile_pictures and profile_header buckets).
+ * Maps profile.skill (DB column) to User.skills and includes profile.articles.
+ *
+ * @param user_id - The user ID to fetch.
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns DataResponse with User including profile fields (about, workplace, occupation, skills, articles).
+ */
 // FIXME: Return a proper value and take in a proper parameter
 export async function getUser(user_id: string, supabaseClient?: SupabaseClient): Promise<DataResponse<User>> {
 

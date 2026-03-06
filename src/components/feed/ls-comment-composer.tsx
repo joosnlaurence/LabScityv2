@@ -8,12 +8,23 @@ import {
   type CreateCommentValues,
 } from "@/lib/validations/post";
 
+/**
+ * Props for LSCommentComposer.
+ *
+ * @param postId - Post to attach the comment to (passed to onAddComment).
+ * @param onAddComment - Called with postId and form values (content) on submit.
+ * @param isSubmitting - When true, submit button shows loading and form can be disabled.
+ */
 export interface LSCommentComposerProps {
   postId: string;
   onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
   isSubmitting?: boolean;
 }
 
+/**
+ * Inline comment form (textarea + Comment button) used inside post cards and on post detail.
+ * Resets content on success; on error the hook shows a notification and form is not reset so user can retry.
+ */
 export function LSCommentComposer({
   postId,
   onAddComment,

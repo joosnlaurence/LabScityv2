@@ -2,6 +2,14 @@ import { Modal, Stack } from "@mantine/core";
 import type { User } from "@/lib/types/feed";
 import LSMiniProfile from "@/components/profile/ls-mini-profile";
 
+/**
+ * Props for LSProfileListModal.
+ *
+ * @param title - Modal title (e.g. "Friends", "Following").
+ * @param profiles - Full list of User objects to render as LSMiniProfile rows.
+ * @param opened - Controlled open state.
+ * @param onClose - Called when the modal is closed.
+ */
 export interface LSProfileListModalProps {
   title: string;
   profiles: User[];
@@ -10,8 +18,8 @@ export interface LSProfileListModalProps {
 }
 
 /**
- * Scrollable modal that displays a full list of user profiles.
- * Shared by the Friends and Following widgets on the profile page.
+ * Scrollable modal that displays a full list of user profiles (body capped at 60vh with overflow).
+ * Shared by the Friends and Following widgets on the profile page when "Show all X" is clicked.
  */
 export default function LSProfileListModal({
   title,

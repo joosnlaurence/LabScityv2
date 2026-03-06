@@ -239,6 +239,33 @@ export function LSEditProfileModal({
   );
 }
 
+/**
+ * Props for LSProfileHero.
+ *
+ * @param profileName - Display name (used for avatar initials when profilePicURL missing).
+ * @param profileResearchInterest - Subtitle (e.g. first research interest).
+ * @param profileAbout - Optional "About" section text.
+ * @param profileSkill - Optional list of skill badges.
+ * @param profileArticles - Optional list of { title, url }; first 3 shown inline, rest in modal.
+ * @param profileHeaderImageURL - Banner/header image URL.
+ * @param profilePicURL - Avatar image URL.
+ * @param occupation - Job title (replaces legacy profileRole).
+ * @param workplace - Institution/employer (replaces legacy profileInstitution).
+ * @param isOwnProfile - If true, show Edit and upload overlays; otherwise show Follow/Unfollow.
+ * @param onProfilePicSelect - When set (own profile), file selection triggers profile pic upload.
+ * @param isUploadingProfilePic - Shows loader on avatar overlay while uploading.
+ * @param onProfileHeaderSelect - When set (own profile), file selection triggers banner upload.
+ * @param isUploadingProfileHeader - Shows loader on banner overlay while uploading.
+ * @param onOpenEditProfile - When own profile: called when user clicks Edit (parent opens modal).
+ * @param editModalOpened - Edit modal controlled open state.
+ * @param onEditModalClose - Edit modal close handler.
+ * @param editInitialValues - Form initial values for the edit modal.
+ * @param onEditSubmit - Edit form submit handler.
+ * @param isEditSubmitting - Edit form submitting state.
+ * @param isFollowing - When viewing others: current follow state.
+ * @param onToggleFollow - When viewing others: follow/unfollow action.
+ * @param isTogglePending - When viewing others: follow mutation pending state.
+ */
 export interface LSProfileHeroProps {
   profileName: string;
   profileResearchInterest: string;
@@ -247,7 +274,6 @@ export interface LSProfileHeroProps {
   profileArticles?: { title: string; url: string }[];
   profileHeaderImageURL?: string;
   profilePicURL?: string;
-  /** Replaces legacy profileRole / profileInstitution. */
   occupation?: string;
   workplace?: string;
   isOwnProfile: boolean;
@@ -255,20 +281,23 @@ export interface LSProfileHeroProps {
   isUploadingProfilePic?: boolean;
   onProfileHeaderSelect?: (file: File | null) => void;
   isUploadingProfileHeader?: boolean;
-  /** When own profile: called when user clicks Edit (parent opens modal). */
   onOpenEditProfile?: () => void;
-  /** When others' profile: edit modal open state and handlers (parent-controlled). */
   editModalOpened?: boolean;
   onEditModalClose?: () => void;
   editInitialValues?: UpdateProfileValues;
   onEditSubmit?: (values: UpdateProfileValues) => void;
   isEditSubmitting?: boolean;
-  /** When others' profile: follow state and toggle. */
   isFollowing?: boolean;
   onToggleFollow?: () => void;
   isTogglePending?: boolean;
 }
 
+/**
+ * Profile hero card: banner image, avatar, name, research interest, occupation/workplace,
+ * about, skills, and articles. First 3 articles inline; "Show all X articles" opens a scrollable modal (60vh).
+ * Own profile: Edit button and LSEditProfileModal; hover overlays on avatar/banner for upload (overlay z-index 130
+ * above avatar so the camera/Edit overlay is visible). Other profile: Follow/Unfollow button.
+ */
 export default function LSProfileHero({
   profileName,
   profileResearchInterest,
@@ -417,6 +446,7 @@ export default function LSProfileHero({
                   >
                     {avatarInitials}
                   </Avatar>
+                  {/* Overlay z-index 130 so it sits above the avatar/button and remains visible. */}
                   {(isAvatarHovered || isUploadingProfilePic) ? (
                     <Box
                       style={{
@@ -493,6 +523,7 @@ export default function LSProfileHero({
               </Group>
             </Box>
           }
+          {/* Articles: first 3 inline; "Show all X" opens modal to avoid unbounded list growth. */}
           {(profileArticles && profileArticles.length > 0) && (
             <Box mb={12}>
               <Text c="navy.7" fw={600} mb={8}>

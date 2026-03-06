@@ -80,7 +80,12 @@ export interface ProfileMediaUploadProps {
   isUploadingProfileHeader: boolean;
 }
 
-/** Build edit form initial values from profile (User) data. */
+/**
+ * Build edit form initial values from profile (User) data.
+ *
+ * @param profile - User object from useUserProfile (first_name, last_name, about, skills, articles, etc.).
+ * @returns UpdateProfileValues for the edit modal defaultValues and reset.
+ */
 function profileToEditInitialValues(profile: {
   first_name: string;
   last_name: string;
@@ -106,6 +111,10 @@ function profileToEditInitialValues(profile: {
 /**
  * Wraps all post-related server actions in React Query mutations
  * and centralises error handling + cache invalidation.
+ *
+ * @param userId - Profile owner's user ID (used to invalidate profileKeys.posts(userId) on success).
+ * @param actions - Server actions for createComment, createReport, likePost, likeComment.
+ * @returns { handleTogglePostLike, handleToggleCommentLike, handleAddComment, submitReport } for use in profile layouts.
  */
 function useProfilePostActions(
   userId: string,
@@ -318,6 +327,7 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
       return result;
     },
     onSuccess: (data) => {
+      // Optimistic update: unfollow removes current user from cached followers so button flips to "Follow" immediately.
       if (data.data?.isFollowing === false && currentUserId) {
         queryClient.setQueryData(
           profileKeys.followers(userId),

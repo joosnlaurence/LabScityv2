@@ -14,11 +14,21 @@ const postComposerSchema = createPostSchema.extend({
   mediaFile: z.any().optional().nullable(),
 });
 
+/**
+ * Props for LSPostComposer.
+ *
+ * @param onSubmit - Called with form values (scientificField, content, category, mediaFile) on submit.
+ * @param isPending - When true, submit button shows loading and form can be disabled.
+ */
 export interface LSPostComposerProps {
   onSubmit: (values: CreatePostValues & { mediaFile?: File | null }) => void | Promise<void>;
   isPending: boolean;
 }
 
+/**
+ * Post creation form: scientific field, post content textarea, optional image upload.
+ * Uses SCIENCE_CATEGORIES for field options. Used on home feed; parent wires onSubmit to createPost mutation.
+ */
 export function LSPostComposer({ onSubmit: onSubmitProp, isPending }: LSPostComposerProps) {
   const {
     control,

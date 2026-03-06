@@ -11,6 +11,11 @@ import { ReportOverlay } from "@/components/report/report-overlay";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import type { HomeFeedProps } from "@/components/feed/home-feed.types";
 
+/**
+ * Home feed: post composer trigger, list of LSPostCards with like/comment/report,
+ * ReportOverlay for reporting posts or comments, and post click navigation to /posts/[post_id].
+ * All data and mutation logic comes from useHomeFeed; actions are passed from the page as props.
+ */
 export function HomeFeed(props: HomeFeedProps) {
   const router = useRouter();
   const {

@@ -47,6 +47,14 @@ interface UserJoinResult {
   users: User | null;
 }
 
+/**
+ * Builds public storage URLs for avatar and profile header from path columns.
+ * Uses profilePictureBucket for avatar and profileHeaderBucket for header (not profilePictureBucket).
+ *
+ * @param user - User row with profile_pic_path and/or profile_header_path.
+ * @param supabase - Supabase client for storage.getPublicUrl.
+ * @returns User with avatar_url and profile_header_url set.
+ */
 function mapUserWithAvatarUrl(user: User, supabase: SupabaseClient): User {
   const avatarUrl = user.profile_pic_path
     ? supabase.storage.from(profilePictureBucket).getPublicUrl(user.profile_pic_path).data.publicUrl
@@ -58,6 +66,13 @@ function mapUserWithAvatarUrl(user: User, supabase: SupabaseClient): User {
   return { ...user, avatar_url: avatarUrl, profile_header_url: profileHeaderUrl };
 }
 
+/**
+ * Creates a signed upload URL for the authenticated user's profile picture.
+ *
+ * @param contentType - MIME type (image/jpeg, image/png, image/webp, image/gif).
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns On success: { success: true, data: { bucket, path, token, maxBytes } }. On failure: { success: false, error }.
+ */
 export async function createProfilePictureUploadUrl(contentType: string, supabaseClient?: SupabaseClient) {
   try {
     const validatedContentType = contentTypeSchema.parse(contentType);
@@ -96,6 +111,14 @@ export async function createProfilePictureUploadUrl(contentType: string, supabas
   }
 }
 
+/**
+ * Persists the profile picture path for the authenticated user after client upload.
+ * Validates path, checks auth, updates public.users, removes previous file from storage if replaced.
+ *
+ * @param profilePicPath - Storage path returned from createProfilePictureUploadUrl (must be under user id).
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns On success: { success: true, data: { profilePicPath, avatarUrl } }. On failure: { success: false, error }.
+ */
 export async function updateOwnProfilePicture(profilePicPath: string, supabaseClient?: SupabaseClient) {
   try {
     const validatedPath = profilePicPathSchema.parse(profilePicPath);
@@ -174,6 +197,14 @@ export async function updateOwnProfilePicture(profilePicPath: string, supabaseCl
   }
 }
 
+/**
+ * Creates a signed upload URL for the authenticated user's profile header (banner).
+ * Same flow as profile picture but uses profileHeaderBucket and a header- prefixed path.
+ *
+ * @param contentType - MIME type (image/jpeg, image/png, image/webp, image/gif).
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns On success: { success: true, data: { bucket, path, token, maxBytes } }. On failure: { success: false, error }.
+ */
 export async function createProfileHeaderUploadUrl(contentType: string, supabaseClient?: SupabaseClient) {
   try {
     const validatedContentType = contentTypeSchema.parse(contentType);
@@ -212,6 +243,14 @@ export async function createProfileHeaderUploadUrl(contentType: string, supabase
   }
 }
 
+/**
+ * Persists the profile header (banner) path for the authenticated user after client upload.
+ * Validates path, checks auth, updates public.profile.header_pic_path, removes previous file from storage if replaced.
+ *
+ * @param profileHeaderPath - Storage path returned from createProfileHeaderUploadUrl (must be under user id).
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns On success: { success: true, data: { profileHeaderPath, profileHeaderUrl } }. On failure: { success: false, error }.
+ */
 export async function updateOwnProfileHeader(profileHeaderPath: string, supabaseClient?: SupabaseClient) {
   try {
     const validatedPath = profileHeaderPathSchema.parse(profileHeaderPath);
@@ -465,6 +504,14 @@ export async function toggleFollowAction(
   }
 }
 
+/**
+ * Fetches users who follow the given user. Returns User[] with avatar_url and profile_header_url
+ * resolved via profilePictureBucket and profileHeaderBucket (mapUserWithAvatarUrl).
+ *
+ * @param user_id - The user whose followers to fetch (following_id in follows).
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns DataResponse with array of User objects.
+ */
 export async function getUserFollowers(
   user_id: string,
   supabaseClient?: SupabaseClient,
@@ -502,6 +549,14 @@ export async function getUserFollowers(
   };
 }
 
+/**
+ * Fetches users that the given user follows. Returns User[] with avatar_url and profile_header_url
+ * resolved via mapUserWithAvatarUrl (profileHeaderBucket for header, not profilePictureBucket).
+ *
+ * @param user_id - The user whose following list to fetch (follower_id in follows).
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns DataResponse with array of User objects.
+ */
 export async function getUserFollowing(
   user_id: string,
   supabaseClient?: SupabaseClient,
@@ -538,6 +593,14 @@ export async function getUserFollowing(
   };
 }
 
+/**
+ * Fetches the given user's friends. Returns User[] with avatar_url and profile_header_url
+ * resolved via mapUserWithAvatarUrl.
+ *
+ * @param user_id - The user whose friends list to fetch.
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns DataResponse with array of User objects.
+ */
 export async function getUserFriends(
   user_id: string,
   supabaseClient?: SupabaseClient,

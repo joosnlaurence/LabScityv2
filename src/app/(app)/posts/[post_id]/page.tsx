@@ -21,18 +21,24 @@ import {
 import { postKeys } from "@/lib/query-keys";
 import type { CreateReportValues } from "@/lib/validations/post";
 
+/**
+ * Post detail page: single post with comments, like/comment/report actions, and ReportOverlay.
+ * Uses usePostDetail for data; mutations invalidate post detail so the view refetches after like/comment.
+ */
 export default function PostDetailPage() {
   const { post_id } = useParams<{ post_id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = usePostDetail(post_id);
 
+  /** Tracks which post or comment is being reported; null when report overlay is closed. */
   const [reportTarget, setReportTarget] = useState<
     | { type: "post"; postId: string }
     | { type: "comment"; postId: string; commentId: string }
     | null
   >(null);
 
+  /** Refetches post detail after successful like or comment so counts and list stay in sync. */
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: postKeys.detail(post_id) });
 

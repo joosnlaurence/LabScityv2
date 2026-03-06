@@ -6,8 +6,15 @@ import LSMiniProfile from "@/components/profile/ls-mini-profile";
 import LSProfileListModal from "@/components/profile/ls-profile-list-modal";
 import type { User } from "@/lib/types/feed";
 
+/** Max profiles shown inline before "Show all X" opens the modal. */
 const INLINE_LIMIT = 6;
 
+/**
+ * Props for LSMiniProfileList.
+ *
+ * @param widgetTitle - Title shown above the list (e.g. "Friends", "Following").
+ * @param profiles - List of users to display; when length > INLINE_LIMIT, only first INLINE_LIMIT shown inline.
+ */
 export interface LSMiniProfileListProps {
   widgetTitle: string;
   profiles?: User[];
@@ -15,8 +22,8 @@ export interface LSMiniProfileListProps {
 
 /**
  * Compact profile-list widget for the profile sidebar.
- * Shows up to 6 profiles inline; a "Show all" button opens
- * an LSProfileListModal with the full list.
+ * Shows up to INLINE_LIMIT (6) profiles inline; when more exist, a "Show all X" button opens
+ * LSProfileListModal with the full list.
  */
 export default function LSMiniProfileList({ widgetTitle, profiles }: LSMiniProfileListProps) {
   const [modalOpened, setModalOpened] = useState(false);

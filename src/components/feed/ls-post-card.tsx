@@ -10,6 +10,28 @@ import {
   IconShare3,
 } from "@tabler/icons-react";
 
+/**
+ * Props for LSPostCard.
+ *
+ * @param userId - When set, author name links to /profile/[userId].
+ * @param userName - Display name (used for avatar initials when avatarUrl missing).
+ * @param field - Scientific field or category label.
+ * @param timeAgo - Relative time string (e.g. "5m ago").
+ * @param content - Post body text.
+ * @param mediaLabel - Optional label for attached media.
+ * @param mediaUrl - Optional image URL; when set with onPostClick, content/media are clickable to navigate to post detail.
+ * @param avatarUrl - Author avatar URL; falls back to initials.
+ * @param onCommentClick - Toggles comment composer when provided.
+ * @param onLikeClick - Like/unlike handler.
+ * @param isLiked - Current like state for heart icon.
+ * @param onReportClick - Opens report overlay when provided.
+ * @param showMenu - Whether to show the options menu (e.g. Report).
+ * @param showActions - Whether to show like/comment buttons.
+ * @param audienceLabel - Optional label next to name (e.g. audience).
+ * @param menuId - Optional id for the menu (accessibility).
+ * @param onPostClick - When provided, clicking post content/media navigates to post detail (e.g. router.push).
+ * @param children - Optional slot for comment composer and comment list below the card.
+ */
 interface LSPostCardProps {
   userId?: string;
   userName: string;
@@ -31,6 +53,11 @@ interface LSPostCardProps {
   children?: React.ReactNode;
 }
 
+/**
+ * Card component for a single post: author avatar/name, field, time, content, optional media,
+ * like/comment actions, and optional children (e.g. comment composer and comments).
+ * Used on home feed and profile feed; onPostClick enables navigation to post detail page.
+ */
 export function LSPostCard({
   userId,
   userName,
