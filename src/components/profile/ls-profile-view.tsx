@@ -44,11 +44,27 @@ type UpdateOwnProfilePictureAction = typeof updateOwnProfilePicture;
 type CreateProfileHeaderUploadUrlAction = typeof createProfileHeaderUploadUrl;
 type UpdateOwnProfileHeaderAction = typeof updateOwnProfileHeader;
 
-/** Public props expected by the server component wrapper. */
+/**
+ * Props for LSProfileView — passed from the profile page server component.
+ *
+ * @param userId - Profile owner's user ID (drives all data queries).
+ * @param isOwnProfile - Whether the viewer owns this profile (controls edit vs follow UI).
+ * @param currentUserId - Authenticated user id; used to derive isFollowing when viewing others.
+ * @param updateProfileAction - Server action to update profile (about, workplace, occupation, skill, articles).
+ * @param toggleFollowAction - Server action to follow/unfollow the profile owner.
+ * @param createProfilePictureUploadUrlAction - Server action to get signed URL for profile pic upload.
+ * @param updateOwnProfilePictureAction - Server action to persist profile pic path after upload.
+ * @param createProfileHeaderUploadUrlAction - Server action to get signed URL for banner upload.
+ * @param updateOwnProfileHeaderAction - Server action to persist banner path after upload.
+ * @param createPostAction - Server action to create a post (passed for consistency; profile posts use feed actions).
+ * @param createCommentAction - Server action to add a comment.
+ * @param createReportAction - Server action to submit a report.
+ * @param likePostAction - Server action to toggle post like.
+ * @param likeCommentAction - Server action to toggle comment like.
+ */
 export interface LSProfileViewProps {
   userId: string;
   isOwnProfile: boolean;
-  /** Current authenticated user id (for deriving isFollowing when viewing others). */
   currentUserId: string | null;
   updateProfileAction: UpdateProfileAction;
   toggleFollowAction: ToggleFollowAction;
@@ -63,6 +79,7 @@ export interface LSProfileViewProps {
   likeCommentAction: LikeCommentAction;
 }
 
+/** Props for mobile layout — single-column stack of hero, posts, friends, following. */
 interface LSProfileMobileLayoutProps {
   userId: string;
   isOwnProfile: boolean;
@@ -193,6 +210,7 @@ const LSProfileMobileLayout = ({
   );
 };
 
+/** Props for desktop layout — hero + side widgets in a row; posts below divider. */
 interface LSProfileDesktopLayoutProps {
   userId: string;
   isOwnProfile: boolean;
@@ -361,8 +379,10 @@ const LSProfileDesktopLayout = ({
 };
 
 /**
- * Full profile page view — renders the hero, posts, and relationship widgets.
- * All TanStack Query mutation logic is delegated to `useLSProfileView`.
+ * Full profile page view — client component that renders hero, posts, and relationship widgets.
+ *
+ * Delegates all TanStack Query mutation logic (edit, follow, media upload, post actions)
+ * to `useLSProfileView`. Chooses mobile or desktop layout based on `useIsMobile()`.
  */
 export function LSProfileView(props: LSProfileViewProps) {
   const isMobile = useIsMobile();
