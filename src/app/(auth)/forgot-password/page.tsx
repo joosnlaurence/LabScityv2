@@ -15,7 +15,7 @@ const inputStyles = {
   color: "var(--mantine-color-navy-7)",
 };
 
-export default function ResetPasswordPage() {
+export default function ForgotPasswordPage() {
   const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [showMessage, setShowMessage] = useState(false);
@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
             />
           </Box>
 
-          <Text fz="lg" fw={600} c="navy.7">Reset your password</Text>
+          <Text fz="lg" fw={600} c="navy.7">Enter your email to reset your password:</Text>
 
           {showMessage && (
             <Alert color="green" title="Email Sent">
