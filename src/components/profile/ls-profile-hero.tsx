@@ -103,7 +103,15 @@ export function LSEditProfileModal({
   });
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Edit Profile">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Profile"
+      centered
+      size="lg"
+      yOffset="5vh"
+      styles={{ body: { maxHeight: "calc(100vh - 200px)", overflowY: "auto" } }}
+    >
       <form onSubmit={handleSubmit(handleSave)}>
         <Stack gap={12}>
           <Group grow>
