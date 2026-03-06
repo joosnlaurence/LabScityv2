@@ -8,7 +8,19 @@ import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
 import LSProfileHero from "@/components/profile/ls-profile-hero";
 import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
+import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import { LSSpinner } from "@/components/ui/ls-spinner";
+
+function getTimeAgo(date: string): string {
+  const now = new Date();
+  const postDate = new Date(date);
+  const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+  if (diffInSeconds < 60) return "just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  return postDate.toLocaleDateString();
+}
 import {
   useUserFollowing,
   useUserFriends,
@@ -129,6 +141,7 @@ const LSProfileMobileLayout = ({
 
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
+    const comments = post.comments ?? [];
 
     return (
       <li key={postId}>
@@ -136,8 +149,8 @@ const LSProfileMobileLayout = ({
           userId={post.user_id}
           userName={username ?? "Unknown User"}
           avatarUrl={profile?.avatar_url ?? undefined}
-          field={post.category ?? "—"}
-          timeAgo={new Date(post.created_at).toLocaleString()}
+          field={post.scientific_field ?? post.category ?? "—"}
+          timeAgo={getTimeAgo(post.created_at)}
           content={post.text ?? ""}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
@@ -146,17 +159,35 @@ const LSProfileMobileLayout = ({
               current === postId ? null : postId,
             )
           }
-          isLiked={false}
+          isLiked={post.isLiked ?? false}
           showMenu={false}
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
         >
-          {activeCommentPostId === postId ? (
-            <LSCommentComposer
-              postId={postId}
-              onAddComment={actions.handleAddComment}
-              isSubmitting={false}
-            />
-          ) : null}
+          <Stack gap="md" w="100%">
+            {activeCommentPostId === postId ? (
+              <LSCommentComposer
+                postId={postId}
+                onAddComment={actions.handleAddComment}
+                isSubmitting={false}
+              />
+            ) : null}
+
+            {comments.length > 0 ? (
+              <>
+                <Divider />
+                {comments.map((comment) => (
+                  <LSPostCommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onLikeClick={(commentId) =>
+                      actions.handleToggleCommentLike(commentId)
+                    }
+                    showMenu={false}
+                  />
+                ))}
+              </>
+            ) : null}
+          </Stack>
         </LSPostCard>
       </li>
     );
@@ -280,6 +311,7 @@ const LSProfileDesktopLayout = ({
 
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
+    const comments = post.comments ?? [];
 
     return (
       <li key={postId}>
@@ -287,8 +319,8 @@ const LSProfileDesktopLayout = ({
           userId={post.user_id}
           userName={username ?? "Unknown User"}
           avatarUrl={profile?.avatar_url ?? undefined}
-          field={post.category ?? "—"}
-          timeAgo={new Date(post.created_at).toLocaleString()}
+          field={post.scientific_field ?? post.category ?? "—"}
+          timeAgo={getTimeAgo(post.created_at)}
           content={post.text ?? ""}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
@@ -297,17 +329,35 @@ const LSProfileDesktopLayout = ({
               current === postId ? null : postId,
             )
           }
-          isLiked={false}
+          isLiked={post.isLiked ?? false}
           showMenu={false}
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
         >
-          {activeCommentPostId === postId ? (
-            <LSCommentComposer
-              postId={postId}
-              onAddComment={actions.handleAddComment}
-              isSubmitting={false}
-            />
-          ) : null}
+          <Stack gap="md" w="100%">
+            {activeCommentPostId === postId ? (
+              <LSCommentComposer
+                postId={postId}
+                onAddComment={actions.handleAddComment}
+                isSubmitting={false}
+              />
+            ) : null}
+
+            {comments.length > 0 ? (
+              <>
+                <Divider />
+                {comments.map((comment) => (
+                  <LSPostCommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onLikeClick={(commentId) =>
+                      actions.handleToggleCommentLike(commentId)
+                    }
+                    showMenu={false}
+                  />
+                ))}
+              </>
+            ) : null}
+          </Stack>
         </LSPostCard>
       </li>
     );
