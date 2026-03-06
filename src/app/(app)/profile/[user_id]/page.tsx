@@ -30,14 +30,25 @@ import {
 } from "@/components/profile/ls-profile-view";
 import { createClient } from "@/supabase/server";
 
+/**
+ * Props for the profile page route.
+ * In React 19 / Next.js 15+, `params` is a Promise and must be awaited.
+ */
 interface ProfilePageProps {
-  // In React 19 / latest Next, params is passed as a Promise
-  // and must be awaited before accessing its properties.
   params: Promise<{
     user_id: string;
   }>;
 }
 
+/**
+ * Profile page — server component that prefetches profile data and hydrates the client.
+ *
+ * - Derives `userId` from the dynamic route; uses Supabase auth to compute `isOwnProfile`.
+ * - Prefetches user, posts (infinite), followers, following, and friends via TanStack Query.
+ * - Dehydrates the query client and wraps LSProfileView in HydrationBoundary.
+ * - Passes all server actions (profile update, follow, media upload, feed actions) as props
+ *   so the client component never imports actions directly.
+ */
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { user_id } = await params;
   const userId = user_id;
@@ -112,6 +123,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const dehydratedState = dehydrate(queryClient);
 
+  // Server actions passed as props; LSProfileView invokes them via useLSProfileView.
   const profileViewProps: LSProfileViewProps = {
     userId,
     isOwnProfile,
