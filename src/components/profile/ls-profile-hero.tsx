@@ -10,7 +10,7 @@ import {
   Modal,
   TextInput,
   Autocomplete,
-  MultiSelect,
+  TagsInput,
   Textarea,
   Stack,
   FileButton,
@@ -162,9 +162,9 @@ export function LSEditProfileModal({
             name="skill"
             control={control}
             render={({ field, fieldState }) => (
-              <MultiSelect
+              <TagsInput
                 label="Your Skills"
-                placeholder="Select multiple..."
+                placeholder="Select or type your own..."
                 data={[...SKILL_OPTIONS]}
                 error={fieldState.error?.message}
                 {...field}
