@@ -296,7 +296,7 @@ export default function LSProfileHero({
 }: LSProfileHeroProps) {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
-  const [isArticlesExpanded, setIsArticlesExpanded] = useState(false);
+  const [isArticlesModalOpen, setIsArticlesModalOpen] = useState(false);
 
   const avatarInitials = profileName
     .split(" ")
@@ -499,10 +499,7 @@ export default function LSProfileHero({
                 Articles
               </Text>
               <Stack gap={6}>
-                {(isArticlesExpanded
-                  ? profileArticles
-                  : profileArticles.slice(0, 3)
-                ).map((article, i) => (
+                {profileArticles.slice(0, 3).map((article, i) => (
                   <Anchor
                     key={i}
                     href={article.url}
@@ -522,13 +519,35 @@ export default function LSProfileHero({
                   color="navy"
                   size="xs"
                   mt={4}
-                  onClick={() => setIsArticlesExpanded((prev) => !prev)}
+                  onClick={() => setIsArticlesModalOpen(true)}
                 >
-                  {isArticlesExpanded
-                    ? "Show less"
-                    : `Show all ${profileArticles.length} articles`}
+                  {`Show all ${profileArticles.length} articles`}
                 </Button>
               )}
+              <Modal
+                opened={isArticlesModalOpen}
+                onClose={() => setIsArticlesModalOpen(false)}
+                title="Articles"
+                centered
+                size="md"
+                styles={{ body: { maxHeight: "60vh", overflowY: "auto" } }}
+              >
+                <Stack gap={8}>
+                  {profileArticles.map((article, i) => (
+                    <Anchor
+                      key={i}
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      c="navy.6"
+                      size="sm"
+                      underline="hover"
+                    >
+                      {article.title}
+                    </Anchor>
+                  ))}
+                </Stack>
+              </Modal>
             </Box>
           )}
           <Box
