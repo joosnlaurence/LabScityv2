@@ -18,7 +18,7 @@ import {
   FileButton,
   Loader,
 } from "@mantine/core";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconCamera, IconPencil, IconTrash } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import type { Resolver } from "react-hook-form";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
@@ -343,14 +343,23 @@ export default function LSProfileHero({
                       inset: 0,
                       background: "rgba(0,0,0,0.35)",
                       display: "flex",
+                      flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
                       color: "white",
                       fontSize: 12,
                       fontWeight: 600,
+                      gap: 4,
                     }}
                   >
-                    {isUploadingProfileHeader ? <Loader size="xs" color="white" /> : "Change header"}
+                    {isUploadingProfileHeader ? (
+                      <Loader size="xs" color="white" />
+                    ) : (
+                      <>
+                        <IconCamera size={20} />
+                        Change banner
+                      </>
+                    )}
                   </Box>
                 ) : null}
               </button>
@@ -404,7 +413,7 @@ export default function LSProfileHero({
                     size={80}
                     radius="xl"
                     color="navy.7"
-                    style={{ position: "relative", zIndex: 120 }}
+                    bg={profilePicURL ? undefined : "navy.7"}
                   >
                     {avatarInitials}
                   </Avatar>
@@ -413,16 +422,27 @@ export default function LSProfileHero({
                       style={{
                         position: "absolute",
                         inset: 0,
+                        zIndex: 130,
+                        borderRadius: "50%",
                         background: "rgba(0,0,0,0.45)",
                         display: "flex",
+                        flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
                         color: "white",
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: 600,
+                        gap: 2,
                       }}
                     >
-                      {isUploadingProfilePic ? <Loader size="xs" color="white" /> : "Change"}
+                      {isUploadingProfilePic ? (
+                        <Loader size="xs" color="white" />
+                      ) : (
+                        <>
+                          <IconCamera size={18} />
+                          Edit
+                        </>
+                      )}
                     </Box>
                   ) : null}
                 </button>
@@ -434,6 +454,7 @@ export default function LSProfileHero({
               size={80}
               radius="xl"
               color="navy.7"
+              bg={profilePicURL ? undefined : "navy.7"}
               style={{ position: "relative", zIndex: 120 }}
             >
               {avatarInitials}
