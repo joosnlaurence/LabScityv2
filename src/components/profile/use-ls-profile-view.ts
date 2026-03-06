@@ -2,9 +2,10 @@
  * Custom hook that encapsulates all TanStack Query mutations and derived state
  * for the LSProfileView component, keeping the UI layer free of data logic.
  */
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createClient } from "@/supabase/client";
 import {
   useUserFollowers,
   useUserProfile,
@@ -69,6 +70,14 @@ export interface FollowProfileHeroProps {
   isFollowing: boolean;
   onToggleFollow: () => void;
   isTogglePending?: boolean;
+}
+
+/** Profile picture & banner upload props for the hero. */
+export interface ProfileMediaUploadProps {
+  onProfilePicSelect: (file: File | null) => void;
+  isUploadingProfilePic: boolean;
+  onProfileHeaderSelect: (file: File | null) => void;
+  isUploadingProfileHeader: boolean;
 }
 
 /** Build edit form initial values from profile (User) data. */
@@ -369,5 +378,171 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
     likeCommentAction,
   });
 
-  return { actions, editProfile, followProfile };
+  // --- Profile picture & banner upload ---
+
+  const allowedImageTypes = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ]);
+  const maxProfilePicBytes = 1024 * 1024;
+  const maxProfileHeaderBytes = 2 * 1024 * 1024;
+  const profilePicBucket = "profile_pictures";
+  const profileHeaderBucket = "profile_header";
+
+  const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
+  const [isUploadingProfileHeader, setIsUploadingProfileHeader] =
+    useState(false);
+
+  const handleProfilePicSelect = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      if (!allowedImageTypes.has(file.type)) {
+        notifications.show({
+          title: "Invalid file type",
+          message: "Only JPG, PNG, WEBP, and GIF images are allowed",
+          color: "red",
+        });
+        return;
+      }
+      if (file.size > maxProfilePicBytes) {
+        notifications.show({
+          title: "File too large",
+          message: "Profile picture must be 1 MB or smaller",
+          color: "red",
+        });
+        return;
+      }
+
+      setIsUploadingProfilePic(true);
+      try {
+        const uploadInfo =
+          await params.createProfilePictureUploadUrlAction(file.type);
+        if (!uploadInfo.success || !uploadInfo.data) {
+          throw new Error(
+            uploadInfo.error ?? "Could not prepare image upload",
+          );
+        }
+
+        const supabase = createClient();
+        const { error: uploadError } = await supabase.storage
+          .from(profilePicBucket)
+          .uploadToSignedUrl(
+            uploadInfo.data.path,
+            uploadInfo.data.token,
+            file,
+          );
+        if (uploadError) {
+          throw new Error(uploadError.message || "Image upload failed");
+        }
+
+        const updateResult = await params.updateOwnProfilePictureAction(
+          uploadInfo.data.path,
+        );
+        if (!updateResult.success) {
+          throw new Error(
+            updateResult.error ?? "Failed to save profile picture",
+          );
+        }
+
+        queryClient.invalidateQueries({ queryKey: profileKeys.user(userId) });
+        notifications.show({
+          title: "Profile picture updated",
+          message: "Your new profile picture has been saved.",
+          color: "green",
+        });
+      } catch (error: unknown) {
+        notifications.show({
+          title: "Could not update profile picture",
+          message:
+            error instanceof Error ? error.message : "Something went wrong",
+          color: "red",
+        });
+      } finally {
+        setIsUploadingProfilePic(false);
+      }
+    },
+    [params, queryClient, userId],
+  );
+
+  const handleProfileHeaderSelect = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      if (!allowedImageTypes.has(file.type)) {
+        notifications.show({
+          title: "Invalid file type",
+          message: "Only JPG, PNG, WEBP, and GIF images are allowed",
+          color: "red",
+        });
+        return;
+      }
+      if (file.size > maxProfileHeaderBytes) {
+        notifications.show({
+          title: "File too large",
+          message: "Banner image must be 2 MB or smaller",
+          color: "red",
+        });
+        return;
+      }
+
+      setIsUploadingProfileHeader(true);
+      try {
+        const uploadInfo =
+          await params.createProfileHeaderUploadUrlAction(file.type);
+        if (!uploadInfo.success || !uploadInfo.data) {
+          throw new Error(
+            uploadInfo.error ?? "Could not prepare image upload",
+          );
+        }
+
+        const supabase = createClient();
+        const { error: uploadError } = await supabase.storage
+          .from(profileHeaderBucket)
+          .uploadToSignedUrl(
+            uploadInfo.data.path,
+            uploadInfo.data.token,
+            file,
+          );
+        if (uploadError) {
+          throw new Error(uploadError.message || "Image upload failed");
+        }
+
+        const updateResult = await params.updateOwnProfileHeaderAction(
+          uploadInfo.data.path,
+        );
+        if (!updateResult.success) {
+          throw new Error(updateResult.error ?? "Failed to save banner");
+        }
+
+        queryClient.invalidateQueries({ queryKey: profileKeys.user(userId) });
+        notifications.show({
+          title: "Banner updated",
+          message: "Your new banner has been saved.",
+          color: "green",
+        });
+      } catch (error: unknown) {
+        notifications.show({
+          title: "Could not update banner",
+          message:
+            error instanceof Error ? error.message : "Something went wrong",
+          color: "red",
+        });
+      } finally {
+        setIsUploadingProfileHeader(false);
+      }
+    },
+    [params, queryClient, userId],
+  );
+
+  const mediaUpload: ProfileMediaUploadProps | undefined = isOwnProfile
+    ? {
+        onProfilePicSelect: handleProfilePicSelect,
+        isUploadingProfilePic,
+        onProfileHeaderSelect: handleProfileHeaderSelect,
+        isUploadingProfileHeader,
+      }
+    : undefined;
+
+  return { actions, editProfile, followProfile, mediaUpload };
 }
