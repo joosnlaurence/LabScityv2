@@ -1,4 +1,4 @@
-import { ActionIcon, Avatar, Box, Card, Flex, Group, Menu, Paper, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
+import { Image, ActionIcon, Avatar, Box, Card, Flex, Group, Menu, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import {
   IconDots,
@@ -7,6 +7,7 @@ import {
   IconMessageCircle,
   IconShare3,
 } from "@tabler/icons-react";
+import linkClasses from "./user-name-link.module.css";
 
 interface PostCardProps {
   userId?: string;
@@ -65,7 +66,7 @@ export function PostCard({
       <Stack gap={-1}>
         {/* name of the poster, audience label ( ??? )*/}
         {userId ? (
-          <Link href={`/profile/${userId}`} style={{ textDecoration: "none", color: "inherit" }}>
+          <Link href={`/profile/${userId}`} className={linkClasses.nameLink} style={{ color: "inherit" }}>
             <Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
               {userName}
               {audienceLabel ? (
@@ -137,7 +138,6 @@ export function PostCard({
         {/* post media */}
         {mediaUrl ? (
           <Flex
-            bg="navy.7"
             c="navy.0"
             mih={180}
             justify="center"
@@ -145,7 +145,7 @@ export function PostCard({
             fw={600}
             style={{ letterSpacing: "0.3px", overflow: "hidden" }}
           >
-            <img src={mediaUrl} alt="Post attachment" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <Image src={mediaUrl} alt="Post attachment" radius="md" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </Flex>
         ) : mediaLabel ? (
           <Flex
