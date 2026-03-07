@@ -228,12 +228,14 @@ const LSProfileMobileLayout = ({
       />
       <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
       <LSMiniProfileList widgetTitle="Following" profiles={following ?? []} />
-      <Box
+      <Stack
         component="ul"
+        gap="lg"
+        w="100%"
         style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}
       >
         {listPosts}
-      </Box>
+      </Stack>
       {hasNextPage ? (
         <Button
           variant="subtle"
@@ -416,12 +418,14 @@ const LSProfileDesktopLayout = ({
       </Flex>
       <Divider my={20} color="navy.1" />
       <Stack mt={20} px="20%">
-        <Box
+        <Stack
           component="ul"
+          gap="lg"
+          w="100%"
           style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}
         >
           {listPosts}
-        </Box>
+        </Stack>
         {hasNextPage ? (
           <Button
             variant="subtle"
