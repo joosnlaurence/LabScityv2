@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 import { useState } from "react";
 import { getFeed } from "@/lib/actions/feed";
@@ -45,6 +45,8 @@ export function useHomeFeed({
   } = useQuery({
     queryKey: feedKeys.list(defaultFeedFilter),
     queryFn: async () => {
+      // await new Promise((resolve) => setTimeout(resolve, 5000))
+
       const result = await getFeed(defaultFeedFilter);
       if (!result.success || !result.data) {
         throw new Error(result.error ?? "Failed to fetch feed");
@@ -186,10 +188,24 @@ export function useHomeFeed({
       }
       return result;
     },
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({queryKey: feedKeys.all });
+      const prevFeed = queryClient.getQueryData(feedKeys.list(defaultFeedFilter));
+      
+      queryClient.setQueryData(feedKeys.list(defaultFeedFilter), (old: any) => ({
+        ...old,
+        posts: old.posts.map((post: any) =>
+          post.id === postId ? { ...post, isLiked: !post.isLiked } : post
+        ),
+      }));
+
+      return { prevFeed };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
-    onError: (error) => {
+    onError: (error, postId, context) => {
+      queryClient.setQueryData(feedKeys.list(defaultFeedFilter), context?.prevFeed);
       notifications.show({
         title: "Could not update like",
         message: error instanceof Error ? error.message : "Something went wrong",

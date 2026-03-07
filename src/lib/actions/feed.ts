@@ -702,7 +702,7 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 
 		if (!posts || posts.length === 0) {
 			// No posts this month, return array filled with #FeedMeMorePosts
-			const hashtags = Array(5).fill("#FeedMeMorePosts");
+			const hashtags = Array(5).fill("FeedMeMorePosts");
 			return { success: true, data: { hashtags } };
 		}
 
@@ -733,7 +733,7 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 		const topFields = fieldRankings
 			.sort((a, b) => b.score - a.score)
 			.slice(0, 5)
-			.map(({ field }) => `#${field}`);
+			.map(({ field }) => `${field}`);
 
 		// Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
 		const hashtags = [

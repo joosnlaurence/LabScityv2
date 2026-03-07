@@ -159,7 +159,7 @@ export default function LSPost({
             </Text>
           </Box>
         </Box>
-        <Text c="navy.7" size="sm" my={12} style={{ lineHeight: 1.2 }}>
+        <Text c="navy.7" size="sm" my={12} style={{ lineHeight: 1.2, wordBreak: 'break-word' }}>
           {postText}
         </Text>
         {/* image preview */}

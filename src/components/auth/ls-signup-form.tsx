@@ -72,11 +72,12 @@ export function LSSignupForm({
   // check if we are on mobile to change some layout stuff around
   const isMobile = useIsMobile()
 
+  console.log(isMobile);
   return (
     <Paper
-      maw={isMobile ? "90%" : "30%"} // limit box size on larger screen 
+      maw={isMobile ? "500px" : "700px"} // limit box size on larger screen 
       bg="navy.0"
-      p="2rem"
+      p="1rem 3rem"
       style={{ borderRadius: "0.625rem" }}
     >
       <form onSubmit={form.handleSubmit(onSubmit)}>

@@ -9,6 +9,7 @@ import { PostCommentCard } from "@/components/feed/post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import type { HomeFeedProps } from "@/components/feed/home-feed.types";
+import HomeFeedSkeleton from "./home-feed-skeleton";
 
 export function HomeFeed(props: HomeFeedProps) {
   const {
@@ -31,8 +32,10 @@ export function HomeFeed(props: HomeFeedProps) {
     handleToggleCommentLike,
   } = useHomeFeed(props);
 
+  if (isFeedLoading) return <HomeFeedSkeleton />
+
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" miw='100%'>
       <ReportOverlay
         open={reportTarget !== null}
         title={reportTarget?.type === "post" ? "Report post" : "Report comment"}
@@ -83,6 +86,7 @@ export function HomeFeed(props: HomeFeedProps) {
         c="gray.0"
         fw={700}
         bg="navy.8"
+        miw='100%'
         onClick={() => setIsComposerOpen((open) => !open)}
       >
         New Post
@@ -96,17 +100,13 @@ export function HomeFeed(props: HomeFeedProps) {
         />
       ) : null}
 
-      {isFeedLoading ? (
-        <Text size="sm" c="dimmed">
-          Loading feed...
-        </Text>
-      ) : isFeedError ? (
+      {isFeedError ? (
         <Text size="sm" c="red">
           {feedError instanceof Error ? feedError.message : "Failed to load feed"}
         </Text>
       ) : null}
 
-      <Stack gap="lg" w="100%">
+      <Stack gap="lg">
         {posts.map((post) => (
           <PostCard
             key={post.id}

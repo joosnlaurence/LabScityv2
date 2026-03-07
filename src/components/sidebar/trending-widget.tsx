@@ -1,40 +1,16 @@
-"use client";
-
 import { Card, Text, Stack, Flex, Badge } from "@mantine/core";
-import { useEffect, useState } from "react";
 import { getTrendingScientificFields } from "@/lib/actions/feed";
-import { LSSpinner } from "../ui/ls-spinner";
+import Hashtag from "./hashtag";
 
-interface TrendingWidgetProps {
-  hashtags?: string[];
-}
-
-export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProps) {
-  const [hashtags, setHashtags] = useState<string[]>(initialHashtags || []);
-  const [isLoading, setIsLoading] = useState(!initialHashtags);
-
-  useEffect(() => {
-    if (initialHashtags) return; // Use provided hashtags if available
-
-    const fetchTrendingFields = async () => {
-      try {
-        const result = await getTrendingScientificFields();
-        if (result.success && result.data) {
-          setHashtags(result.data.hashtags);
-        } else {
-          // Fallback if fetch fails
-          setHashtags(Array(5).fill("#FeedMeMorePosts"));
-        }
-      } catch {
-        // Fallback if fetch fails
-        setHashtags(Array(5).fill("#FeedMeMorePosts"));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTrendingFields();
-  }, [initialHashtags]);
+export async function TrendingWidget() {
+  let hashtags: string[] = Array(5).fill('FeedMeMorePosts');;
+  
+  try {
+    const res = await getTrendingScientificFields();
+    if(res.success && res.data) {
+      hashtags = res.data.hashtags;
+    }
+  } catch {}
 
   return (
     <Card
@@ -53,30 +29,13 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
         >
           Trending
         </Text>
-        {/* the hashtags */}
-        {isLoading ? (
-          <Flex justify="center" py="sm">
-            <LSSpinner />
-          </Flex>
-        ) : (
           <Flex wrap="wrap" gap={6} justify="flex-start">
             {
               hashtags.map((hashtag, index) => (
-                <Badge
-                  key={index}
-                  color="gray.7"
-                  fw="normal"
-                  fz="sm"
-                  p={12}
-                  tt="lowercase"
-                  variant="outline"
-                >
-                  {hashtag}
-                </Badge>
+                <Hashtag key={index} hashtag={hashtag}/>
               ))
             }
           </Flex>
-        )}
       </Stack>
     </Card >
   );

@@ -133,7 +133,9 @@ export function PostCard({
         </Box>
 
         {/* post content*/}
-        <Text fz="sm" c="navy.7">{content}</Text>
+        <Text fz="sm" c="navy.7" style={{ wordBreak: "break-word" }}>
+          {content}
+        </Text>
 
         {/* post media */}
         {mediaUrl ? (

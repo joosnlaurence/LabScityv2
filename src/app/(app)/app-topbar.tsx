@@ -8,7 +8,6 @@ import {
   Divider,
   Flex,
   Group,
-  Image,
   Menu,
   Modal,
   Paper,
@@ -18,6 +17,7 @@ import {
   TextInput,
   UnstyledButton,
 } from "@mantine/core";
+import Image from 'next/image';
 import { useDebouncedValue } from "@mantine/hooks";
 import {
   IconBell,
@@ -222,7 +222,7 @@ const LSAppTopBar = () => {
 
   /* to fix layout stuff */
 
-  const topBarSize = 60 // honestly im not sure what to name this but whatever
+  const topBarHeight = 60 // honestly im not sure what to name this but whatever
   const desktopSearchDropdownSize = 512
 
   /*---------------------*/
@@ -232,8 +232,8 @@ const LSAppTopBar = () => {
       pos="sticky"
       bg="gray.0"
       top={0}
-      left={isMobile ? 0 : topBarSize}
-      h={topBarSize}
+      left={isMobile ? 0 : topBarHeight}
+      h={topBarHeight}
       w={"100%"}
       justify="center"
       align="center"
@@ -244,7 +244,7 @@ const LSAppTopBar = () => {
     >
       {searchOpen ? (
         /* Search mode: full-width input */
-        <Flex h={topBarSize} w="100%" align="center" gap="xs" px="md">
+        <Flex h={topBarHeight} w="100%" align="center" gap="xs" px="md">
           {/* NOTE: there used to be a search icon here but i nuked it cuz it looks bad */}
 
           {/* search input field */}
@@ -286,7 +286,17 @@ const LSAppTopBar = () => {
           </Flex>
 
           {/* logo */}
-          <Image src="/logo-lightgray.png" w="auto" h="64%" />
+          <Link href="/home" style={{display: 'flex', alignItems:'center', height:'100%'}}>
+              <Image 
+                src="/logo-lightgray.png"
+                width={500}
+                height={60}
+                style={{width: 'auto', height: '38px', margin: '11px'}}
+                alt='LabScity Logo'
+                priority={true}
+              />
+          </Link>
+          
 
           {/* anchored to right of topbar */}
           <Flex direction="row" pos="absolute" right={0} align="center">
@@ -390,7 +400,7 @@ const LSAppTopBar = () => {
         showDropdown && (
           <Paper
             pos="absolute"
-            top={topBarSize}
+            top={topBarHeight}
             shadow="xl"
             w={isMobile ? "100%" : desktopSearchDropdownSize}
             mah="60vh"
