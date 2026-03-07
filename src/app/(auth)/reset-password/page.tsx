@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -19,7 +19,7 @@ const inputStyles = {
   color: "var(--mantine-color-navy-7)",
 };
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const [newPassword, setNewPassword] = useState("");
@@ -202,5 +202,13 @@ export default function ResetPasswordPage() {
         </form>
       )}
     </Paper>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
