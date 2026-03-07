@@ -14,6 +14,7 @@ import {
   type CreateReportValues,
 } from "@/lib/validations/post";
 import type { HomeFeedProps } from "./home-feed.types";
+// import { stopCoverageInsideWorker } from "vitest/internal/browser";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 const maxPostImageBytes = 5 * 1024 * 1024;
@@ -95,6 +96,7 @@ export function useHomeFeed({
       if (!result.success) {
         throw new Error(result.error ?? "Failed to create post");
       }
+      
       return result;
     },
     onSuccess: () => {

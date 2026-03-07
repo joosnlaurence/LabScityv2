@@ -738,7 +738,7 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 		// Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
 		const hashtags = [
 			...topFields,
-			...Array(Math.max(0, 5 - topFields.length)).fill("#FeedMeMorePosts"),
+			...Array(Math.max(0, 5 - topFields.length)).fill("FeedMeMorePosts"),
 		];
 
 		return { success: true, data: { hashtags } };

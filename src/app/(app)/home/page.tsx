@@ -34,7 +34,7 @@ export default async function HomePage() {
         </Flex>
         
         {/* trending + sidecards */}
-        <Flex flex={4} miw={{ base: "100%", sm: 'auto'}}> {/* mobile miw makes box take full width */}
+        <Flex flex={4} miw={{ base: "100%", sm: 'auto'}}>
           <Suspense fallback={<TrendingWidgetSkeleton />}>
             <TrendingWidget />
           </Suspense>

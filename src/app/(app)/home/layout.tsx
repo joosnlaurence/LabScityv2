@@ -5,7 +5,6 @@ export default function HomeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const isMobile = useIsMobile()
 
   return (
     <Box mih="100vh" bg="gray.0">
