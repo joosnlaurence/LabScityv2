@@ -489,3 +489,46 @@ export async function removeMember(
 		return { success: false, error: "Failed to remove member" };
 	}
 }
+
+/**
+ * Permanently delete a group. Admin-only destructive action that removes all
+ * group posts (and their comments, likes, reports), members, invites, the
+ * linked conversation (with messages), and finally the group row itself.
+ * Uses the `delete_group` RPC which enforces admin authorization via
+ * `auth.uid()` and handles the full FK-safe cascading delete.
+ *
+ * @param groupId - The ID of the group to delete
+ * @returns Promise resolving to DataResponse indicating success or failure
+ */
+export async function deleteGroup(
+	groupId: number,
+): Promise<DataResponse<null>> {
+	try {
+		groupIdSchema.parse(groupId);
+
+		const supabase = await createClient();
+		const { data: authData } = await supabase.auth.getUser();
+
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
+
+		const { error: rpcError } = await supabase.rpc("delete_group", {
+			target_group_id: groupId,
+		});
+
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
+
+		return { success: true, data: null };
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message ?? "Validation failed",
+			};
+		}
+		return { success: false, error: "Failed to delete group" };
+	}
+}
