@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+	Avatar,
 	Box,
 	Button,
 	Center,
@@ -18,10 +19,10 @@ import {
 	IconMessageCircle,
 	IconSettings,
 	IconLogout,
+	IconTrash,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
-import LSProfileHero from "@/components/profile/ls-profile-hero";
 import { useAuth } from "@/components/auth/use-auth";
 import type { User } from "@/lib/types/feed";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -44,6 +45,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 		createGroupAction,
 		joinGroupAction,
 		leaveGroupAction,
+		deleteGroupAction,
 		addMemberByEmailAction,
 		removeMemberAction,
 		createPostAction,
@@ -58,6 +60,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 	const router = useRouter();
 	const { user } = useAuth();
 	const [leaveConfirmOpened, setLeaveConfirmOpened] = useState(false);
+	const [deleteConfirmOpened, setDeleteConfirmOpened] = useState(false);
 	const {
 		groups,
 		isGroupsLoading,
@@ -73,6 +76,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 		openManageMembers,
 		closeManageMembers,
 		leaveMutation,
+		deleteGroupMutation,
 		addMemberMutation,
 		removeMemberMutation,
 		handleGroupCreated,
@@ -94,6 +98,12 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 		setLeaveConfirmOpened(false);
 	};
 
+	const handleDeleteConfirm = () => {
+		if (!activeGroupId) return;
+		deleteGroupMutation.mutate(activeGroupId);
+		setDeleteConfirmOpened(false);
+	};
+
 	const memberProfiles: User[] = (groupDetails?.members ?? []).map((m) => ({
 		user_id: m.user_id,
 		first_name: m.first_name ?? "",
@@ -112,6 +122,13 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 		/>
 	);
 
+	const groupInitials = groupDetails?.name
+		.split(" ")
+		.filter(Boolean)
+		.map((w) => w[0])
+		.slice(0, 2)
+		.join("") ?? "";
+
 	const contentNode = activeGroupId && groupDetails ? (
 		<Stack gap="md">
 			<Flex
@@ -121,13 +138,28 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 				gap={8}
 			>
 				<Box flex={5}>
-					<LSProfileHero
-						profileName={groupDetails.name}
-						profileResearchInterest=""
-						profileAbout={groupDetails.description}
-						profileSkill={[]}
-						isOwnProfile={false}
-					/>
+					<Paper p="lg" radius="md" shadow="sm" bg="white">
+						<Group gap="md" align="flex-start">
+							<Avatar
+								size={72}
+								radius="xl"
+								color="navy.7"
+								bg="navy.7"
+							>
+								{groupInitials}
+							</Avatar>
+							<Stack gap={4} style={{ flex: 1 }}>
+								<Text size="xl" fw={600} c="navy.7">
+									{groupDetails.name}
+								</Text>
+								{groupDetails.description && (
+									<Text c="navy.7">
+										{groupDetails.description}
+									</Text>
+								)}
+							</Stack>
+						</Group>
+					</Paper>
 				</Box>
 				<Box flex={3}>
 					<Stack gap="xs">
@@ -162,16 +194,29 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 										Manage
 									</Button>
 								)}
-								<Button
-									variant="light"
-									color="red"
-									leftSection={<IconLogout size={16} />}
-									onClick={() => setLeaveConfirmOpened(true)}
-									loading={leaveMutation.isPending}
-									style={{ flex: 1 }}
-								>
-									Leave
-								</Button>
+								{isAdmin ? (
+									<Button
+										variant="light"
+										color="red"
+										leftSection={<IconTrash size={16} />}
+										onClick={() => setDeleteConfirmOpened(true)}
+										loading={deleteGroupMutation.isPending}
+										style={{ flex: 1 }}
+									>
+										Delete Group
+									</Button>
+								) : (
+									<Button
+										variant="light"
+										color="red"
+										leftSection={<IconLogout size={16} />}
+										onClick={() => setLeaveConfirmOpened(true)}
+										loading={leaveMutation.isPending}
+										style={{ flex: 1 }}
+									>
+										Leave
+									</Button>
+								)}
 							</Group>
 						)}
 					</Stack>
@@ -254,6 +299,39 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
 							loading={leaveMutation.isPending}
 						>
 							Leave Group
+						</Button>
+					</Group>
+				</Stack>
+			</Modal>
+
+			{/* Delete group confirmation */}
+			<Modal
+				opened={deleteConfirmOpened}
+				onClose={() => setDeleteConfirmOpened(false)}
+				title="Delete Group"
+				size="sm"
+				centered
+			>
+				<Stack gap="md">
+					<Text size="sm">
+						Are you sure you want to permanently delete{" "}
+						<Text span fw={600}>{groupDetails?.name}</Text>?
+						All posts, comments, messages, and members will be
+						removed. This action cannot be undone.
+					</Text>
+					<Group justify="flex-end" gap="xs">
+						<Button
+							variant="default"
+							onClick={() => setDeleteConfirmOpened(false)}
+						>
+							Cancel
+						</Button>
+						<Button
+							color="red"
+							onClick={handleDeleteConfirm}
+							loading={deleteGroupMutation.isPending}
+						>
+							Delete Group
 						</Button>
 					</Group>
 				</Stack>
