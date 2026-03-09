@@ -1,6 +1,7 @@
 import type {
 	addMemberByEmail,
 	createGroup,
+	deleteGroup,
 	joinGroup,
 	leaveGroup,
 	removeMember,
@@ -18,6 +19,7 @@ export type CreateGroupAction = typeof createGroup;
 export type JoinGroupAction = typeof joinGroup;
 export type LeaveGroupAction = typeof leaveGroup;
 export type AddMemberByEmailAction = typeof addMemberByEmail;
+export type DeleteGroupAction = typeof deleteGroup;
 export type RemoveMemberAction = typeof removeMember;
 export type CreatePostAction = typeof createPost;
 export type CreatePostImageUploadUrlAction = typeof createPostImageUploadUrl;
@@ -32,6 +34,7 @@ export interface LSGroupLayoutProps {
 	joinGroupAction: JoinGroupAction;
 	leaveGroupAction: LeaveGroupAction;
 	addMemberByEmailAction: AddMemberByEmailAction;
+	deleteGroupAction: DeleteGroupAction;
 	removeMemberAction: RemoveMemberAction;
 	createPostAction: CreatePostAction;
 	createPostImageUploadUrlAction: CreatePostImageUploadUrlAction;
