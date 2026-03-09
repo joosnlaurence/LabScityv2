@@ -2,9 +2,13 @@
 
 import { z } from "zod";
 import {
+	addMemberSchema,
 	createGroupSchema,
 	groupIdSchema,
+	removeMemberSchema,
+	type AddMemberValues,
 	type CreateGroupValues,
+	type RemoveMemberValues,
 } from "@/lib/validations/groups";
 import { createClient } from "@/supabase/server";
 import type { DataResponse } from "@/lib/types/data";
@@ -359,5 +363,111 @@ export async function leaveGroup(
 			};
 		}
 		return { success: false, error: "Failed to leave group" };
+	}
+}
+
+/**
+ * Add a member to a group by their email address. Only group Admins may call
+ * this. Uses the `add_group_member` RPC which verifies admin status via
+ * `auth.uid()` and handles both `group_members` and `conversation_participants`.
+ *
+ * @param values - Object containing groupId and email
+ * @returns Promise resolving to DataResponse indicating success or failure
+ */
+export async function addMemberByEmail(
+	values: AddMemberValues,
+): Promise<DataResponse<null>> {
+	try {
+		const parsed = addMemberSchema.parse(values);
+
+		const supabase = await createClient();
+		const { data: authData } = await supabase.auth.getUser();
+
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
+
+		const { data: targetUser, error: lookupError } = await supabase
+			.from("users")
+			.select("user_id")
+			.eq("email", parsed.email)
+			.single();
+
+		if (lookupError || !targetUser) {
+			return { success: false, error: "No user found with that email address" };
+		}
+
+		const { data: existingMember } = await supabase
+			.from("group_members")
+			.select("user_id")
+			.eq("group_id", parsed.groupId)
+			.eq("user_id", targetUser.user_id)
+			.single();
+
+		if (existingMember) {
+			return { success: false, error: "This user is already a member of the group" };
+		}
+
+		const { error: rpcError } = await supabase.rpc("add_group_member", {
+			target_group_id: parsed.groupId,
+			target_user_id: targetUser.user_id,
+		});
+
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
+
+		return { success: true, data: null };
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message ?? "Validation failed",
+			};
+		}
+		return { success: false, error: "Failed to add member" };
+	}
+}
+
+/**
+ * Remove a member from a group. Only group Admins may call this, and Admins
+ * cannot be removed. Uses the `remove_group_member` RPC which verifies admin
+ * status via `auth.uid()` and handles both `group_members` and
+ * `conversation_participants`.
+ *
+ * @param values - Object containing groupId and targetUserId
+ * @returns Promise resolving to DataResponse indicating success or failure
+ */
+export async function removeMember(
+	values: RemoveMemberValues,
+): Promise<DataResponse<null>> {
+	try {
+		const parsed = removeMemberSchema.parse(values);
+
+		const supabase = await createClient();
+		const { data: authData } = await supabase.auth.getUser();
+
+		if (!authData.user) {
+			return { success: false, error: "Authentication required" };
+		}
+
+		const { error: rpcError } = await supabase.rpc("remove_group_member", {
+			target_group_id: parsed.groupId,
+			target_user_id: parsed.targetUserId,
+		});
+
+		if (rpcError) {
+			return { success: false, error: rpcError.message };
+		}
+
+		return { success: true, data: null };
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message ?? "Validation failed",
+			};
+		}
+		return { success: false, error: "Failed to remove member" };
 	}
 }
