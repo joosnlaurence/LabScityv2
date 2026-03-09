@@ -44,8 +44,8 @@ async function integration_test_data_ts() {
   console.log("result6: ", result6);
   console.log("result7: ", result7);
 
-  const result8 = await searchForUsers({ query: "Liam" }, supabaseAdmin)
-  const result9 = await searchForPosts({ query: "quokka" }, supabaseAdmin)
+  const result8 = await searchForUsers({ query: "Lixm Harvell" }, supabaseAdmin)
+  const result9 = await searchForPosts({ query: "qokka real" }, supabaseAdmin)
   const result10 = await searchForGroups({ query: "test" }, supabaseAdmin)
 
   console.log("result8: ", result8)

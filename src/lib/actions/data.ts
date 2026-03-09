@@ -396,7 +396,7 @@ export async function searchForUsers(input: SearchInput, supabaseClient?: Supaba
     const formattedQuery = formatQuery(input.query);
     const { data, error } = await supabase.rpc('search_users', { search_query: formattedQuery }).limit(querylimit)
     if (error) {
-      return { success: false, error: "Failed to search for users" }
+      return { success: false, error: "Failed to search for users: " + error.message }
     }
     return { success: true, data: data as User[] }
   } catch (error) {
@@ -428,7 +428,7 @@ export async function searchForPosts(input: SearchInput, supabaseClient?: Supaba
     const formattedQuery = formatQuery(input.query);
     const { data, error } = await supabase.rpc('search_posts', { search_query: formattedQuery }).limit(querylimit)
     if (error) {
-      return { success: false, error: "Failed to search for posts" }
+      return { success: false, error: "Failed to search for posts: " + error.message }
     }
     return { success: true, data: data as Post[] }
   } catch (error) {
@@ -460,7 +460,7 @@ export async function searchForGroups(input: SearchInput, supabaseClient?: Supab
     const formattedQuery = formatQuery(input.query);
     const { data, error } = await supabase.rpc('search_groups', { search_query: formattedQuery }).limit(querylimit)
     if (error) {
-      return { success: false, error: "Failed to search for groups" }
+      return { success: false, error: "Failed to search for groups: " + error.message }
     }
     return { success: true, data: data as Group[] }
   } catch (error) {
