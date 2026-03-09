@@ -39,3 +39,12 @@ export const postKeys = {
   all: ["post"] as const,
   detail: (post_id: string) => [...postKeys.all, "detail", post_id] as const,
 };
+
+export const groupKeys = {
+  all: ["groups"] as const,
+  list: () => [...groupKeys.all, "list"] as const,
+  detail: (groupId: number) =>
+    [...groupKeys.all, "detail", groupId] as const,
+  feed: (groupId: number, filter: FeedFilterValues) =>
+    [...groupKeys.all, "feed", groupId, filter] as const,
+};
