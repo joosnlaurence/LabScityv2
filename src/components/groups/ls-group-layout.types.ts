@@ -1,7 +1,9 @@
 import type {
+	addMemberByEmail,
 	createGroup,
 	joinGroup,
 	leaveGroup,
+	removeMember,
 } from "@/lib/actions/groups";
 import type {
 	createComment,
@@ -15,6 +17,8 @@ import type {
 export type CreateGroupAction = typeof createGroup;
 export type JoinGroupAction = typeof joinGroup;
 export type LeaveGroupAction = typeof leaveGroup;
+export type AddMemberByEmailAction = typeof addMemberByEmail;
+export type RemoveMemberAction = typeof removeMember;
 export type CreatePostAction = typeof createPost;
 export type CreatePostImageUploadUrlAction = typeof createPostImageUploadUrl;
 export type CreateCommentAction = typeof createComment;
@@ -27,6 +31,8 @@ export interface LSGroupLayoutProps {
 	createGroupAction: CreateGroupAction;
 	joinGroupAction: JoinGroupAction;
 	leaveGroupAction: LeaveGroupAction;
+	addMemberByEmailAction: AddMemberByEmailAction;
+	removeMemberAction: RemoveMemberAction;
 	createPostAction: CreatePostAction;
 	createPostImageUploadUrlAction: CreatePostImageUploadUrlAction;
 	createCommentAction: CreateCommentAction;
