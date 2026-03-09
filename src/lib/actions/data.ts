@@ -338,19 +338,14 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
 
   try {
 
+    console.log(input)
     const supabase = supabaseClient || await createClient();
     // Default to a limit of ten?
     const querylimit = input.limit || 10;
     const formattedQuery = formatQuery(input.query);
 
-    const { data, error: dbError } = await supabase
-      // NOTE: user_generated_content_search is a virtual table (a VIEW) on the db.
-      // TODO: remove * when table is finalized
-      .from('user_generated_content_search')
-      .select('*')
-      .textSearch('tsv', formattedQuery, {
-        config: 'english',
-      }).limit(querylimit);
+    const { data, error: dbError } = await supabase.rpc('search_all_content', { search_query: formattedQuery }).limit(querylimit);
+    console.log(data)
 
     if (dbError) {
       console.error("Failed to retreive search results: ", dbError);
