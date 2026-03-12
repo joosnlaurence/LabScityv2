@@ -182,9 +182,7 @@ function useProfilePostActions(
       if (!result.success) throw new Error(result.error ?? "Failed to delete post");
       return result;
     },
-    onMutate: async (postId: string) => {
-      await queryClient.cancelQueries({ queryKey: profileKeys.posts(userId) });
-      const snapshot = queryClient.getQueryData(profileKeys.posts(userId));
+    onSuccess: (_result, postId) => {
       queryClient.setQueryData(profileKeys.posts(userId), (old: any) => {
         if (!old) return old;
         return {
@@ -195,12 +193,8 @@ function useProfilePostActions(
           })),
         };
       });
-      return { snapshot };
     },
-    onError: (error: unknown, _postId: string, context: any) => {
-      if (context?.snapshot) {
-        queryClient.setQueryData(profileKeys.posts(userId), context.snapshot);
-      }
+    onError: (error: unknown) => {
       notifications.show({
         title: "Could not delete post",
         message: error instanceof Error ? error.message : "Something went wrong",

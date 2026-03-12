@@ -225,19 +225,13 @@ export function useHomeFeed({
       if (!result.success) throw new Error(result.error ?? "Failed to delete post");
       return result;
     },
-    onMutate: async (postId: string) => {
-      await queryClient.cancelQueries({ queryKey: feedKeys.list(defaultFeedFilter) });
-      const snapshot = queryClient.getQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter));
+    onSuccess: (_result, postId) => {
       queryClient.setQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter), (old) => {
         if (!old) return old;
         return { ...old, posts: old.posts.filter((p) => p.id !== postId) };
       });
-      return { snapshot };
     },
-    onError: (error, _postId, context) => {
-      if (context?.snapshot) {
-        queryClient.setQueryData(feedKeys.list(defaultFeedFilter), context.snapshot);
-      }
+    onError: (error) => {
       notifications.show({
         title: "Could not delete post",
         message: error instanceof Error ? error.message : "Something went wrong",
