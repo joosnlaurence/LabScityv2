@@ -1,4 +1,4 @@
-import { User } from '@/lib/types/feed'
+import { FeedCommentItem, User } from '@/lib/types/feed'
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -9,7 +9,24 @@ export interface Post {
   media_url?: string | null;
   created_at: string;
   category?: string;
+  scientific_field?: string | null;
   like_amount: number;
+  isLiked?: boolean;
+  comments?: FeedCommentItem[];
+}
+
+export interface Group {
+  group_id: number;
+  name: string;
+  description: string | null;
+  created_at: string; // ISO 8601 string from 'timestamp with time zone'
+  conversation_id: number | null;
+  topics: string[] | null;
+  last_activity_at: string | null;
+  privacy: 'public' | 'private' | null;
+  avatar_url: string | null;
+  cover_photo_url: string | null;
+  rules: string | null;
 }
 
 /** Extended post with optional author information */
