@@ -24,7 +24,7 @@ import {
 import { IconSend, IconInfoCircle, IconPlus } from '@tabler/icons-react'
 import { useParams } from 'next/navigation'
 import { ChatPreview, getChatsWithPreview, getOldMessages } from '@/lib/actions/chat'
-import { useCreateChat } from '@/components/chat/use-chat'
+import { useCreateChat, useLeaveConversation } from '@/components/chat/use-chat'
 
 interface Message {
   id: number
@@ -56,6 +56,9 @@ export default function ChatPage() {
 
   // -- NEW CHAT MUTATION --
   const createChatMutation = useCreateChat()
+
+  // -- LEAVE CHAT MUTATION --
+  const leaveConversationMutation = useLeaveConversation()
 
   // -- REFS --
   const viewport = useRef<HTMLDivElement>(null)
@@ -370,6 +373,18 @@ export default function ChatPage() {
                   onClick={() => {/* TODO: delete chat */}}
                 >
                   Delete Chat
+                </Button>
+                <Button
+                  fullWidth
+                  color="navy.7"
+                  variant="light"
+                  radius="xl"
+                  loading={leaveConversationMutation.isPending}
+                  onClick={() => leaveConversationMutation.mutate(parseInt(chat_id), {
+                    onSuccess: () => setInfoModalOpen(false)
+                  })}
+                >
+                  Leave Chat
                 </Button>
               </Stack>
             </Modal>
