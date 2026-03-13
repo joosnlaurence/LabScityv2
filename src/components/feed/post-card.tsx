@@ -1,4 +1,5 @@
-import { Image, ActionIcon, Avatar, Box, Card, Flex, Group, Menu, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Avatar, Box, Card, Flex, Group, Menu, SimpleGrid, Stack, Text, UnstyledButton, AspectRatio } from "@mantine/core";
+import Image from 'next/image';
 import Link from "next/link";
 import {
   IconDots,
@@ -17,6 +18,8 @@ interface PostCardProps {
   content: string;
   mediaLabel?: string | null;
   mediaUrl?: string | null;
+  mediaWidth?: number | undefined;
+  mediaHeight?: number | undefined;
   avatarUrl?: string | null;
   onCommentClick?: () => void;
   onLikeClick?: () => void;
@@ -37,6 +40,8 @@ export function PostCard({
   content,
   mediaLabel,
   mediaUrl,
+  mediaWidth,
+  mediaHeight,
   avatarUrl,
   onCommentClick,
   onLikeClick,
@@ -91,6 +96,8 @@ export function PostCard({
     </Group>
   );
 
+  const aspectRatio = (mediaUrl ? mediaWidth! / mediaHeight! : undefined);
+
   return (
     // post card
     <Card
@@ -139,16 +146,27 @@ export function PostCard({
 
         {/* post media */}
         {mediaUrl ? (
-          <Flex
-            c="navy.0"
-            mih={180}
-            justify="center"
-            align="center"
-            fw={600}
-            style={{ letterSpacing: "0.3px", overflow: "hidden" }}
+          <Box
+            pos="relative"
+            w='100%'
+            mah={600}
+            style={{
+              aspectRatio: `${mediaWidth! / mediaHeight!}`,
+              // paddingTop: `clamp(180px, ${(mediaHeight! / mediaWidth!) * 100}%, 600px)`,
+              borderRadius: "var(--mantine-radius-lg)",
+              border: '1px solid var(--mantine-color-navy-0)',
+              backgroundColor: 'var(--mantine-color-navy-0)',
+              overflow: "hidden",
+            }}
           >
-            <Image src={mediaUrl} alt="Post attachment" radius="md" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          </Flex>
+            <Image
+              src={mediaUrl}
+              alt="Post attachment"
+              fill
+              style={{ objectFit: "contain" }}
+            />
+          </Box>
+
         ) : mediaLabel ? (
           <Flex
             bg="navy.7"

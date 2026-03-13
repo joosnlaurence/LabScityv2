@@ -106,6 +106,8 @@ export async function createPost(input: CreatePostValues, supabaseClient?: any) 
 				category: parsed.category,
 				text: parsed.content,
 				media_path: parsed.mediaPath ?? null,
+        media_width: parsed.mediaWidth ?? null,
+        media_height: parsed.mediaHeight ?? null
 			})
 			.select()
 			.single();
@@ -243,6 +245,8 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 				scientific_field,
 				user_id,
 				media_path,
+        media_width,
+        media_height,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				likes(user_id)
 			`
@@ -318,6 +322,8 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 			const mediaUrl = post.media_path
 				? supabase.storage.from(postMediaBucket).getPublicUrl(post.media_path).data.publicUrl
 				: null;
+      const mediaWidth: number | undefined = post.media_width;
+      const mediaHeight: number | undefined = post.media_height;
 			const postAvatarUrl = post.users?.profile_pic_path
 				? supabase.storage.from("profile_pictures").getPublicUrl(post.users.profile_pic_path).data.publicUrl
 				: null;
@@ -330,6 +336,8 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 			scientificField: post.scientific_field,
 			content: post.text,
 			mediaUrl,
+      mediaWidth,
+      mediaHeight,
 			timeAgo: getTimeAgo(post.created_at),
 			comments: comments.map((comment: any) => ({
 				id: comment.comment_id,

@@ -75,6 +75,7 @@ export function LSSignupForm({
   console.log(isMobile);
   return (
     <Paper
+      miw={400}
       maw={isMobile ? "500px" : "700px"} // limit box size on larger screen 
       bg="navy.0"
       p="1rem 3rem"
@@ -89,8 +90,8 @@ export function LSSignupForm({
             <Image
               src="/logo.png"
               alt="LabScity Logo"
-              width={200}
-              height={200}
+              width={320}
+              height={108}
               priority
               style={{ width: "auto", height: "auto", objectFit: "contain" }}
             />

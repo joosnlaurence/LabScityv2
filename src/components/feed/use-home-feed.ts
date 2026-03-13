@@ -14,7 +14,7 @@ import {
   type CreateReportValues,
 } from "@/lib/validations/post";
 import type { HomeFeedProps } from "./home-feed.types";
-// import { stopCoverageInsideWorker } from "vitest/internal/browser";
+import { getImageDims } from "@/lib/utils";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 const maxPostImageBytes = 5 * 1024 * 1024;
@@ -58,7 +58,11 @@ export function useHomeFeed({
 
   const createPostMutation = useMutation({
     mutationFn: async (values: CreatePostValues & { mediaFile?: File | null }) => {
-      let mediaPath: string | undefined;
+      let media: {mediaPath?: string, mediaWidth?: number, mediaHeight?: number} = {
+        mediaPath: undefined,
+        mediaWidth: undefined,
+        mediaHeight: undefined
+      };
 
       if (values.mediaFile) {
         if (!allowedImageMimeTypes.has(values.mediaFile.type)) {
@@ -83,14 +87,17 @@ export function useHomeFeed({
           throw new Error(uploadError.message || "Image upload failed");
         }
 
-        mediaPath = uploadInfo.data.path;
+        media.mediaPath = uploadInfo.data.path;
+        const { width, height } = await getImageDims(values.mediaFile);
+        media.mediaWidth = width;
+        media.mediaHeight = height;
       }
 
       const payload = {
         scientificField: values.scientificField,
         content: values.content,
         category: values.category,
-        mediaPath,
+        ...media,
       };
       const result = await createPostAction(payload);
       if (!result.success) {

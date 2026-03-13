@@ -13,6 +13,8 @@ export const createPostSchema = z.object({
 		message: "Category is required",
 	}),
 	mediaPath: z.string().min(1).optional(),
+  mediaWidth: z.number().optional(),
+  mediaHeight: z.number().optional()
 });
 
 export const feedFilterSchema = z.object({

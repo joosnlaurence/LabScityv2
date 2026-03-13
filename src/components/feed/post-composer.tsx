@@ -11,6 +11,8 @@ import {
 
 const postComposerSchema = createPostSchema.extend({
   mediaFile: z.any().optional().nullable(),
+  imageWidth: z.number().optional().nullable(),
+  imageHeight: z.number().optional().nullable()
 });
 
 const SCIENCE_CATEGORIES = [
@@ -77,6 +79,7 @@ export interface PostComposerProps {
 export function PostComposer({ onSubmit: onSubmitProp, isPending }: PostComposerProps) {
   const {
     control,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting, isValid },
     register,

@@ -35,7 +35,7 @@ export function HomeFeed(props: HomeFeedProps) {
   if (isFeedLoading) return <HomeFeedSkeleton />
 
   return (
-    <Stack gap="lg" miw='100%'>
+    <Stack gap="lg">
       <ReportOverlay
         open={reportTarget !== null}
         title={reportTarget?.type === "post" ? "Report post" : "Report comment"}
@@ -117,6 +117,8 @@ export function HomeFeed(props: HomeFeedProps) {
             timeAgo={post.timeAgo}
             content={post.content}
             mediaUrl={post.mediaUrl ?? null}
+            mediaWidth={post.mediaWidth}
+            mediaHeight={post.mediaHeight}
             mediaLabel={post.mediaLabel ?? null}
             onCommentClick={() =>
               setActiveCommentPostId((current) => (current === post.id ? null : post.id))

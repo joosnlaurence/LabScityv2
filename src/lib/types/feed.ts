@@ -70,6 +70,7 @@ export interface PostWithRelations extends Post {
  * Local feed display type used by the home feed UI
  */
 export interface FeedPostItem {
+  mediaWidth: number | undefined;
   id: string;
   userId: string;
   userName: string;
@@ -78,6 +79,8 @@ export interface FeedPostItem {
   content: string;
   timeAgo: string;
   mediaUrl?: string | null;
+  mediaWidh?: number;
+  mediaHeight?: number;
   mediaLabel?: string | null;
   comments: FeedCommentItem[];
   isLiked?: boolean;
