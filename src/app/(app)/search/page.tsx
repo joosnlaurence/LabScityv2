@@ -3,6 +3,7 @@
 import {
   Avatar,
   Divider,
+  Flex,
   Group,
   Paper,
   Stack,
@@ -11,6 +12,8 @@ import {
 } from "@mantine/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { LSPostCard } from "@/components/feed/ls-post-card";
+import { usePostDetail } from "@/components/feed/use-post-detail";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import { searchUserContent } from "@/lib/actions/data";
 import type { searchResult } from "@/lib/types/data";
@@ -31,6 +34,49 @@ function SearchSection({
       </Text>
       {children}
     </Stack>
+  );
+}
+
+function SearchPostResult({ postId }: { postId: string }) {
+  const router = useRouter();
+  const { data, isLoading, isError } = usePostDetail(postId);
+
+  if (isLoading) {
+    return (
+      <Paper withBorder radius="md" p="lg">
+        <Flex justify="center" py="md">
+          <LSSpinner />
+        </Flex>
+      </Paper>
+    );
+  }
+
+  if (isError || !data?.success || !data.data) {
+    return (
+      <Paper withBorder radius="md" p="lg">
+        <Text c="red">Failed to load post.</Text>
+      </Paper>
+    );
+  }
+
+  const post = data.data;
+
+  return (
+    <LSPostCard
+      userId={post.userId}
+      userName={post.userName}
+      avatarUrl={post.avatarUrl ?? null}
+      field={post.scientificField}
+      timeAgo={post.timeAgo}
+      content={post.content}
+      mediaUrl={post.mediaUrl ?? null}
+      isLiked={post.isLiked ?? false}
+      likeCount={post.likeCount ?? 0}
+      commentCount={post.comments.length}
+      onPostClick={() => router.push(`/posts/${post.id}`)}
+      showActions={false}
+      showMenu={false}
+    />
   );
 }
 
@@ -150,21 +196,10 @@ export default function SearchPage() {
                 {groupedResults.users.length > 0 && <Divider />}
                 <SearchSection title="Posts">
                   {groupedResults.posts.map((result) => (
-                    <UnstyledButton
+                    <SearchPostResult
                       key={`post-${result.id}`}
-                      onClick={() => router.push(`/posts/${result.id}`)}
-                    >
-                      <Paper withBorder radius="md" p="md">
-                        <Stack gap={6}>
-                          <Text size="sm" fw={600} c="navy.7">
-                            Post
-                          </Text>
-                          <Text c="gray.8" style={{ whiteSpace: "pre-wrap" }}>
-                            {result.content}
-                          </Text>
-                        </Stack>
-                      </Paper>
-                    </UnstyledButton>
+                      postId={result.id}
+                    />
                   ))}
                 </SearchSection>
               </>
