@@ -8,7 +8,8 @@ import type {
   GetUserPostsInput,
   UserPostsResponse,
   searchResult,
-  SearchInput
+  SearchInput,
+  Group,
 } from "@/lib/types/data";
 
 import { User } from "@/lib/types/feed"
@@ -123,15 +124,21 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
     // Step 2: Create Supabase client
     const supabase = supabaseClient || await createClient();
 
+    // Get current user to compute isLiked
+    const { data: authData } = await supabase.auth.getUser();
+    const currentUserId = authData?.user?.id;
+
     // Step 3: Build query with explicit column selection
     let query = supabase.from("posts").select(`
         post_id,
         user_id,
         created_at,
         category,
+        scientific_field,
         text,
         media_path,
-        like_amount
+        like_amount,
+        likes(user_id)
       `);
 
     // Step 4: Apply filters
@@ -143,7 +150,6 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
 
     // Step 5: Apply sorting based on cursor position
 
-    // NOTE: This ternary is confusingly placed here when it's result will not be used till afterwards on line 84. AI is stupid.
     const sortOrder = validatedInput.sortOrder === "asc" ? "asc" : "desc";
     query = query.order(validatedInput.sortBy, {
       ascending: sortOrder === "asc",
@@ -181,7 +187,57 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
     // NOTE: In typescript ternary expressions can be defined over a non boolean value and will be evaluated based on whether the variable is null or not.
     // In this case posts either has returned data from the db, or it is null.
     // If it has returned it will be parsed and assigned to validatedPosts.
-    const validatedPosts = posts ? postSchema.array().parse(posts) : [];
+    // Helper to format relative time
+    const getTimeAgo = (date: string): string => {
+      const now = new Date();
+      const d = new Date(date);
+      const s = Math.floor((now.getTime() - d.getTime()) / 1000);
+      if (s < 60) return "just now";
+      if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+      if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+      if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
+      return d.toLocaleDateString();
+    };
+
+    // Fetch comments for each post
+    const postsWithComments = await Promise.all(
+      (posts ?? []).map(async (post: any) => {
+        const { likes, ...rest } = post;
+        const { data: comments } = await supabase
+          .from("comment")
+          .select(`
+            comment_id,
+            text,
+            created_at,
+            user_id,
+            users:user_id(user_id, first_name, last_name, profile_pic_path),
+            comment_likes(user_id)
+          `)
+          .eq("post_id", post.post_id)
+          .order("created_at", { ascending: false });
+
+        return {
+          ...rest,
+          isLiked: currentUserId
+            ? (likes ?? []).some((l: any) => l.user_id === currentUserId)
+            : false,
+          comments: (comments ?? []).map((c: any) => ({
+            id: String(c.comment_id),
+            userId: c.user_id,
+            userName: `${c.users?.first_name} ${c.users?.last_name}`.trim(),
+            avatarUrl: c.users?.profile_pic_path
+              ? supabase.storage.from("profile_pictures").getPublicUrl(c.users.profile_pic_path).data.publicUrl
+              : null,
+            content: c.text,
+            timeAgo: getTimeAgo(c.created_at),
+            isLiked: currentUserId
+              ? (c.comment_likes ?? []).some((l: any) => l.user_id === currentUserId)
+              : false,
+          })),
+        };
+      })
+    );
+    const validatedPosts = postSchema.array().parse(postsWithComments);
 
     // Determine if there are more posts
     const hasMore = validatedPosts.length > validatedInput.limit;
@@ -257,16 +313,12 @@ function formatQuery(query: string) {
   return formattedQuery;
 }
 
-// TODO: CREATE PROPER SCHEMA
-// TODO: FIX POSTGRESQL VIEW TO CORRECTLY SORT/FILTER/ORDER RESULTS
-// TODO: Should sorting and ordering be done on the server or by the database?
 // TODO: ADD pagination for search
 
 /**
  * Retrieves a list user generated content (Users, Posts, Articles, and Groups)
  *
  * @param searchQuery - string representing the query in plain english
- * @param limit - The maximum number of returned results (default=10)
  * @param supabaseClient - Optional Supabase client instance (used for testing)
  * @return Promise resolving to DataResponse with matching content or an empty array
  *
@@ -287,14 +339,7 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
     const querylimit = input.limit || 10;
     const formattedQuery = formatQuery(input.query);
 
-    const { data, error: dbError } = await supabase
-      // NOTE: user_generated_content_search is a virtual table (a VIEW) on the db.
-      // TODO: remove * when table is finalized
-      .from('user_generated_content_search')
-      .select('*')
-      .textSearch('tsv', formattedQuery, {
-        config: 'english',
-      }).limit(querylimit);
+    const { data, error: dbError } = await supabase.rpc('search_all_content', { search_query: formattedQuery }).limit(querylimit);
 
     if (dbError) {
       console.error("Failed to retreive search results: ", dbError);
@@ -327,7 +372,112 @@ export async function searchUserContent(input: SearchInput, supabaseClient?: Sup
   }
 }
 
-// FIXME: Return a proper value and take in a proper parameter
+/**
+ * Searches for users matching the given query.
+ * Uses the 'search_users' RPC function for full-text search.
+ *
+ * @param input - Object containing search query and optional limit
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with matching User array
+ *
+ * @example
+ * ```typescript
+ * const result = await searchForUsers({ query: "john" });
+ * if (result.success) {
+ *   console.log(result.data);
+ * }
+ * ```
+ */
+export async function searchForUsers(input: SearchInput, supabaseClient?: SupabaseClient): Promise<DataResponse<User[]>> {
+  try {
+    const supabase = supabaseClient || await createClient();
+    // Default to a limit of ten?
+    const querylimit = input.limit || 10;
+    const formattedQuery = formatQuery(input.query);
+    const { data, error } = await supabase.rpc('search_users', { search_query: formattedQuery }).limit(querylimit)
+    if (error) {
+      return { success: false, error: "Failed to search for users: " + error.message }
+    }
+    return { success: true, data: data as User[] }
+  } catch (error) {
+    return { success: false, error: "An unexpected error occurred in searchForUsers: " + error }
+  }
+}
+
+/**
+ * Searches for posts matching the given query.
+ * Uses the 'search_posts' RPC function for full-text search.
+ *
+ * @param input - Object containing search query and optional limit
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with matching Post array
+ *
+ * @example
+ * ```typescript
+ * const result = await searchForPosts({ query: "science" });
+ * if (result.success) {
+ *   console.log(result.data);
+ * }
+ * ```
+ */
+export async function searchForPosts(input: SearchInput, supabaseClient?: SupabaseClient): Promise<DataResponse<Post[]>> {
+  try {
+    const supabase = supabaseClient || await createClient();
+    // Default to a limit of ten?
+    const querylimit = input.limit || 10;
+    const formattedQuery = formatQuery(input.query);
+    const { data, error } = await supabase.rpc('search_posts', { search_query: formattedQuery }).limit(querylimit)
+    if (error) {
+      return { success: false, error: "Failed to search for posts: " + error.message }
+    }
+    return { success: true, data: data as Post[] }
+  } catch (error) {
+    return { success: false, error: "An unexpected error occurred in searchForPosts: " + error }
+  }
+}
+
+/**
+ * Searches for groups matching the given query.
+ * Uses the 'search_groups' RPC function for full-text search.
+ *
+ * @param input - Object containing search query and optional limit
+ * @param supabaseClient - Optional Supabase client instance (used for testing)
+ * @returns Promise resolving to DataResponse with matching Group array
+ *
+ * @example
+ * ```typescript
+ * const result = await searchForGroups({ query: "science" });
+ * if (result.success) {
+ *   console.log(result.data);
+ * }
+ * ```
+ */
+export async function searchForGroups(input: SearchInput, supabaseClient?: SupabaseClient): Promise<DataResponse<Group[]>> {
+  try {
+    const supabase = supabaseClient || await createClient();
+    // Default to a limit of ten?
+    const querylimit = input.limit || 10;
+    const formattedQuery = formatQuery(input.query);
+    const { data, error } = await supabase.rpc('search_groups', { search_query: formattedQuery }).limit(querylimit)
+    if (error) {
+      return { success: false, error: "Failed to search for groups: " + error.message }
+    }
+    return { success: true, data: data as Group[] }
+  } catch (error) {
+    return { success: false, error: "An unexpected error occurred in searchForGroups: " + error }
+  }
+}
+
+/**
+ * Fetches a single user by id, joining public.users with public.profile.
+ * Resolves avatar_url and profile_header_url from storage (profile_pictures and profile_header buckets).
+ * Maps profile.skill (DB column) to User.skills and includes profile.articles.
+ *
+ * @param user_id - The user ID to fetch.
+ * @param supabaseClient - Optional Supabase client (e.g. for tests).
+ * @returns DataResponse with User including profile fields (about, workplace, occupation, skills, articles).
+ */
+// FIXME: Take in an explicitly typed parameter.
 export async function getUser(user_id: string, supabaseClient?: SupabaseClient): Promise<DataResponse<User>> {
 
   try {
@@ -347,7 +497,7 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
     const user = data[0];
     const { data: profileData, error: profileError } = await supabase
       .from("profile")
-      .select("header_pic_path")
+      .select("header_pic_path, about, workplace, occupation, skill, articles")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -362,6 +512,10 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
       ? supabase.storage.from("profile_header").getPublicUrl(profileData.header_pic_path).data.publicUrl
       : null;
 
+    // Map profile.skill (DB column) to User.skills; merge extended profile fields.
+    const profileSkill = profileData?.skill;
+    const skills = Array.isArray(profileSkill) ? profileSkill : null;
+
     return {
       success: true,
       data: {
@@ -369,6 +523,11 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
         profile_header_path: profileData?.header_pic_path ?? null,
         avatar_url: avatarUrl,
         profile_header_url: profileHeaderUrl,
+        about: profileData?.about ?? null,
+        workplace: profileData?.workplace ?? null,
+        occupation: profileData?.occupation ?? null,
+        skills,
+        articles: Array.isArray(profileData?.articles) ? profileData.articles : null,
       },
     }
 

@@ -2,16 +2,23 @@
 
 import { Button, Divider, Stack, Text } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
-import { CommentComposer } from "@/components/feed/comment-composer";
-import { PostCard } from "@/components/feed/post-card";
-import { PostComposer } from "@/components/feed/post-composer";
-import { PostCommentCard } from "@/components/feed/post-comment-card";
+import { useRouter } from "next/navigation";
+import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
+import { LSPostCard } from "@/components/feed/ls-post-card";
+import { LSPostComposer } from "@/components/feed/ls-post-composer";
+import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import type { HomeFeedProps } from "@/components/feed/home-feed.types";
 import HomeFeedSkeleton from "./home-feed-skeleton";
 
+/**
+ * Home feed: post composer trigger, list of LSPostCards with like/comment/report,
+ * ReportOverlay for reporting posts or comments, and post click navigation to /posts/[post_id].
+ * All data and mutation logic comes from useHomeFeed; actions are passed from the page as props.
+ */
 export function HomeFeed(props: HomeFeedProps) {
+  const router = useRouter();
   const {
     posts,
     isFeedLoading,
@@ -44,7 +51,7 @@ export function HomeFeed(props: HomeFeedProps) {
             ? posts
               .filter((post) => post.id === reportTarget.postId)
               .map((post) => (
-                <PostCard
+                <LSPostCard
                   key={post.id}
                   userId={post.userId}
                   userName={post.userName}
@@ -64,7 +71,7 @@ export function HomeFeed(props: HomeFeedProps) {
               .flatMap((post) => post.comments)
               .filter((comment) => comment.id === reportTarget?.commentId)
               .map((comment) => (
-                <PostCommentCard
+                <LSPostCommentCard
                   key={comment.id}
                   comment={comment}
                   showMenu={false}
@@ -93,7 +100,7 @@ export function HomeFeed(props: HomeFeedProps) {
       </Button>
 
       {isComposerOpen ? (
-        <PostComposer
+        <LSPostComposer
           key="open"
           onSubmit={handleSubmitPost}
           isPending={createPostMutation.isPending}
@@ -108,7 +115,7 @@ export function HomeFeed(props: HomeFeedProps) {
 
       <Stack gap="lg">
         {posts.map((post) => (
-          <PostCard
+          <LSPostCard
             key={post.id}
             userId={post.userId}
             userName={post.userName}
@@ -125,7 +132,10 @@ export function HomeFeed(props: HomeFeedProps) {
             }
             onLikeClick={() => handleTogglePostLike(post.id)}
             isLiked={post.isLiked ?? false}
+            likeCount={post.likeCount}
+            commentCount={post.comments.length}
             onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
+            onPostClick={() => router.push(`/posts/${post.id}`)}
             audienceLabel={post.audienceLabel ?? null}
             menuId={`post-menu-${post.id}`}
           >
@@ -133,7 +143,7 @@ export function HomeFeed(props: HomeFeedProps) {
               <Stack gap="md" w="100%">
                 {activeCommentPostId === post.id ? (
                   <>
-                    <CommentComposer
+                    <LSCommentComposer
                       postId={post.id}
                       onAddComment={handleAddComment}
                       isSubmitting={createCommentMutation.isPending}
@@ -144,7 +154,7 @@ export function HomeFeed(props: HomeFeedProps) {
                 <Divider />
 
                 {post.comments.map((comment) => (
-                  <PostCommentCard
+                  <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
                     onLikeClick={(commentId) =>
@@ -162,7 +172,7 @@ export function HomeFeed(props: HomeFeedProps) {
                 ))}
               </Stack>
             ) : null}
-          </PostCard>
+          </LSPostCard>
         ))}
       </Stack>
     </Stack>
