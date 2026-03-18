@@ -42,7 +42,7 @@ export function HomeFeed(props: HomeFeedProps) {
   if (isFeedLoading) return <HomeFeedSkeleton />
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" maw={700} w="100%">
       <ReportOverlay
         open={reportTarget !== null}
         title={reportTarget?.type === "post" ? "Report post" : "Report comment"}

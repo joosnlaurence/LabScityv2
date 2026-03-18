@@ -344,6 +344,8 @@ const LSProfileDesktopLayout = ({
           commentCount={post.comments?.length ?? 0}
           showMenu={false}
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
+          mediaHeight={post.media_height}
+          mediaWidth={post.media_width}
         >
           <Stack gap="md" w="100%">
             {activeCommentPostId === postId ? (

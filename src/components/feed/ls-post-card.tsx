@@ -58,6 +58,14 @@ interface LSPostCardProps {
   children?: React.ReactNode;
 }
 
+// Helper to 
+function noPropagate(fn?: () => void) {
+  return (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fn?.();
+  };
+}
+
 /**
  * Card component for a single post: author avatar/name, field, time, content, optional media,
  * like/comment actions, and optional children (e.g. comment composer and comments).
@@ -103,8 +111,13 @@ export function LSPostCard({
 
       <Stack gap={-1}>
         {userId ? (
-          <Anchor component={Link} href={`/profile/${userId}`} underline="hover" c="navy.7">
-            <Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
+          <Anchor 
+            component={Link} 
+            href={`/profile/${userId}`} 
+            onClick={noPropagate()}
+            underline="hover" c="navy.7"
+          >
+            <Text component="span" fw={700} c="navy.7" lh={1.1}>
               {userName}
               {audienceLabel ? (
                 <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
@@ -128,15 +141,17 @@ export function LSPostCard({
     </Group>
   );
 
-  const aspectRatio = (mediaUrl ? mediaWidth! / mediaHeight! : undefined);
-
   return (
     <Card
       bg="gray.0"
       padding="md"
       radius="md"
       shadow="sm"
-      style={{ overflow: "hidden" }}
+      onClick={onPostClick}
+      style={{ 
+        cursor: onPostClick ? 'pointer' : undefined, 
+        overflow: "hidden", 
+      }}
     >
       <Stack gap={16}>
         <Box>
@@ -160,7 +175,7 @@ export function LSPostCard({
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    <Menu.Item onClick={onReportClick}>Report</Menu.Item>
+                    <Menu.Item onClick={noPropagate(onReportClick)}>Report</Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
               ) : null}
@@ -172,7 +187,7 @@ export function LSPostCard({
           fz="sm"
           c="navy.7"
           onClick={onPostClick}
-          style={{ cursor: onPostClick ? 'pointer' : undefined, wordBreak: "break-word" }}
+          style={{ wordBreak: "break-word" }}
         >
           {content}
         </Text>
@@ -180,16 +195,12 @@ export function LSPostCard({
         {mediaUrl ? (
           <Box
             pos="relative"
-            w='100%'
             mah={600}
             fw={600}
-            mih={100}
-            onClick={onPostClick}
             style={{
               aspectRatio: `${mediaWidth! / mediaHeight!}`,
               overflow: "hidden",
               letterSpacing: "0.3px",
-              cursor: onPostClick ? "pointer" : undefined
             }}
           >
             <Image
@@ -197,9 +208,9 @@ export function LSPostCard({
               src={mediaUrl}
               alt="Post attachment"
               bdrs="lg"
-              bd="1px solid navy.0"
               bg='navy.0'
               fill
+              mah={600}
               style={{ objectFit: "contain" }}
             />
           </Box>
@@ -213,8 +224,7 @@ export function LSPostCard({
             align="center"
             ta="center"
             fw={600}
-            onClick={onPostClick}
-            style={{ letterSpacing: "0.3px", overflow: "hidden", cursor: onPostClick ? "pointer" : undefined }}
+            style={{ letterSpacing: "0.3px", overflow: "hidden" }}
           >
             <Text component="span" style={{ whiteSpace: "pre-line" }}>
               {mediaLabel}
@@ -223,11 +233,11 @@ export function LSPostCard({
         ) : null}
 
         {showActions ? (
-          <Flex justify="space-around">
+          <SimpleGrid cols={3}>
 
             {/* like button */}
             <Button
-              size="compact-xs"
+              size="compact-md"
               mr={3} // HACK: small margin here to make things look a bit nicer
               variant="transparent"
               color="navy.6"
@@ -239,7 +249,7 @@ export function LSPostCard({
                   <IconHeart size={18} />
                 )
               }
-              onClick={onLikeClick}
+              onClick={noPropagate(onLikeClick)}
             >
               {/* like label */}
               <Text span fz="sm" c={isLiked ? "#e03131" : "navy.6"}>
@@ -251,11 +261,11 @@ export function LSPostCard({
 
             {/* comment button */}
             <Button
-              size="compact-xs"
+              size="compact-md"
               variant="transparent"
               color="navy.6"
               leftSection={<IconMessageCircle size={18} />}
-              onClick={onCommentClick}
+              onClick={noPropagate(onCommentClick)}
             >
               <Text span fz="sm" c="navy.6">
                 {typeof commentCount === "number" ? commentCount : ""}
@@ -264,13 +274,14 @@ export function LSPostCard({
 
             {/* share button */}
             <Button
-              size="compact-xs"
+              size="compact-md"
               variant="transparent"
               color="navy.6"
               leftSection={<IconShare3 size={18} />}
+              onClick={noPropagate()}
             />
 
-          </Flex>
+          </SimpleGrid>
         ) : null}
 
         {children}

@@ -884,6 +884,8 @@ export async function getPostDetail(postId: string, supabaseClient?: any): Promi
 				scientific_field,
 				user_id,
 				media_path,
+        media_width,
+        media_height,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				likes(user_id)
 			`
@@ -959,6 +961,8 @@ export async function getPostDetail(postId: string, supabaseClient?: any): Promi
 				? post.likes.some((like: any) => like.user_id === authData.user?.id)
 				: false,
 			likeCount: post.like_amount ?? 0,
+      mediaWidth: post.media_width,
+      mediaHeight: post.media_height
 		};
 
 		return { success: true, data: formatted };

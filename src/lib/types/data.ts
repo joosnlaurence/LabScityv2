@@ -7,6 +7,8 @@ export interface Post {
   text?: string;
   media_path?: string | null;
   media_url?: string | null;
+  media_height?: number;
+  media_width?: number;
   created_at: string;
   category?: string;
   scientific_field?: string | null;

@@ -160,6 +160,7 @@ export default function PostDetailPage() {
     );
   }
 
+  
   return (
     <Stack p="md" maw={700} mx="auto">
       <ActionIcon variant="subtle" color="navy.7" size="xl" onClick={() => router.back()} aria-label="Go back">
@@ -179,6 +180,8 @@ export default function PostDetailPage() {
                 timeAgo={post.timeAgo}
                 content={post.content}
                 mediaUrl={post.mediaUrl ?? null}
+                mediaHeight={post.mediaHeight}
+                mediaWidth={post.mediaWidth}
                 showMenu={false}
                 showActions={false}
               />
@@ -212,6 +215,10 @@ export default function PostDetailPage() {
         showActions
         showMenu
         menuId={`post-menu-${post.id}`}
+        mediaHeight={post.mediaHeight}
+        mediaWidth={post.mediaWidth}
+        likeCount={post.likeCount}
+        commentCount={post.comments.length}
       >
         <Stack gap="md" w="100%">
           <LSCommentComposer

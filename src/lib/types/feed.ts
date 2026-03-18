@@ -37,6 +37,8 @@ export interface Post {
   user_id: string;
   content: string;
   media_url: string | null;
+  mediaWidth?: number;
+  mediaHeight?: number;
   category: PostCategory;
   link: string | null;
   created_at: string;
@@ -79,7 +81,6 @@ export interface PostWithRelations extends Post {
  * Local feed display type used by the home feed UI
  */
 export interface FeedPostItem {
-  mediaWidth: number | undefined;
   id: string;
   userId: string;
   userName: string;
@@ -88,8 +89,8 @@ export interface FeedPostItem {
   content: string;
   timeAgo: string;
   mediaUrl?: string | null;
-  mediaWidh?: number;
-  mediaHeight?: number;
+  mediaHeight?: number | undefined;
+  mediaWidth: number | undefined;
   mediaLabel?: string | null;
   comments: FeedCommentItem[];
   isLiked?: boolean;
