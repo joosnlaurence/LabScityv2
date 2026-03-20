@@ -13,8 +13,14 @@ import {
   type CreateGroupValues,
   createGroupSchema,
   groupIdSchema,
+  type InviteMembersValues,
+  inviteMembersSchema,
   type RemoveMemberValues,
+  type RespondToInviteValues,
   removeMemberSchema,
+  respondToInviteSchema,
+  type UpdateGroupValues,
+  updateGroupSchema,
 } from "@/lib/validations/groups";
 import { createClient } from "@/supabase/server";
 
@@ -429,6 +435,286 @@ export async function leaveGroup(
       };
     }
     return { success: false, error: "Failed to leave group" };
+  }
+}
+
+/**
+ * Updates group fields (name, description, topics, privacy). Only Admins may call.
+ */
+export async function updateGroup(
+  values: UpdateGroupValues,
+): Promise<DataResponse<null>> {
+  try {
+    const parsed = updateGroupSchema.parse(values);
+
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const { data: roleRow, error: roleError } = await supabase
+      .from("group_members")
+      .select("role")
+      .eq("group_id", parsed.groupId)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (roleError) {
+      return { success: false, error: roleError.message };
+    }
+    if (roleRow?.role !== "Admin") {
+      return {
+        success: false,
+        error: "Only group admins can edit group details",
+      };
+    }
+
+    const patch: {
+      name?: string;
+      description?: string;
+      topics?: string[];
+      privacy?: "public" | "private";
+    } = {};
+    if (parsed.name !== undefined) patch.name = parsed.name;
+    if (parsed.description !== undefined) {
+      patch.description = parsed.description;
+    }
+    if (parsed.topics !== undefined) patch.topics = parsed.topics;
+    if (parsed.privacy !== undefined) patch.privacy = parsed.privacy;
+
+    const { error: updateError } = await supabase
+      .from("groups")
+      .update(patch)
+      .eq("group_id", parsed.groupId);
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to update group" };
+  }
+}
+
+/**
+ * Creates or refreshes pending invites and notifies each user. Admin-only.
+ * Skips existing members and users who already have a pending invite.
+ */
+export async function inviteUsersToGroup(
+  values: InviteMembersValues,
+): Promise<DataResponse<{ invitedCount: number }>> {
+  try {
+    const parsed = inviteMembersSchema.parse(values);
+
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const { data: roleRow, error: roleError } = await supabase
+      .from("group_members")
+      .select("role")
+      .eq("group_id", parsed.groupId)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (roleError) {
+      return { success: false, error: roleError.message };
+    }
+    if (roleRow?.role !== "Admin") {
+      return { success: false, error: "Only group admins can send invites" };
+    }
+
+    const { data: groupRow, error: groupError } = await supabase
+      .from("groups")
+      .select("name")
+      .eq("group_id", parsed.groupId)
+      .single();
+
+    if (groupError || !groupRow) {
+      return {
+        success: false,
+        error: groupError?.message ?? "Group not found",
+      };
+    }
+
+    const inviterId = authData.user.id;
+    const uniqueIds = [...new Set(parsed.userIds)].filter(
+      (id) => id !== inviterId,
+    );
+
+    let invitedCount = 0;
+
+    for (const targetUserId of uniqueIds) {
+      const { data: existingMember } = await supabase
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", parsed.groupId)
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+      if (existingMember) {
+        continue;
+      }
+
+      const { data: priorInvite } = await supabase
+        .from("invites")
+        .select("status")
+        .eq("group_id", parsed.groupId)
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+      if (priorInvite?.status === "pending") {
+        continue;
+      }
+
+      const { error: upsertError } = await supabase.from("invites").upsert(
+        {
+          group_id: parsed.groupId,
+          user_id: targetUserId,
+          status: "pending",
+        },
+        { onConflict: "group_id,user_id" },
+      );
+
+      if (upsertError) {
+        return { success: false, error: upsertError.message };
+      }
+
+      const { error: notifError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: targetUserId,
+          type: "group_invite",
+          title: "Group invitation",
+          content: `You've been invited to join "${groupRow.name}"`,
+          link: `/groups?group=${parsed.groupId}`,
+        });
+
+      if (notifError) {
+        return { success: false, error: notifError.message };
+      }
+
+      invitedCount += 1;
+    }
+
+    return { success: true, data: { invitedCount } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to send invites" };
+  }
+}
+
+/**
+ * Accept or decline a pending group invite. Accept joins via `joinGroup` (same
+ * self-join path as open groups); `add_group_member` is admin-only and cannot
+ * be called by the invitee.
+ */
+export async function respondToGroupInvite(
+  values: RespondToInviteValues,
+): Promise<DataResponse<null>> {
+  try {
+    const parsed = respondToInviteSchema.parse(values);
+
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const userId = authData.user.id;
+
+    const { data: invite, error: inviteError } = await supabase
+      .from("invites")
+      .select("status")
+      .eq("group_id", parsed.groupId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (inviteError) {
+      return { success: false, error: inviteError.message };
+    }
+
+    if (!invite || invite.status !== "pending") {
+      return {
+        success: false,
+        error: "No pending invitation for this group",
+      };
+    }
+
+    if (parsed.response === "declined") {
+      const { error } = await supabase
+        .from("invites")
+        .update({ status: "declined" })
+        .eq("group_id", parsed.groupId)
+        .eq("user_id", userId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true, data: null };
+    }
+
+    const { data: existingMember } = await supabase
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", parsed.groupId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingMember) {
+      const { error } = await supabase
+        .from("invites")
+        .update({ status: "accepted" })
+        .eq("group_id", parsed.groupId)
+        .eq("user_id", userId);
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true, data: null };
+    }
+
+    const joinResult = await joinGroup(parsed.groupId, supabase);
+    if (!joinResult.success) {
+      return joinResult;
+    }
+
+    const { error: updErr } = await supabase
+      .from("invites")
+      .update({ status: "accepted" })
+      .eq("group_id", parsed.groupId)
+      .eq("user_id", userId);
+
+    if (updErr) {
+      return { success: false, error: updErr.message };
+    }
+
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to respond to invite" };
   }
 }
 
