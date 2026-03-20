@@ -27,6 +27,40 @@ import {
 } from "@/lib/validations/groups";
 import { createClient } from "@/supabase/server";
 
+type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
+
+/** Direct insert when `join_public_group` RPC is not applicable (e.g. private group + invite). */
+async function insertDirectGroupMembership(
+  supabase: ServerSupabase,
+  groupId: number,
+  userId: string,
+): Promise<DataResponse<null>> {
+  const { error: memberError } = await supabase.from("group_members").insert({
+    group_id: groupId,
+    user_id: userId,
+    role: "Member",
+  });
+
+  if (memberError) {
+    return { success: false, error: memberError.message };
+  }
+
+  const { data: group } = await supabase
+    .from("groups")
+    .select("conversation_id")
+    .eq("group_id", groupId)
+    .single();
+
+  if (group?.conversation_id) {
+    await supabase.from("conversation_participants").insert({
+      conversation_id: group.conversation_id,
+      user_id: userId,
+    });
+  }
+
+  return { success: true, data: null };
+}
+
 /**
  * Fetch all groups the authenticated user is a member of, with member counts.
  *
@@ -325,21 +359,45 @@ export async function createGroup(
       return { success: false, error: "Authentication required" };
     }
 
-    const { data: groupId, error } = await supabase.rpc("create_group", {
-      group_name: parsed.name,
-      group_description: parsed.description ?? "",
-      creator_id: authData.user.id,
+    const extended = await supabase.rpc("create_group", {
+      p_name: parsed.name,
+      p_description: parsed.description ?? "",
+      p_privacy: parsed.privacy,
+      p_topics: parsed.topics,
+      p_rules: "",
     });
 
-    if (error) {
-      return { success: false, error: error.message };
+    let newGroupId: number | null = null;
+
+    if (!extended.error && extended.data != null) {
+      newGroupId = Number(extended.data);
+      if (!Number.isFinite(newGroupId)) {
+        return { success: false, error: "Invalid group id from server" };
+      }
+      return { success: true, data: { group_id: newGroupId } };
     }
 
-    if (groupId === null || groupId === undefined) {
+    const { data: legacyId, error: legacyError } = await supabase.rpc(
+      "create_group",
+      {
+        group_name: parsed.name,
+        group_description: parsed.description ?? "",
+        creator_id: authData.user.id,
+      },
+    );
+
+    if (legacyError) {
+      return {
+        success: false,
+        error: legacyError.message,
+      };
+    }
+
+    if (legacyId === null || legacyId === undefined) {
       return { success: false, error: "Group was not created" };
     }
 
-    const newGroupId = Number(groupId);
+    newGroupId = Number(legacyId);
     if (!Number.isFinite(newGroupId)) {
       return { success: false, error: "Invalid group id from server" };
     }
@@ -392,29 +450,35 @@ export async function joinGroup(
       return { success: false, error: "Authentication required" };
     }
 
-    const { error: memberError } = await supabase
-      .from("group_members")
-      .insert({ group_id: groupId, user_id: authData.user.id, role: "Member" });
+    const userId = authData.user.id;
 
-    if (memberError) {
-      return { success: false, error: memberError.message };
+    const { error: rpcError } = await supabase.rpc("join_public_group", {
+      target_group_id: groupId,
+    });
+
+    if (!rpcError) {
+      return { success: true, data: null };
     }
 
-    // Add user to the group's conversation
-    const { data: group } = await supabase
-      .from("groups")
-      .select("conversation_id")
-      .eq("group_id", groupId)
-      .single();
-
-    if (group?.conversation_id) {
-      await supabase.from("conversation_participants").insert({
-        conversation_id: group.conversation_id,
-        user_id: authData.user.id,
-      });
+    const msg = rpcError.message ?? "";
+    if (
+      msg.includes("already a member") ||
+      msg.includes("You are already a member")
+    ) {
+      return { success: true, data: null };
+    }
+    if (msg.includes("banned")) {
+      return { success: false, error: rpcError.message };
+    }
+    if (
+      msg.includes("private") ||
+      msg.includes("does not exist") ||
+      msg.includes("Group is private")
+    ) {
+      return insertDirectGroupMembership(supabase, groupId, userId);
     }
 
-    return { success: true, data: null };
+    return { success: false, error: rpcError.message };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
@@ -579,8 +643,9 @@ export async function updateGroup(
 }
 
 /**
- * Creates or refreshes pending invites and notifies each user. Admin-only.
- * Skips existing members and users who already have a pending invite.
+ * Sends invites via `invite_user_to_group` RPC (admin + not already member).
+ * `handle_group_invite` trigger inserts `notifications` — do not duplicate here.
+ * Re-opening a **declined** invite uses `UPDATE` only (no second notification).
  */
 export async function inviteUsersToGroup(
   values: InviteMembersValues,
@@ -609,13 +674,13 @@ export async function inviteUsersToGroup(
       return { success: false, error: "Only group admins can send invites" };
     }
 
-    const { data: groupRow, error: groupError } = await supabase
+    const { data: groupExists, error: groupError } = await supabase
       .from("groups")
-      .select("name")
+      .select("group_id")
       .eq("group_id", parsed.groupId)
-      .single();
+      .maybeSingle();
 
-    if (groupError || !groupRow) {
+    if (groupError || !groupExists) {
       return {
         success: false,
         error: groupError?.message ?? "Group not found",
@@ -652,31 +717,30 @@ export async function inviteUsersToGroup(
         continue;
       }
 
-      const { error: upsertError } = await supabase.from("invites").upsert(
-        {
-          group_id: parsed.groupId,
-          user_id: targetUserId,
-          status: "pending",
-        },
-        { onConflict: "group_id,user_id" },
-      );
+      if (priorInvite?.status === "declined") {
+        const { error: updErr } = await supabase
+          .from("invites")
+          .update({ status: "pending" })
+          .eq("group_id", parsed.groupId)
+          .eq("user_id", targetUserId);
 
-      if (upsertError) {
-        return { success: false, error: upsertError.message };
+        if (updErr) {
+          return { success: false, error: updErr.message };
+        }
+        invitedCount += 1;
+        continue;
       }
 
-      const { error: notifError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: targetUserId,
-          type: "group_invite",
-          title: "Group invitation",
-          content: `You've been invited to join "${groupRow.name}"`,
-          link: `/groups?group=${parsed.groupId}`,
-        });
+      const { error: rpcError } = await supabase.rpc("invite_user_to_group", {
+        p_group_id: parsed.groupId,
+        p_target_user_id: targetUserId,
+      });
 
-      if (notifError) {
-        return { success: false, error: notifError.message };
+      if (rpcError) {
+        if (rpcError.message.includes("already a member")) {
+          continue;
+        }
+        return { success: false, error: rpcError.message };
       }
 
       invitedCount += 1;
