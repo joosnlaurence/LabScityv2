@@ -355,6 +355,7 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 			isLiked: post.likes && post.likes.length > 0 && authData.user
 				? post.likes.some((like: any) => like.user_id === authData.user?.id)
 				: false,
+			likeCount: post.like_amount ?? 0,
 			};
 		});
 
@@ -957,6 +958,7 @@ export async function getPostDetail(postId: string, supabaseClient?: any): Promi
 			isLiked: post.likes && post.likes.length > 0 && authData.user
 				? post.likes.some((like: any) => like.user_id === authData.user?.id)
 				: false,
+			likeCount: post.like_amount ?? 0,
 		};
 
 		return { success: true, data: formatted };

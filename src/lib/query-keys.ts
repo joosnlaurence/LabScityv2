@@ -48,3 +48,19 @@ export const groupKeys = {
   feed: (groupId: number, filter: FeedFilterValues) =>
     [...groupKeys.all, "feed", groupId, filter] as const,
 };
+
+export const dataKeys = {
+  all: ["data"] as const,
+  post: (postId: number) => [...dataKeys.all, "post", postId] as const,
+  userPosts: (userId: string, cursor?: string) =>
+    [...dataKeys.all, "userPosts", userId, cursor] as const,
+  search: (query: string, limit?: number) =>
+    [...dataKeys.all, "search", query, limit] as const,
+  searchUsers: (query: string, limit?: number) =>
+    [...dataKeys.all, "searchUsers", query, limit] as const,
+  searchPosts: (query: string, limit?: number) =>
+    [...dataKeys.all, "searchPosts", query, limit] as const,
+  searchGroups: (query: string, limit?: number) =>
+    [...dataKeys.all, "searchGroups", query, limit] as const,
+  user: (userId: string) => [...dataKeys.all, "user", userId] as const,
+};

@@ -36,6 +36,8 @@ export function HomeFeed(props: HomeFeedProps) {
     handleAddComment,
     handleTogglePostLike,
     handleToggleCommentLike,
+    handleDeletePost,
+    currentUserId,
   } = useHomeFeed(props);
 
   return (
@@ -130,8 +132,12 @@ export function HomeFeed(props: HomeFeedProps) {
             }
             onLikeClick={() => handleTogglePostLike(post.id)}
             isLiked={post.isLiked ?? false}
+            likeCount={post.likeCount}
+            commentCount={post.comments.length}
             onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
+            onDeleteClick={post.userId === currentUserId ? () => handleDeletePost(post.id) : undefined}
             onPostClick={() => router.push(`/posts/${post.id}`)}
+            shareUrl={`/posts/${post.id}`}
             audienceLabel={post.audienceLabel ?? null}
             menuId={`post-menu-${post.id}`}
           >
