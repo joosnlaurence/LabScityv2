@@ -20,6 +20,7 @@ import {
   deleteGroup,
   getGroupDetails,
   getGroups,
+  inviteUsersToGroup,
   joinGroup,
   leaveGroup,
   removeMember,
@@ -94,6 +95,7 @@ export default async function GroupsPage({
         leaveGroupAction={leaveGroup}
         deleteGroupAction={deleteGroup}
         addMemberByEmailAction={addMemberByEmail}
+        inviteUsersToGroupAction={inviteUsersToGroup}
         removeMemberAction={removeMember}
         createPostAction={createPost}
         createPostImageUploadUrlAction={createPostImageUploadUrl}
