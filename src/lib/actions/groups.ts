@@ -1,22 +1,22 @@
 "use server";
 
 import { z } from "zod";
-import {
-	addMemberSchema,
-	createGroupSchema,
-	groupIdSchema,
-	removeMemberSchema,
-	type AddMemberValues,
-	type CreateGroupValues,
-	type RemoveMemberValues,
-} from "@/lib/validations/groups";
-import { createClient } from "@/supabase/server";
 import type { DataResponse } from "@/lib/types/data";
 import type {
-	GetGroupsResult,
-	GroupListItem,
-	GroupWithMembers,
+  GetGroupsResult,
+  GroupListItem,
+  GroupWithMembers,
 } from "@/lib/types/groups";
+import {
+  type AddMemberValues,
+  addMemberSchema,
+  type CreateGroupValues,
+  createGroupSchema,
+  groupIdSchema,
+  type RemoveMemberValues,
+  removeMemberSchema,
+} from "@/lib/validations/groups";
+import { createClient } from "@/supabase/server";
 
 /**
  * Fetch all groups the authenticated user is a member of, with member counts.
@@ -25,82 +25,88 @@ import type {
  * @returns Promise resolving to DataResponse with the user's group list
  */
 export async function getGroups(
-	supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R> ? R : never,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
 ): Promise<DataResponse<GetGroupsResult>> {
-	try {
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+  try {
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { data: memberships, error: membershipError } = await supabase
-			.from("group_members")
-			.select("group_id")
-			.eq("user_id", authData.user.id);
+    const { data: memberships, error: membershipError } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", authData.user.id);
 
-		if (membershipError) {
-			return { success: false, error: membershipError.message };
-		}
+    if (membershipError) {
+      return { success: false, error: membershipError.message };
+    }
 
-		if (!memberships || memberships.length === 0) {
-			return { success: true, data: [] };
-		}
+    if (!memberships || memberships.length === 0) {
+      return { success: true, data: [] };
+    }
 
-		const groupIds = memberships.map((m) => m.group_id);
+    const groupIds = memberships.map((m) => m.group_id);
 
-		const { data: groups, error: groupsError } = await supabase
-			.from("groups")
-			.select("group_id, name, description, created_at, conversation_id")
-			.in("group_id", groupIds)
-			.order("name");
+    const { data: groups, error: groupsError } = await supabase
+      .from("groups")
+      .select(
+        "group_id, name, description, created_at, conversation_id, topics, privacy",
+      )
+      .in("group_id", groupIds)
+      .order("name");
 
-		if (groupsError) {
-			return { success: false, error: groupsError.message };
-		}
+    if (groupsError) {
+      return { success: false, error: groupsError.message };
+    }
 
-		if (!groups || groups.length === 0) {
-			return { success: true, data: [] };
-		}
+    if (!groups || groups.length === 0) {
+      return { success: true, data: [] };
+    }
 
-		// Fetch member counts per group in a single query
-		const { data: memberCounts, error: countError } = await supabase
-			.from("group_members")
-			.select("group_id")
-			.in("group_id", groupIds);
+    // Fetch member counts per group in a single query
+    const { data: memberCounts, error: countError } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .in("group_id", groupIds);
 
-		if (countError) {
-			return { success: false, error: countError.message };
-		}
+    if (countError) {
+      return { success: false, error: countError.message };
+    }
 
-		const countMap = (memberCounts ?? []).reduce<Record<number, number>>(
-			(acc, row) => {
-				acc[row.group_id] = (acc[row.group_id] ?? 0) + 1;
-				return acc;
-			},
-			{},
-		);
+    const countMap = (memberCounts ?? []).reduce<Record<number, number>>(
+      (acc, row) => {
+        acc[row.group_id] = (acc[row.group_id] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
-		const result: GroupListItem[] = groups.map((g) => ({
-			group_id: g.group_id,
-			name: g.name,
-			description: g.description ?? "",
-			created_at: g.created_at,
-			conversation_id: g.conversation_id,
-			memberCount: countMap[g.group_id] ?? 0,
-		}));
+    const result: GroupListItem[] = groups.map((g) => ({
+      group_id: g.group_id,
+      name: g.name,
+      description: g.description ?? "",
+      created_at: g.created_at,
+      conversation_id: g.conversation_id,
+      topics: Array.isArray(g.topics) ? (g.topics as string[]) : [],
+      privacy: g.privacy === "private" ? "private" : "public",
+      memberCount: countMap[g.group_id] ?? 0,
+    }));
 
-		return { success: true, data: result };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to fetch groups" };
-	}
+    return { success: true, data: result };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to fetch groups" };
+  }
 }
 
 /**
@@ -111,95 +117,109 @@ export async function getGroups(
  * @returns Promise resolving to DataResponse with the group and its members
  */
 export async function getGroupDetails(
-	groupId: number,
-	supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R> ? R : never,
+  groupId: number,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
 ): Promise<DataResponse<GroupWithMembers>> {
-	try {
-		groupIdSchema.parse(groupId);
+  try {
+    groupIdSchema.parse(groupId);
 
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { data: group, error: groupError } = await supabase
-			.from("groups")
-			.select("group_id, name, description, created_at, conversation_id")
-			.eq("group_id", groupId)
-			.single();
+    const { data: group, error: groupError } = await supabase
+      .from("groups")
+      .select(
+        "group_id, name, description, created_at, conversation_id, topics, privacy",
+      )
+      .eq("group_id", groupId)
+      .single();
 
-		if (groupError || !group) {
-			return { success: false, error: groupError?.message ?? "Group not found" };
-		}
+    if (groupError || !group) {
+      return {
+        success: false,
+        error: groupError?.message ?? "Group not found",
+      };
+    }
 
-		const { data: members, error: membersError } = await supabase
-			.from("group_members")
-			.select(
-				`
+    const { data: members, error: membersError } = await supabase
+      .from("group_members")
+      .select(
+        `
 				group_id,
 				user_id,
 				role,
 				created_at,
 				users:user_id(first_name, last_name, profile_pic_path)
 			`,
-			)
-			.eq("group_id", groupId)
-			.order("created_at");
+      )
+      .eq("group_id", groupId)
+      .order("created_at");
 
-		if (membersError) {
-			return { success: false, error: membersError.message };
-		}
+    if (membersError) {
+      return { success: false, error: membersError.message };
+    }
 
-		// Supabase join returns users as object (FK) or array depending on client version
-		type RawUser = { first_name: string | null; last_name: string | null; profile_pic_path: string | null };
-		type RawMember = {
-			group_id: number;
-			user_id: string;
-			role: string | null;
-			created_at: string;
-			users: RawUser | RawUser[] | null;
-		};
-		const toUser = (u: RawUser | RawUser[] | null): RawUser | null =>
-			Array.isArray(u) ? u[0] ?? null : u;
-		const formattedMembers = (members ?? []).map((m: RawMember) => {
-			const u = toUser(m.users);
-			const picPath = u?.profile_pic_path ?? null;
-			return {
-				group_id: m.group_id,
-				user_id: m.user_id,
-				role: m.role ?? "Member",
-				created_at: m.created_at,
-				first_name: u?.first_name ?? null,
-				last_name: u?.last_name ?? null,
-				profile_pic_path: picPath,
-				avatar_url: picPath
-					? supabase.storage.from("profile_pictures").getPublicUrl(picPath).data.publicUrl
-					: null,
-			};
-		});
+    // Supabase join returns users as object (FK) or array depending on client version
+    type RawUser = {
+      first_name: string | null;
+      last_name: string | null;
+      profile_pic_path: string | null;
+    };
+    type RawMember = {
+      group_id: number;
+      user_id: string;
+      role: string | null;
+      created_at: string;
+      users: RawUser | RawUser[] | null;
+    };
+    const toUser = (u: RawUser | RawUser[] | null): RawUser | null =>
+      Array.isArray(u) ? (u[0] ?? null) : u;
+    const formattedMembers = (members ?? []).map((m: RawMember) => {
+      const u = toUser(m.users);
+      const picPath = u?.profile_pic_path ?? null;
+      return {
+        group_id: m.group_id,
+        user_id: m.user_id,
+        role: m.role ?? "Member",
+        created_at: m.created_at,
+        first_name: u?.first_name ?? null,
+        last_name: u?.last_name ?? null,
+        profile_pic_path: picPath,
+        avatar_url: picPath
+          ? supabase.storage.from("profile_pictures").getPublicUrl(picPath).data
+              .publicUrl
+          : null,
+      };
+    });
 
-		const result: GroupWithMembers = {
-			group_id: group.group_id,
-			name: group.name,
-			description: group.description ?? "",
-			created_at: group.created_at,
-			conversation_id: group.conversation_id,
-			members: formattedMembers,
-			memberCount: formattedMembers.length,
-		};
+    const result: GroupWithMembers = {
+      group_id: group.group_id,
+      name: group.name,
+      description: group.description ?? "",
+      created_at: group.created_at,
+      conversation_id: group.conversation_id,
+      topics: Array.isArray(group.topics) ? (group.topics as string[]) : [],
+      privacy: group.privacy === "private" ? "private" : "public",
+      members: formattedMembers,
+      memberCount: formattedMembers.length,
+    };
 
-		return { success: true, data: result };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to fetch group details" };
-	}
+    return { success: true, data: result };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to fetch group details" };
+  }
 }
 
 /**
@@ -211,39 +231,62 @@ export async function getGroupDetails(
  * @returns Promise resolving to DataResponse with the new group_id
  */
 export async function createGroup(
-	values: CreateGroupValues,
-	supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R> ? R : never,
+  values: CreateGroupValues,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
 ): Promise<DataResponse<{ group_id: number }>> {
-	try {
-		const parsed = createGroupSchema.parse(values);
+  try {
+    const parsed = createGroupSchema.parse(values);
 
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { data: groupId, error } = await supabase.rpc("create_group", {
-			group_name: parsed.name,
-			group_description: parsed.description ?? "",
-			creator_id: authData.user.id,
-		});
+    const { data: groupId, error } = await supabase.rpc("create_group", {
+      group_name: parsed.name,
+      group_description: parsed.description ?? "",
+      creator_id: authData.user.id,
+    });
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
-		return { success: true, data: { group_id: groupId } };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to create group" };
-	}
+    if (groupId === null || groupId === undefined) {
+      return { success: false, error: "Group was not created" };
+    }
+
+    const newGroupId = Number(groupId);
+    if (!Number.isFinite(newGroupId)) {
+      return { success: false, error: "Invalid group id from server" };
+    }
+
+    const { error: metaError } = await supabase
+      .from("groups")
+      .update({
+        topics: parsed.topics,
+        privacy: parsed.privacy,
+      })
+      .eq("group_id", newGroupId);
+
+    if (metaError) {
+      return { success: false, error: metaError.message };
+    }
+
+    return { success: true, data: { group_id: newGroupId } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to create group" };
+  }
 }
 
 /**
@@ -255,51 +298,53 @@ export async function createGroup(
  * @returns Promise resolving to DataResponse indicating success or failure
  */
 export async function joinGroup(
-	groupId: number,
-	supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R> ? R : never,
+  groupId: number,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
 ): Promise<DataResponse<null>> {
-	try {
-		groupIdSchema.parse(groupId);
+  try {
+    groupIdSchema.parse(groupId);
 
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { error: memberError } = await supabase
-			.from("group_members")
-			.insert({ group_id: groupId, user_id: authData.user.id, role: "Member" });
+    const { error: memberError } = await supabase
+      .from("group_members")
+      .insert({ group_id: groupId, user_id: authData.user.id, role: "Member" });
 
-		if (memberError) {
-			return { success: false, error: memberError.message };
-		}
+    if (memberError) {
+      return { success: false, error: memberError.message };
+    }
 
-		// Add user to the group's conversation
-		const { data: group } = await supabase
-			.from("groups")
-			.select("conversation_id")
-			.eq("group_id", groupId)
-			.single();
+    // Add user to the group's conversation
+    const { data: group } = await supabase
+      .from("groups")
+      .select("conversation_id")
+      .eq("group_id", groupId)
+      .single();
 
-		if (group?.conversation_id) {
-			await supabase.from("conversation_participants").insert({
-				conversation_id: group.conversation_id,
-				user_id: authData.user.id,
-			});
-		}
+    if (group?.conversation_id) {
+      await supabase.from("conversation_participants").insert({
+        conversation_id: group.conversation_id,
+        user_id: authData.user.id,
+      });
+    }
 
-		return { success: true, data: null };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to join group" };
-	}
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to join group" };
+  }
 }
 
 /**
@@ -311,77 +356,80 @@ export async function joinGroup(
  * @returns Promise resolving to DataResponse indicating success or failure
  */
 export async function leaveGroup(
-	groupId: number,
-	supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R> ? R : never,
+  groupId: number,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
 ): Promise<DataResponse<null>> {
-	try {
-		groupIdSchema.parse(groupId);
+  try {
+    groupIdSchema.parse(groupId);
 
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		// Check if user is the last admin
-		const { data: membership } = await supabase
-			.from("group_members")
-			.select("role")
-			.eq("group_id", groupId)
-			.eq("user_id", authData.user.id)
-			.single();
+    // Check if user is the last admin
+    const { data: membership } = await supabase
+      .from("group_members")
+      .select("role")
+      .eq("group_id", groupId)
+      .eq("user_id", authData.user.id)
+      .single();
 
-		if (membership?.role === "Admin") {
-			const { data: admins } = await supabase
-				.from("group_members")
-				.select("user_id")
-				.eq("group_id", groupId)
-				.eq("role", "Admin");
+    if (membership?.role === "Admin") {
+      const { data: admins } = await supabase
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", groupId)
+        .eq("role", "Admin");
 
-			if (!admins || admins.length <= 1) {
-				return {
-					success: false,
-					error: "Cannot leave: you are the only Admin. Transfer admin role first.",
-				};
-			}
-		}
+      if (!admins || admins.length <= 1) {
+        return {
+          success: false,
+          error:
+            "Cannot leave: you are the only Admin. Transfer admin role first.",
+        };
+      }
+    }
 
-		const { error: leaveError } = await supabase
-			.from("group_members")
-			.delete()
-			.eq("group_id", groupId)
-			.eq("user_id", authData.user.id);
+    const { error: leaveError } = await supabase
+      .from("group_members")
+      .delete()
+      .eq("group_id", groupId)
+      .eq("user_id", authData.user.id);
 
-		if (leaveError) {
-			return { success: false, error: leaveError.message };
-		}
+    if (leaveError) {
+      return { success: false, error: leaveError.message };
+    }
 
-		// Remove from group conversation
-		const { data: group } = await supabase
-			.from("groups")
-			.select("conversation_id")
-			.eq("group_id", groupId)
-			.single();
+    // Remove from group conversation
+    const { data: group } = await supabase
+      .from("groups")
+      .select("conversation_id")
+      .eq("group_id", groupId)
+      .single();
 
-		if (group?.conversation_id) {
-			await supabase
-				.from("conversation_participants")
-				.delete()
-				.eq("conversation_id", group.conversation_id)
-				.eq("user_id", authData.user.id);
-		}
+    if (group?.conversation_id) {
+      await supabase
+        .from("conversation_participants")
+        .delete()
+        .eq("conversation_id", group.conversation_id)
+        .eq("user_id", authData.user.id);
+    }
 
-		return { success: true, data: null };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to leave group" };
-	}
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to leave group" };
+  }
 }
 
 /**
@@ -393,58 +441,61 @@ export async function leaveGroup(
  * @returns Promise resolving to DataResponse indicating success or failure
  */
 export async function addMemberByEmail(
-	values: AddMemberValues,
+  values: AddMemberValues,
 ): Promise<DataResponse<null>> {
-	try {
-		const parsed = addMemberSchema.parse(values);
+  try {
+    const parsed = addMemberSchema.parse(values);
 
-		const supabase = await createClient();
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { data: targetUser, error: lookupError } = await supabase
-			.from("users")
-			.select("user_id")
-			.eq("email", parsed.email)
-			.single();
+    const { data: targetUser, error: lookupError } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("email", parsed.email)
+      .single();
 
-		if (lookupError || !targetUser) {
-			return { success: false, error: "No user found with that email address" };
-		}
+    if (lookupError || !targetUser) {
+      return { success: false, error: "No user found with that email address" };
+    }
 
-		const { data: existingMember } = await supabase
-			.from("group_members")
-			.select("user_id")
-			.eq("group_id", parsed.groupId)
-			.eq("user_id", targetUser.user_id)
-			.single();
+    const { data: existingMember } = await supabase
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", parsed.groupId)
+      .eq("user_id", targetUser.user_id)
+      .single();
 
-		if (existingMember) {
-			return { success: false, error: "This user is already a member of the group" };
-		}
+    if (existingMember) {
+      return {
+        success: false,
+        error: "This user is already a member of the group",
+      };
+    }
 
-		const { error: rpcError } = await supabase.rpc("add_group_member", {
-			target_group_id: parsed.groupId,
-			target_user_id: targetUser.user_id,
-		});
+    const { error: rpcError } = await supabase.rpc("add_group_member", {
+      target_group_id: parsed.groupId,
+      target_user_id: targetUser.user_id,
+    });
 
-		if (rpcError) {
-			return { success: false, error: rpcError.message };
-		}
+    if (rpcError) {
+      return { success: false, error: rpcError.message };
+    }
 
-		return { success: true, data: null };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to add member" };
-	}
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to add member" };
+  }
 }
 
 /**
@@ -457,37 +508,37 @@ export async function addMemberByEmail(
  * @returns Promise resolving to DataResponse indicating success or failure
  */
 export async function removeMember(
-	values: RemoveMemberValues,
+  values: RemoveMemberValues,
 ): Promise<DataResponse<null>> {
-	try {
-		const parsed = removeMemberSchema.parse(values);
+  try {
+    const parsed = removeMemberSchema.parse(values);
 
-		const supabase = await createClient();
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { error: rpcError } = await supabase.rpc("remove_group_member", {
-			target_group_id: parsed.groupId,
-			target_user_id: parsed.targetUserId,
-		});
+    const { error: rpcError } = await supabase.rpc("remove_group_member", {
+      target_group_id: parsed.groupId,
+      target_user_id: parsed.targetUserId,
+    });
 
-		if (rpcError) {
-			return { success: false, error: rpcError.message };
-		}
+    if (rpcError) {
+      return { success: false, error: rpcError.message };
+    }
 
-		return { success: true, data: null };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to remove member" };
-	}
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to remove member" };
+  }
 }
 
 /**
@@ -501,34 +552,34 @@ export async function removeMember(
  * @returns Promise resolving to DataResponse indicating success or failure
  */
 export async function deleteGroup(
-	groupId: number,
+  groupId: number,
 ): Promise<DataResponse<null>> {
-	try {
-		groupIdSchema.parse(groupId);
+  try {
+    groupIdSchema.parse(groupId);
 
-		const supabase = await createClient();
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const { error: rpcError } = await supabase.rpc("delete_group", {
-			target_group_id: groupId,
-		});
+    const { error: rpcError } = await supabase.rpc("delete_group", {
+      target_group_id: groupId,
+    });
 
-		if (rpcError) {
-			return { success: false, error: rpcError.message };
-		}
+    if (rpcError) {
+      return { success: false, error: rpcError.message };
+    }
 
-		return { success: true, data: null };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to delete group" };
-	}
+    return { success: true, data: null };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to delete group" };
+  }
 }

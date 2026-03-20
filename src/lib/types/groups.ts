@@ -3,36 +3,50 @@
  * Based on Supabase tables: groups, group_members.
  */
 
+export type GroupPrivacy = "public" | "private";
+
+export type GroupRole = "Admin" | "Moderator" | "Member";
+
 /** Row from the `groups` table. */
 export interface Group {
-	group_id: number;
-	name: string;
-	description: string;
-	created_at: string;
-	conversation_id: number | null;
+  group_id: number;
+  name: string;
+  description: string;
+  created_at: string;
+  conversation_id: number | null;
+  topics: string[];
+  privacy: GroupPrivacy;
+}
+
+/** Pending or settled group invitation (public.invites). */
+export interface GroupInvite {
+  group_id: number;
+  user_id: string;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
 }
 
 /** Row from `group_members` joined with `users` for display info. */
 export interface GroupMember {
-	group_id: number;
-	user_id: string;
-	role: string;
-	created_at: string;
-	first_name: string | null;
-	last_name: string | null;
-	profile_pic_path: string | null;
-	avatar_url?: string | null;
+  group_id: number;
+  user_id: string;
+  role: string;
+  created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_pic_path: string | null;
+  avatar_url?: string | null;
 }
 
 /** A group with its full member list and count. */
 export interface GroupWithMembers extends Group {
-	members: GroupMember[];
-	memberCount: number;
+  members: GroupMember[];
+  memberCount: number;
 }
 
 /** Sidebar-friendly group item with just the member count. */
 export interface GroupListItem extends Group {
-	memberCount: number;
+  memberCount: number;
 }
 
 /** Shape returned by getGroups server action on success. */

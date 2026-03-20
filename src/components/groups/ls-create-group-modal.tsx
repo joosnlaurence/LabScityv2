@@ -1,21 +1,29 @@
 "use client";
 
-import { Button, Modal, Stack, TextInput, Textarea } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-	createGroupSchema,
-	type CreateGroupValues,
-} from "@/lib/validations/groups";
+  Button,
+  Modal,
+  Select,
+  Stack,
+  TagsInput,
+  Textarea,
+  TextInput,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { Controller, useForm } from "react-hook-form";
+import type { z } from "zod";
+import { createGroupSchema } from "@/lib/validations/groups";
 import type { CreateGroupAction } from "./ls-group-layout.types";
 
+type CreateGroupFormValues = z.input<typeof createGroupSchema>;
+
 export interface LSCreateGroupModalProps {
-	opened: boolean;
-	onClose: () => void;
-	createGroupAction: CreateGroupAction;
-	/** Called with the new group_id after successful creation. */
-	onCreated: (groupId: number) => void;
+  opened: boolean;
+  onClose: () => void;
+  createGroupAction: CreateGroupAction;
+  /** Called with the new group_id after successful creation. */
+  onCreated: (groupId: number) => void;
 }
 
 /**
@@ -23,90 +31,129 @@ export interface LSCreateGroupModalProps {
  * On success, calls onCreated so the parent can navigate and invalidate queries.
  */
 export function LSCreateGroupModal({
-	opened,
-	onClose,
-	createGroupAction,
-	onCreated,
+  opened,
+  onClose,
+  createGroupAction,
+  onCreated,
 }: LSCreateGroupModalProps) {
-	const {
-		control,
-		handleSubmit,
-		reset,
-		formState: { isSubmitting, errors },
-	} = useForm<CreateGroupValues>({
-		resolver: zodResolver(createGroupSchema),
-		defaultValues: { name: "", description: "" },
-	});
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting, errors },
+  } = useForm<CreateGroupFormValues>({
+    resolver: zodResolver(createGroupSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      topics: [],
+      privacy: "public",
+    },
+  });
 
-	const onSubmit = async (values: CreateGroupValues) => {
-		const result = await createGroupAction(values);
+  const onSubmit = async (values: CreateGroupFormValues) => {
+    const parsed = createGroupSchema.parse(values);
+    const result = await createGroupAction(parsed);
 
-		if (!result.success || !result.data) {
-			notifications.show({
-				title: "Could not create group",
-				message: result.error ?? "Something went wrong",
-				color: "red",
-			});
-			return;
-		}
+    if (!result.success || !result.data) {
+      notifications.show({
+        title: "Could not create group",
+        message: result.error ?? "Something went wrong",
+        color: "red",
+      });
+      return;
+    }
 
-		notifications.show({
-			title: "Group created",
-			message: `"${values.name}" is ready to go.`,
-			color: "green",
-		});
+    notifications.show({
+      title: "Group created",
+      message: `"${parsed.name}" is ready to go.`,
+      color: "green",
+    });
 
-		reset();
-		onCreated(result.data.group_id);
-	};
+    reset();
+    onCreated(result.data.group_id);
+  };
 
-	const handleClose = () => {
-		reset();
-		onClose();
-	};
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
-	return (
-		<Modal
-			opened={opened}
-			onClose={handleClose}
-			title="Create a new group"
-			centered
-		>
-			<form onSubmit={handleSubmit(onSubmit)}>
-				<Stack gap="md">
-					<Controller
-						name="name"
-						control={control}
-						render={({ field }) => (
-							<TextInput
-								{...field}
-								label="Group name"
-								placeholder="e.g. Quantum Physics Lab"
-								error={errors.name?.message}
-								data-autofocus
-							/>
-						)}
-					/>
+  return (
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title="Create a new group"
+      centered
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack gap="md">
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <TextInput
+                {...field}
+                label="Group name"
+                placeholder="e.g. Quantum Physics Lab"
+                error={errors.name?.message}
+                data-autofocus
+              />
+            )}
+          />
 
-					<Controller
-						name="description"
-						control={control}
-						render={({ field }) => (
-							<Textarea
-								{...field}
-								label="Description"
-								placeholder="What is this group about?"
-								minRows={3}
-								error={errors.description?.message}
-							/>
-						)}
-					/>
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <Textarea
+                {...field}
+                label="Description"
+                placeholder="What is this group about?"
+                minRows={3}
+                error={errors.description?.message}
+              />
+            )}
+          />
 
-					<Button type="submit" loading={isSubmitting} fullWidth>
-						Create Group
-					</Button>
-				</Stack>
-			</form>
-		</Modal>
-	);
+          <Controller
+            name="topics"
+            control={control}
+            render={({ field }) => (
+              <TagsInput
+                {...field}
+                label="Scientific topics"
+                placeholder="Type a topic and press Enter (at least one)"
+                description="Up to 5 topics — used for discovery and search"
+                error={errors.topics?.message}
+                maxTags={5}
+              />
+            )}
+          />
+
+          <Controller
+            name="privacy"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label="Privacy"
+                description="Private groups are hidden from discovery"
+                data={[
+                  { value: "public", label: "Public" },
+                  { value: "private", label: "Private" },
+                ]}
+                value={field.value}
+                onChange={(v) => field.onChange(v ?? "public")}
+                error={errors.privacy?.message}
+              />
+            )}
+          />
+
+          <Button type="submit" loading={isSubmitting} fullWidth>
+            Create Group
+          </Button>
+        </Stack>
+      </form>
+    </Modal>
+  );
 }
