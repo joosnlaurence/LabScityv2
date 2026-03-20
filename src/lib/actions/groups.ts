@@ -152,6 +152,109 @@ export async function getGroups(
   }
 }
 
+const profileUserIdSchema = z.string().uuid("Invalid profile user id");
+
+/**
+ * Groups the profile subject belongs to, as visible to the **current** viewer.
+ * - **Own profile:** all memberships (public and private).
+ * - **Someone else:** only **public** groups (private memberships stay hidden).
+ */
+export async function getProfileVisibleGroups(
+  profileUserId: string,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
+): Promise<DataResponse<GetGroupsResult>> {
+  try {
+    profileUserIdSchema.parse(profileUserId);
+
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const viewerId = authData.user.id;
+
+    const { data: memberships, error: membershipError } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", profileUserId);
+
+    if (membershipError) {
+      return { success: false, error: membershipError.message };
+    }
+
+    if (!memberships || memberships.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const groupIds = memberships.map((m) => m.group_id);
+
+    const { data: groups, error: groupsError } = await supabase
+      .from("groups")
+      .select(
+        "group_id, name, description, created_at, conversation_id, topics, privacy",
+      )
+      .in("group_id", groupIds)
+      .order("name");
+
+    if (groupsError) {
+      return { success: false, error: groupsError.message };
+    }
+
+    let visible = groups ?? [];
+    if (viewerId !== profileUserId) {
+      visible = visible.filter((g) => g.privacy === "public");
+    }
+
+    if (visible.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const visibleIds = visible.map((g) => g.group_id);
+
+    const { data: memberCounts, error: countError } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .in("group_id", visibleIds);
+
+    if (countError) {
+      return { success: false, error: countError.message };
+    }
+
+    const countMap = (memberCounts ?? []).reduce<Record<number, number>>(
+      (acc, row) => {
+        acc[row.group_id] = (acc[row.group_id] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    );
+
+    const result: GroupListItem[] = visible.map((g) => ({
+      group_id: g.group_id,
+      name: g.name,
+      description: g.description ?? "",
+      created_at: g.created_at,
+      conversation_id: g.conversation_id,
+      topics: Array.isArray(g.topics) ? (g.topics as string[]) : [],
+      privacy: g.privacy === "private" ? "private" : "public",
+      memberCount: countMap[g.group_id] ?? 0,
+    }));
+
+    return { success: true, data: result };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to fetch profile groups" };
+  }
+}
+
 /**
  * Fetch a single group with its full member list and count.
  *

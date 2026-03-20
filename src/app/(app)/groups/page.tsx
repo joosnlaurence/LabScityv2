@@ -38,10 +38,11 @@ export const metadata: Metadata = {
 export default async function GroupsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ group?: string }>;
+  searchParams: Promise<{ group?: string; tab?: string }>;
 }) {
-  const { group } = await searchParams;
+  const { group, tab } = await searchParams;
   const activeGroupId = group ? Number(group) : undefined;
+  const defaultTab = tab === "discover" ? "discover" : "mine";
 
   const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ export default async function GroupsPage({
   return (
     <HydrationBoundary state={dehydratedState}>
       <LSGroupsPageShell
+        defaultTab={defaultTab}
         activeGroupId={activeGroupId}
         createGroupAction={createGroup}
         joinGroupAction={joinGroup}

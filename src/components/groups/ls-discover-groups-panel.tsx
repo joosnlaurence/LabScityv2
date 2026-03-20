@@ -2,11 +2,13 @@
 
 import {
   Center,
+  Paper,
   SimpleGrid,
   Stack,
   TagsInput,
   Text,
   TextInput,
+  Title,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -109,21 +111,33 @@ export function LSDiscoverGroupsPanel({
   });
 
   return (
-    <Stack gap="md">
-      <TextInput
-        label="Search"
-        placeholder="Group name or description"
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.currentTarget.value)}
-      />
-      <TagsInput
-        label="Filter by topics"
-        placeholder="Type a topic and press Enter"
-        description="Groups must include all listed topics"
-        value={topicInput}
-        onChange={setTopicInput}
-        maxTags={5}
-      />
+    <Stack gap="lg">
+      <Paper radius="md" p="md" withBorder bg="white">
+        <Stack gap="md">
+          <div>
+            <Title order={5} c="navy.7">
+              Find a group
+            </Title>
+            <Text size="xs" c="dimmed">
+              Search by name, description, or narrow with topic tags.
+            </Text>
+          </div>
+          <TextInput
+            label="Search"
+            placeholder="Group name or description"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.currentTarget.value)}
+          />
+          <TagsInput
+            label="Filter by topics"
+            placeholder="Type a topic and press Enter"
+            description="Groups must include all listed topics"
+            value={topicInput}
+            onChange={setTopicInput}
+            maxTags={5}
+          />
+        </Stack>
+      </Paper>
 
       {discoverQuery.isLoading ? (
         <Center py="xl">

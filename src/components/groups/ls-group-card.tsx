@@ -29,7 +29,21 @@ export function LSGroupCard({
       : group.description;
 
   return (
-    <Card withBorder shadow="sm" radius="md" p="md" h="100%">
+    <Card
+      withBorder
+      shadow="sm"
+      radius="md"
+      p="md"
+      h="100%"
+      styles={{
+        root: {
+          transition: "box-shadow 160ms ease, transform 160ms ease",
+          "&:hover": {
+            boxShadow: "var(--mantine-shadow-md)",
+          },
+        },
+      }}
+    >
       <Stack gap="sm" justify="space-between" h="100%">
         <Stack gap="xs">
           <Text fw={600} size="lg" c="navy.7" lineClamp={2}>

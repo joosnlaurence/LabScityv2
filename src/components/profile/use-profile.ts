@@ -1,5 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/components/auth/use-auth";
 import { getUser, getUserPosts } from "@/lib/actions/data";
+import { getProfileVisibleGroups } from "@/lib/actions/groups";
 import {
   getUserFollowers,
   getUserFollowing,
@@ -119,5 +121,24 @@ export function useUserFriends(
       return result.data;
     },
     enabled: Boolean(user_id) && (options?.enabled ?? true),
+  });
+}
+
+/**
+ * Groups the profile user belongs to (public-only when viewing others; full list on own profile).
+ * Requires sign-in; stays idle when logged out.
+ */
+export function useProfileGroups(profileUserId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: profileKeys.groups(profileUserId),
+    queryFn: async () => {
+      const result = await getProfileVisibleGroups(profileUserId);
+      if (!result.success || !result.data) {
+        throw new Error(result.error ?? "Failed to fetch groups");
+      }
+      return result.data;
+    },
+    enabled: Boolean(user?.id && profileUserId),
   });
 }

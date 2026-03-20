@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { Box, Button, Divider, Flex, Stack } from "@mantine/core";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
-import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
-import LSProfileHero from "@/components/profile/ls-profile-hero";
-import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
+import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
+import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
+import { LSProfileGroupsWidget } from "@/components/profile/ls-profile-groups-widget";
+import LSProfileHero from "@/components/profile/ls-profile-hero";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 
 /**
@@ -24,16 +25,11 @@ function getTimeAgo(date: string): string {
   if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
   return postDate.toLocaleDateString();
 }
-import {
-  useUserFollowing,
-  useUserFriends,
-  useUserPosts,
-  useUserProfile,
-} from "@/components/profile/use-profile";
-import { useLSProfileView } from "@/components/profile/use-ls-profile-view";
+
 import type {
   CreateCommentAction,
   CreatePostAction,
@@ -43,19 +39,26 @@ import type {
   LikePostAction,
 } from "@/components/feed/home-feed.types";
 import type {
-  updateProfileAction,
-  toggleFollowAction,
-  createProfilePictureUploadUrl,
-  updateOwnProfilePicture,
-  createProfileHeaderUploadUrl,
-  updateOwnProfileHeader,
-} from "@/lib/actions/profile";
-import type {
   EditProfileHeroProps,
   FollowProfileHeroProps,
   ProfileMediaUploadProps,
   ProfilePostActionsResult,
 } from "@/components/profile/use-ls-profile-view";
+import { useLSProfileView } from "@/components/profile/use-ls-profile-view";
+import {
+  useUserFollowing,
+  useUserFriends,
+  useUserPosts,
+  useUserProfile,
+} from "@/components/profile/use-profile";
+import type {
+  createProfileHeaderUploadUrl,
+  createProfilePictureUploadUrl,
+  toggleFollowAction,
+  updateOwnProfileHeader,
+  updateOwnProfilePicture,
+  updateProfileAction,
+} from "@/lib/actions/profile";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -140,9 +143,9 @@ const LSProfileMobileLayout = ({
   const friendsQuery = useUserFriends(userId);
   const friends = friendsQuery.data;
 
-  const [activeCommentPostId, setActiveCommentPostId] = useState<
-    string | null
-  >(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
+    null,
+  );
 
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
@@ -171,7 +174,9 @@ const LSProfileMobileLayout = ({
           likeCount={post.like_amount ?? 0}
           commentCount={post.comments?.length ?? 0}
           showMenu={isOwnProfile}
-          onDeleteClick={isOwnProfile ? () => actions.handleDeletePost(postId) : undefined}
+          onDeleteClick={
+            isOwnProfile ? () => actions.handleDeletePost(postId) : undefined
+          }
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
           shareUrl={`/posts/${post.post_id}`}
         >
@@ -233,6 +238,7 @@ const LSProfileMobileLayout = ({
         isTogglePending={followProfile?.isTogglePending}
       />
       <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
+      <LSProfileGroupsWidget userId={userId} isOwnProfile={isOwnProfile} />
       <LSMiniProfileList widgetTitle="Following" profiles={following ?? []} />
       <Stack
         component="ul"
@@ -298,9 +304,9 @@ const LSProfileDesktopLayout = ({
   const followingQuery = useUserFollowing(userId);
   const following = followingQuery.data;
 
-  const [activeCommentPostId, setActiveCommentPostId] = useState<
-    string | null
-  >(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
+    null,
+  );
 
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
@@ -347,7 +353,9 @@ const LSProfileDesktopLayout = ({
           likeCount={post.like_amount ?? 0}
           commentCount={post.comments?.length ?? 0}
           showMenu={isOwnProfile}
-          onDeleteClick={isOwnProfile ? () => actions.handleDeletePost(postId) : undefined}
+          onDeleteClick={
+            isOwnProfile ? () => actions.handleDeletePost(postId) : undefined
+          }
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
           shareUrl={`/posts/${post.post_id}`}
         >
@@ -413,9 +421,12 @@ const LSProfileDesktopLayout = ({
         </Box>
         <Flex flex={3} direction="column" gap={8}>
           <Box flex={3}>
-            <LSMiniProfileList
-              widgetTitle="Friends"
-              profiles={friends ?? []}
+            <LSMiniProfileList widgetTitle="Friends" profiles={friends ?? []} />
+          </Box>
+          <Box flex={3}>
+            <LSProfileGroupsWidget
+              userId={userId}
+              isOwnProfile={isOwnProfile}
             />
           </Box>
           <Box flex={5}>

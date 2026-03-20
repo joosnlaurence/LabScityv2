@@ -85,6 +85,8 @@ export function LSCreateGroupModal({
       onClose={handleClose}
       title="Create a new group"
       centered
+      size="lg"
+      radius="md"
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="md">

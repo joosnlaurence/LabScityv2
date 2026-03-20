@@ -1,7 +1,7 @@
 import {
-  QueryClient,
   dehydrate,
   HydrationBoundary,
+  QueryClient,
 } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { HomeFeed } from "@/components/feed/home-feed";
@@ -15,7 +15,8 @@ import {
   likeComment,
   likePost,
 } from "@/lib/actions/feed";
-import { feedKeys } from "@/lib/query-keys";
+import { getGroups, joinGroup, searchPublicGroups } from "@/lib/actions/groups";
+import { feedKeys, groupKeys } from "@/lib/query-keys";
 import { feedFilterSchema } from "@/lib/validations/post";
 import { createClient } from "@/supabase/server";
 
@@ -28,7 +29,9 @@ const defaultFeedFilter = feedFilterSchema.parse({});
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const queryClient = new QueryClient();
 
@@ -43,6 +46,36 @@ export default async function HomePage() {
     },
   });
 
+  const popularLimit = 6;
+  if (user?.id) {
+    await Promise.all([
+      queryClient.prefetchQuery({
+        queryKey: groupKeys.list(),
+        queryFn: async () => {
+          const result = await getGroups();
+          if (!result.success || !result.data) {
+            throw new Error(result.error ?? "Failed to fetch groups");
+          }
+          return result.data;
+        },
+      }),
+      queryClient.prefetchQuery({
+        queryKey: groupKeys.popular(popularLimit),
+        queryFn: async () => {
+          const result = await searchPublicGroups({
+            query: "",
+            topicTags: [],
+            limit: popularLimit,
+          });
+          if (!result.success) {
+            throw new Error(result.error ?? "Failed to fetch popular groups");
+          }
+          return result.data ?? [];
+        },
+      }),
+    ]);
+  }
+
   const dehydratedState = dehydrate(queryClient);
 
   return (
@@ -56,6 +89,15 @@ export default async function HomePage() {
         likeCommentAction={likeComment}
         deletePostAction={deletePost}
         currentUserId={user?.id ?? null}
+        popularGroupsActions={
+          user?.id
+            ? {
+                searchPublicGroupsAction: searchPublicGroups,
+                joinGroupAction: joinGroup,
+                getGroupsAction: getGroups,
+              }
+            : undefined
+        }
       />
     </HydrationBoundary>
   );

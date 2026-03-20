@@ -1,23 +1,28 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { getFeed } from "@/lib/actions/feed";
-import type { FeedPostItem, GetFeedResult } from "@/lib/types/feed";
 import { feedKeys } from "@/lib/query-keys";
-import { createClient } from "@/supabase/client";
+import type { FeedPostItem, GetFeedResult } from "@/lib/types/feed";
 import {
-  feedFilterSchema,
   type CreateCommentValues,
   type CreatePostValues,
   type CreateReportValues,
+  feedFilterSchema,
 } from "@/lib/validations/post";
+import { createClient } from "@/supabase/client";
 import type { HomeFeedProps } from "./home-feed.types";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 const maxPostImageBytes = 5 * 1024 * 1024;
-const allowedImageMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const allowedImageMimeTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 const postMediaBucket = "post_images";
 
 export function useHomeFeed({
@@ -29,10 +34,13 @@ export function useHomeFeed({
   likeCommentAction,
   deletePostAction,
   currentUserId,
+  popularGroupsActions,
 }: HomeFeedProps) {
   const queryClient = useQueryClient();
   const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
+    null,
+  );
   const [reportTarget, setReportTarget] = useState<
     | { type: "post"; postId: string }
     | { type: "comment"; postId: string; commentId: string }
@@ -56,7 +64,9 @@ export function useHomeFeed({
   });
 
   const createPostMutation = useMutation({
-    mutationFn: async (values: CreatePostValues & { mediaFile?: File | null }) => {
+    mutationFn: async (
+      values: CreatePostValues & { mediaFile?: File | null },
+    ) => {
       let mediaPath: string | undefined;
 
       if (values.mediaFile) {
@@ -68,7 +78,9 @@ export function useHomeFeed({
           throw new Error("Image must be 5MB or smaller");
         }
 
-        const uploadInfo = await createPostImageUploadUrlAction(values.mediaFile.type);
+        const uploadInfo = await createPostImageUploadUrlAction(
+          values.mediaFile.type,
+        );
         if (!uploadInfo.success || !uploadInfo.data) {
           throw new Error(uploadInfo.error ?? "Could not prepare image upload");
         }
@@ -76,7 +88,11 @@ export function useHomeFeed({
         const supabase = createClient();
         const { error: uploadError } = await supabase.storage
           .from(postMediaBucket)
-          .uploadToSignedUrl(uploadInfo.data.path, uploadInfo.data.token, values.mediaFile);
+          .uploadToSignedUrl(
+            uploadInfo.data.path,
+            uploadInfo.data.token,
+            values.mediaFile,
+          );
 
         if (uploadError) {
           throw new Error(uploadError.message || "Image upload failed");
@@ -102,7 +118,8 @@ export function useHomeFeed({
       setIsComposerOpen(false);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Something went wrong";
+      const message =
+        error instanceof Error ? error.message : "Something went wrong";
       const isUploadIssue =
         message.includes("upload") ||
         message.includes("Image") ||
@@ -113,7 +130,9 @@ export function useHomeFeed({
         message.includes("5MB");
 
       notifications.show({
-        title: isUploadIssue ? "Could not upload image" : "Could not create post",
+        title: isUploadIssue
+          ? "Could not upload image"
+          : "Could not create post",
         message,
         color: "red",
       });
@@ -141,7 +160,8 @@ export function useHomeFeed({
     onError: (error) => {
       notifications.show({
         title: "Could not add comment",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -174,7 +194,8 @@ export function useHomeFeed({
     onError: (error) => {
       notifications.show({
         title: "Could not submit report",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -189,28 +210,43 @@ export function useHomeFeed({
       return result;
     },
     onMutate: async (postId: string) => {
-      await queryClient.cancelQueries({ queryKey: feedKeys.list(defaultFeedFilter) });
-      const snapshot = queryClient.getQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter));
-      queryClient.setQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter), (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          posts: old.posts.map((p) =>
-            p.id === postId
-              ? { ...p, isLiked: !p.isLiked, likeCount: (p.likeCount ?? 0) + (p.isLiked ? -1 : 1) }
-              : p
-          ),
-        };
+      await queryClient.cancelQueries({
+        queryKey: feedKeys.list(defaultFeedFilter),
       });
+      const snapshot = queryClient.getQueryData<GetFeedResult>(
+        feedKeys.list(defaultFeedFilter),
+      );
+      queryClient.setQueryData<GetFeedResult>(
+        feedKeys.list(defaultFeedFilter),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            posts: old.posts.map((p) =>
+              p.id === postId
+                ? {
+                    ...p,
+                    isLiked: !p.isLiked,
+                    likeCount: (p.likeCount ?? 0) + (p.isLiked ? -1 : 1),
+                  }
+                : p,
+            ),
+          };
+        },
+      );
       return { snapshot };
     },
     onError: (error, _postId, context) => {
       if (context?.snapshot) {
-        queryClient.setQueryData(feedKeys.list(defaultFeedFilter), context.snapshot);
+        queryClient.setQueryData(
+          feedKeys.list(defaultFeedFilter),
+          context.snapshot,
+        );
       }
       notifications.show({
         title: "Could not update like",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -222,19 +258,24 @@ export function useHomeFeed({
   const deletePostMutation = useMutation({
     mutationFn: async (postId: string) => {
       const result = await deletePostAction(postId);
-      if (!result.success) throw new Error(result.error ?? "Failed to delete post");
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to delete post");
       return result;
     },
     onSuccess: (_result, postId) => {
-      queryClient.setQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter), (old) => {
-        if (!old) return old;
-        return { ...old, posts: old.posts.filter((p) => p.id !== postId) };
-      });
+      queryClient.setQueryData<GetFeedResult>(
+        feedKeys.list(defaultFeedFilter),
+        (old) => {
+          if (!old) return old;
+          return { ...old, posts: old.posts.filter((p) => p.id !== postId) };
+        },
+      );
     },
     onError: (error) => {
       notifications.show({
         title: "Could not delete post",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -244,7 +285,13 @@ export function useHomeFeed({
   });
 
   const likeCommentMutation = useMutation({
-    mutationFn: async ({ postId, commentId }: { postId: string; commentId: string }) => {
+    mutationFn: async ({
+      postId,
+      commentId,
+    }: {
+      postId: string;
+      commentId: string;
+    }) => {
       const result = await likeCommentAction(commentId);
       if (!result.success) {
         throw new Error(result.error ?? "Failed to update like");
@@ -257,7 +304,8 @@ export function useHomeFeed({
     onError: (error) => {
       notifications.show({
         title: "Could not update like",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -265,20 +313,29 @@ export function useHomeFeed({
 
   const posts: FeedPostItem[] = feedData?.posts ?? [];
 
-  const handleSubmitPost = (values: CreatePostValues & { mediaFile?: File | null }) => {
+  const handleSubmitPost = (
+    values: CreatePostValues & { mediaFile?: File | null },
+  ) => {
     createPostMutation.mutate(values);
   };
 
   const onSubmitReport = async (values: CreateReportValues) => {
     if (!reportTarget) return;
     await createReportMutation.mutateAsync({
-      postId: reportTarget.type === "post" ? reportTarget.postId : reportTarget.postId,
-      commentId: reportTarget.type === "comment" ? reportTarget.commentId : null,
+      postId:
+        reportTarget.type === "post"
+          ? reportTarget.postId
+          : reportTarget.postId,
+      commentId:
+        reportTarget.type === "comment" ? reportTarget.commentId : null,
       values,
     });
   };
 
-  const handleAddComment = async (postId: string, values: CreateCommentValues) => {
+  const handleAddComment = async (
+    postId: string,
+    values: CreateCommentValues,
+  ) => {
     await createCommentMutation.mutateAsync({ postId, values });
   };
 
@@ -314,5 +371,6 @@ export function useHomeFeed({
     handleToggleCommentLike,
     handleDeletePost,
     currentUserId,
+    popularGroupsActions,
   };
 }

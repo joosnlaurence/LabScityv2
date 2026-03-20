@@ -97,9 +97,16 @@ export function LSManageMembersModal({
 
   return (
     <>
-      <Modal opened={opened} onClose={onClose} title="Manage Members" size="md">
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        title="Manage members"
+        size="lg"
+        radius="md"
+        centered
+      >
         <Stack gap="lg">
-          <Tabs defaultValue="friends">
+          <Tabs defaultValue="friends" color="navy" radius="md">
             <Tabs.List>
               <Tabs.Tab value="friends">Invite friends</Tabs.Tab>
               <Tabs.Tab value="email">Add by email</Tabs.Tab>

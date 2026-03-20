@@ -93,7 +93,8 @@ export function LSEditGroupModal({
       opened={opened}
       onClose={onClose}
       title="Edit group"
-      size="md"
+      size="lg"
+      radius="md"
       centered
     >
       <form onSubmit={handleSubmit(onSubmit)}>

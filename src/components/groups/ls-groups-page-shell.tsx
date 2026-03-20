@@ -9,6 +9,8 @@ import type { LSGroupLayoutProps } from "./ls-group-layout.types";
 export interface LSGroupsPageShellProps extends LSGroupLayoutProps {
   searchPublicGroupsAction: typeof searchPublicGroups;
   getGroupsAction: typeof getGroups;
+  /** Deep-link from e.g. `/groups?tab=discover`. */
+  defaultTab?: "mine" | "discover";
 }
 
 /**
@@ -17,11 +19,12 @@ export interface LSGroupsPageShellProps extends LSGroupLayoutProps {
 export function LSGroupsPageShell({
   searchPublicGroupsAction,
   getGroupsAction,
+  defaultTab = "mine",
   ...layoutProps
 }: LSGroupsPageShellProps) {
   return (
-    <Tabs defaultValue="mine">
-      <Tabs.List>
+    <Tabs defaultValue={defaultTab} color="navy" radius="md">
+      <Tabs.List grow>
         <Tabs.Tab value="mine">My groups</Tabs.Tab>
         <Tabs.Tab value="discover">Discover</Tabs.Tab>
       </Tabs.List>
