@@ -43,10 +43,11 @@ export const postKeys = {
 export const groupKeys = {
   all: ["groups"] as const,
   list: () => [...groupKeys.all, "list"] as const,
-  detail: (groupId: number) =>
-    [...groupKeys.all, "detail", groupId] as const,
+  detail: (groupId: number) => [...groupKeys.all, "detail", groupId] as const,
   feed: (groupId: number, filter: FeedFilterValues) =>
     [...groupKeys.all, "feed", groupId, filter] as const,
+  discover: (query: string, topicTagsKey: string, limit: number) =>
+    [...groupKeys.all, "discover", query, topicTagsKey, limit] as const,
 };
 
 export const dataKeys = {

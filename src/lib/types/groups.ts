@@ -51,3 +51,12 @@ export interface GroupListItem extends Group {
 
 /** Shape returned by getGroups server action on success. */
 export type GetGroupsResult = GroupListItem[];
+
+/** Public group row for discovery (no member count required). */
+export interface GroupDiscoverItem {
+  group_id: number;
+  name: string;
+  description: string;
+  topics: string[];
+  privacy: GroupPrivacy;
+}

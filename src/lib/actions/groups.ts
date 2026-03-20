@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { DataResponse } from "@/lib/types/data";
 import type {
   GetGroupsResult,
+  GroupDiscoverItem,
   GroupListItem,
   GroupWithMembers,
 } from "@/lib/types/groups";
@@ -12,6 +13,8 @@ import {
   addMemberSchema,
   type CreateGroupValues,
   createGroupSchema,
+  type DiscoverGroupsValues,
+  discoverGroupsSchema,
   groupIdSchema,
   type InviteMembersValues,
   inviteMembersSchema,
@@ -225,6 +228,76 @@ export async function getGroupDetails(
       };
     }
     return { success: false, error: "Failed to fetch group details" };
+  }
+}
+
+/**
+ * Browse/search **public** groups (discovery tab).
+ *
+ * **RLS:** If this always returns empty, add a `SELECT` policy on `public.groups`
+ * allowing authenticated users to read rows where `privacy = 'public'` (in
+ * addition to any member-only policy).
+ */
+export async function searchPublicGroups(
+  input: DiscoverGroupsValues,
+  supabaseClient?: ReturnType<typeof createClient> extends Promise<infer R>
+    ? R
+    : never,
+): Promise<DataResponse<GroupDiscoverItem[]>> {
+  try {
+    const parsed = discoverGroupsSchema.parse(input);
+
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    let q = supabase
+      .from("groups")
+      .select("group_id, name, description, topics, privacy")
+      .eq("privacy", "public");
+
+    const term = parsed.query.trim();
+    if (term.length > 0) {
+      const escaped = term
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      const pattern = `%${escaped}%`;
+      q = q.or(`name.ilike.${pattern},description.ilike.${pattern}`);
+    }
+
+    if (parsed.topicTags.length > 0) {
+      q = q.contains("topics", parsed.topicTags);
+    }
+
+    const { data: rows, error } = await q
+      .order("last_activity_at", { ascending: false })
+      .limit(parsed.limit);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const result: GroupDiscoverItem[] = (rows ?? []).map((g) => ({
+      group_id: g.group_id,
+      name: g.name,
+      description: g.description ?? "",
+      topics: Array.isArray(g.topics) ? (g.topics as string[]) : [],
+      privacy: g.privacy === "private" ? "private" : "public",
+    }));
+
+    return { success: true, data: result };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to search public groups" };
   }
 }
 

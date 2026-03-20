@@ -82,3 +82,16 @@ export type RemoveMemberValues = z.infer<typeof removeMemberSchema>;
 export type InviteMembersValues = z.infer<typeof inviteMembersSchema>;
 export type RespondToInviteValues = z.infer<typeof respondToInviteSchema>;
 export type UpdateGroupValues = z.infer<typeof updateGroupSchema>;
+
+/** Public group discovery (authenticated browse / search). */
+export const discoverGroupsSchema = z.object({
+  query: z.string().max(200).optional().default(""),
+  topicTags: z
+    .array(topicTagSchema)
+    .max(5, { message: "At most 5 topic filters" })
+    .optional()
+    .default([]),
+  limit: z.number().int().min(1).max(50).optional().default(24),
+});
+
+export type DiscoverGroupsValues = z.infer<typeof discoverGroupsSchema>;
