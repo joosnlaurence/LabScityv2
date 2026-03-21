@@ -58,7 +58,9 @@ interface LSPostCardProps {
   children?: React.ReactNode;
 }
 
-// Helper to 
+// Helper to prevent clicks on things like the like button or profile name from
+// bubbling up to handling onPostClick, since post card overlaps with each 
+// part 
 function noPropagate(fn?: () => void) {
   return (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -186,7 +188,6 @@ export function LSPostCard({
         <Text
           fz="sm"
           c="navy.7"
-          onClick={onPostClick}
           style={{ wordBreak: "break-word" }}
         >
           {content}

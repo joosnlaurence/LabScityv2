@@ -236,10 +236,38 @@ export function useHomeFeed({
       }
       return result;
     },
+    onMutate: async ({ postId, commentId }, context) => {
+      await context.client.cancelQueries({ queryKey: feedKeys.list(defaultFeedFilter) });
+      const snapshot = context.client.getQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter));
+      context.client.setQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          posts: old.posts.map((p) =>
+            p.id === postId
+              ? 
+              {
+                ...p,
+                comments: p.comments.map((c) => 
+                  c.id === commentId
+                    ? {...c, isLiked: !c.isLiked}
+                    : c
+                ) 
+              }
+              : p
+          ),
+        };
+      });
+      return { snapshot };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
-    onError: (error) => {
+    onError: (error, _variables, onMutateResult, context) => {
+      if(onMutateResult?.snapshot) {
+        context.client.setQueryData(feedKeys.list(defaultFeedFilter), onMutateResult.snapshot)
+      }
+      console.error(error);
       notifications.show({
         title: "Could not update like",
         message: error instanceof Error ? error.message : "Something went wrong",

@@ -116,3 +116,8 @@ export interface GetFeedResult {
   posts: FeedPostItem[];
   nextCursor: string | null;
 }
+
+export interface GetPostDetailResult {
+  success: boolean;
+  data: FeedPostItem;
+}

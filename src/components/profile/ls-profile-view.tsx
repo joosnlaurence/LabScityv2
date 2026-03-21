@@ -363,8 +363,8 @@ const LSProfileDesktopLayout = ({
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      actions.handleToggleCommentLike(commentId)
+                    onLikeClick={() =>
+                      actions.handleToggleCommentLike(comment.id)
                     }
                     showMenu={false}
                   />

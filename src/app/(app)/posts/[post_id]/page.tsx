@@ -18,8 +18,11 @@ import {
   likeComment,
   likePost,
 } from "@/lib/actions/feed";
-import { postKeys } from "@/lib/query-keys";
-import type { CreateReportValues } from "@/lib/validations/post";
+import { feedKeys, postKeys } from "@/lib/query-keys";
+import { feedFilterSchema, type CreateReportValues } from "@/lib/validations/post";
+import { FeedPostItem, GetFeedResult, GetPostDetailResult } from "@/lib/types/feed";
+
+const defaultFeedFilter = feedFilterSchema.parse({});
 
 /**
  * Post detail page: single post with comments, like/comment/report actions, and ReportOverlay.
@@ -61,32 +64,84 @@ export default function PostDetailPage() {
   const likePostMutation = useMutation({
     mutationFn: async (postId: string) => {
       const result = await likePost(postId);
-      if (!result.success) throw new Error(result.error ?? "Failed to update like");
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to update like");
+      }
       return result;
     },
-    onSuccess: invalidate,
-    onError: (error) => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: postKeys.detail(post_id) });
+      const snapshot = queryClient.getQueryData<GetPostDetailResult>(postKeys.detail(post_id));
+      queryClient.setQueryData<GetPostDetailResult>(postKeys.detail(post_id), (old) => {
+        if (!old) return old;
+        const post = old.data;
+        return {
+          ...old,
+          data: {
+            ...post,
+            isLiked: !post.isLiked, likeCount: (post.likeCount ?? 0) + (post.isLiked ? -1 : 1)
+          }
+        };
+      });
+      return { snapshot };
+    },
+    onError: (error, _postId, context) => {
+      if (context?.snapshot) {
+        queryClient.setQueryData(postKeys.detail(post_id), context.snapshot);
+      }
       notifications.show({
         title: "Could not update like",
         message: error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      invalidate();
     },
   });
 
   const likeCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
       const result = await likeComment(commentId);
-      if (!result.success) throw new Error(result.error ?? "Failed to update like");
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to update like");
+      }
       return result;
     },
-    onSuccess: invalidate,
-    onError: (error) => {
+    onMutate: async (commentId) => {
+      await queryClient.cancelQueries({ queryKey: postKeys.detail(post_id) });
+      const snapshot = queryClient.getQueryData<GetPostDetailResult>(postKeys.detail(post_id));
+      queryClient.setQueryData<GetPostDetailResult>(postKeys.detail(post_id), (old) => {
+        if (!old) return old;
+        const post = old.data;
+        return {
+          ...old,
+          data: {
+            ...post,
+            comments: post.comments.map((c) => 
+              c.id === commentId
+                ? { ...c, isLiked: !c.isLiked }
+                : c
+            )
+          }
+        };
+      });
+      return { snapshot };
+    },
+    onError: (error, _postId, context) => {
+      if (context?.snapshot) {
+        queryClient.setQueryData(postKeys.detail(post_id), context.snapshot);
+      }
       notifications.show({
-        title: "Could not update like",
+        title: "Could not update comment like",
         message: error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      invalidate();
     },
   });
 
@@ -160,7 +215,6 @@ export default function PostDetailPage() {
     );
   }
 
-  
   return (
     <Stack p="md" maw={700} mx="auto">
       <ActionIcon variant="subtle" color="navy.7" size="xl" onClick={() => router.back()} aria-label="Go back">
@@ -234,9 +288,9 @@ export default function PostDetailPage() {
                 <LSPostCommentCard
                   key={comment.id}
                   comment={comment}
-                  onLikeClick={(commentId) => likeCommentMutation.mutate(commentId)}
-                  onReportClick={(commentId) =>
-                    setReportTarget({ type: "comment", postId: post.id, commentId })
+                  onLikeClick={() => likeCommentMutation.mutate(comment.id)}
+                  onReportClick={() =>
+                    setReportTarget({ type: "comment", postId: post.id, commentId: comment.id })
                   }
                   menuId={`comment-menu-${comment.id}`}
                 />
