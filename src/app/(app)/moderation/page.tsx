@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { LSModerationReportCard } from "@/components/moderation/ls-moderation-report-card";
 import {
   canAccessModerationAction,
   getModerationReportsAction,
 } from "@/lib/actions/moderation";
+import { LSModerationReportCard } from "@/components/moderation/ls-moderation-report-card";
+import { Group, Stack, Title, Text } from "@mantine/core";
 
 export const metadata: Metadata = {
   title: "Moderation | LabScity",
   description: "Moderator queue for handling user reports.",
 };
 
+/// Checks if we have mod privileges; redirects to home if we try to access this but don't
 export default async function ModerationPage() {
   const accessResult = await canAccessModerationAction();
 
   if (!accessResult.success) {
     return (
-      <main className="mx-auto w-full max-w-5xl p-4">
-        <h1 className="mb-2 text-2xl font-semibold">Moderation Queue</h1>
-        <p className="text-sm text-red-600">{accessResult.error}</p>
+      <main>
+        <h1>Moderation Queue</h1>
+        <p>{accessResult.error}</p>
       </main>
     );
   }
@@ -31,9 +33,9 @@ export default async function ModerationPage() {
 
   if (!reportsResult.success) {
     return (
-      <main className="mx-auto w-full max-w-5xl p-4">
-        <h1 className="mb-2 text-2xl font-semibold">Moderation Queue</h1>
-        <p className="text-sm text-red-600">{reportsResult.error}</p>
+      <main>
+        <h1>Moderation Queue</h1>
+        <p>{reportsResult.error}</p>
       </main>
     );
   }
@@ -41,25 +43,21 @@ export default async function ModerationPage() {
   const reports = reportsResult.data;
 
   return (
-    <main className="mx-auto w-full max-w-5xl p-4 sm:p-6">
-      <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h1 className="text-2xl font-semibold">Moderation Queue</h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          Recent feed reports that moderators can dismiss, remove content for, or escalate by banning users.
-        </p>
-      </div>
+    <Stack gap={0} p={12}>
+      <Title c="gray.8" my={12} fw={"normal"}>Reports</Title>
 
       {reports.length === 0 ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
-          No open reports right now.
-        </div>
+        <div>No open reports right now.</div>
       ) : (
-        <div className="space-y-5">
+        <Stack>
           {reports.map((report) => (
-            <LSModerationReportCard key={report.reportId} report={report} />
+            <LSModerationReportCard
+              key={report.reportId}
+              report={report}
+            />
           ))}
-        </div>
+        </Stack>
       )}
-    </main>
+    </Stack>
   );
 }

@@ -1,96 +1,120 @@
+"use client";
+
+// TODO: hyperlinks to report and reportee urls
+
 import {
-  banUserAction,
-  deleteReportedPostAction,
-  dismissReportAction,
   type ModerationReportItem,
 } from "@/lib/actions/moderation";
+import { Button, Card, Stack, Text, Title, Image, Group, Divider, Flex, Badge } from "@mantine/core";
+import { IconFlagFilled, IconReport, IconSpeakerphone, IconTrash, IconX } from "@tabler/icons-react";
 
 interface LSModerationReportCardProps {
   report: ModerationReportItem;
 }
 
 export function LSModerationReportCard({ report }: LSModerationReportCardProps) {
+  const handleDismiss = async () => {
+    // TODO: implement
+  };
+
+  const handleDeletePost = async () => {
+    // TODO: implement
+  };
+
+  const handleBanUser = async () => {
+    // TODO: implement
+  };
+
   return (
-    <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-        <span className="rounded-full border border-zinc-300 bg-zinc-50 px-2.5 py-1 font-medium text-zinc-700">
-          {report.type ?? "Unspecified"}
-        </span>
-        {report.commentId ? (
-          <span className="rounded-full border border-zinc-300 bg-zinc-50 px-2.5 py-1 text-zinc-600">
-            Comment Report
-          </span>
-        ) : null}
-      </div>
+    <Card
+      bg="gray.0"
+      padding="md"
+      radius="md"
+      shadow="lg"
+      style={{ overflow: "hidden" }}
+    >
+      <Group>
+        <Text>
+          <Text span fz={"h2"} fw={"lighter"} c={"gray.6"}>{"#"}</Text>
+          <Text span fz={"h2"} fw={"bold"} c={"gray.9"}>{report.reportId}</Text>
+        </Text>
 
-      <div className="mb-4 grid gap-1.5 text-sm text-zinc-700">
-        <p>
-          <span className="font-medium text-zinc-900">Reporter:</span>{" "}
-          {report.reporterName ?? report.reporterId ?? "Unknown"}
-        </p>
-        <p>
-          <span className="font-medium text-zinc-900">Reported user:</span>{" "}
-          {report.reportedUserName ?? report.reportedUserId ?? "Unknown"}
-        </p>
-        <p>
-          <span className="font-medium text-zinc-900">Created:</span>{" "}
-          {new Date(report.createdAt).toLocaleString()}
-        </p>
-        <p>
-          <span className="font-medium text-zinc-900">Post text:</span>{" "}
-          {report.postText ?? "[No post text found]"}
-        </p>
-        <p>
-          <span className="font-medium text-zinc-900">Context:</span>{" "}
-          {report.additionalContext ?? "None provided"}
-        </p>
-      </div>
+        {report.type &&
+          <Badge tt="none" size="lg" color="red">
+            <Text style={{ whiteSpace: "nowrap" }}>{report.type}</Text>
+          </Badge>
+        }
+      </Group>
 
-      {report.postMediaUrl ? (
-        <div className="mb-4 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-          <img
-            src={report.postMediaUrl}
-            alt="Reported post media"
-            className="max-h-80 w-full object-cover"
-          />
-        </div>
-      ) : null}
+      { /* reporter -> reportee */}
+      <Flex direction="row" gap={8} c="gray.6">
+        <Text>{report.reporterName}</Text>
+        <IconSpeakerphone width={18} />
+        <Text fw="bold" c="red">{report.reportedUserName}</Text>
+      </Flex>
 
-      <div className="flex flex-wrap gap-2">
-        <form action={dismissReportAction}>
-          <input type="hidden" name="reportId" value={report.reportId} />
-          <button
-            type="submit"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100"
-          >
-            Mark Unsubstantial (Dismiss)
-          </button>
-        </form>
 
-        <form action={deleteReportedPostAction}>
-          <input type="hidden" name="reportId" value={report.reportId} />
-          <input type="hidden" name="postId" value={report.postId} />
-          <button
-            type="submit"
-            className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-          >
-            Delete Post
-          </button>
-        </form>
+      <Text span c={"gray.6"}>
+        {new Date(report.createdAt).toLocaleString("en-US",
+          { dateStyle: "long", timeStyle: "short" }
+        )}
+      </Text>
 
-        {report.reportedUserId ? (
-          <form action={banUserAction}>
-            <input type="hidden" name="reportId" value={report.reportId} />
-            <input type="hidden" name="reportedUserId" value={report.reportedUserId} />
-            <button
-              type="submit"
-              className="rounded-md border border-red-500 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100"
+      <Stack gap={4} my={6}>
+
+        {/* other info about the report */}
+
+        <Text c={"gray.9"}>
+          {/* report type */}
+
+          {/* show comment report in addition to type if received comment id with it */}
+          <Text span c={"gray.6"}>{report.commentId ? <span>Comment Report</span> : null}</Text>
+        </Text>
+
+        <Divider my={8} />
+
+        <Group gap={12}>
+          <Text>
+            <Text span c="red" fw="bold">{report.reportedUserName}{": "}</Text>
+            <Text
+              span c={"gray.7"}
             >
-              Ban User
-            </button>
-          </form>
-        ) : null}
-      </div>
-    </article>
+              {`"${report.postText ?? "(no post text)"}"`}
+            </Text>
+          </Text>
+
+          {/* post media */}
+          <Image
+            src={report.postMediaUrl}
+            radius={"sm"}
+            alt="Reported post media"
+          />
+        </Group>
+
+        <Card bg="gray.2" c="gray.7" shadow="none" radius="sm" mt={4}>
+          <Text>
+            <Text span fw="bold">{report.reporterName}{"'s Context: "}</Text>
+            <Text
+              span
+              c={"gray.6"}
+            >
+              {`"${report.additionalContext ?? "(none provided"}"`}
+            </Text>
+          </Text>
+        </Card>
+
+      </Stack>
+
+      {/* actions */}
+      <Flex direction={"row"} gap={2} mt={8}>
+        <Button flex={1} leftSection={<IconTrash width={18} />} color={"red"} p={4} onClick={handleDeletePost}>Delete</Button>
+        {report.reportedUserId &&
+          <Button flex={1} leftSection={<IconX width={18} />} color={"red"} p={4} onClick={handleBanUser}>Ban User</Button>
+
+        }
+        <Button flex={1} variant={"filled"} color={"gray.6"} p={4} onClick={handleDismiss}>Dismiss</Button>
+      </Flex>
+
+    </Card >
   );
 }
