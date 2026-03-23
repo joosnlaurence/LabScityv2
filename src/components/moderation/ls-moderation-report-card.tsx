@@ -2,8 +2,12 @@
 
 // TODO: hyperlinks to report and reportee urls
 
+import Link from "next/link";
 import {
   type ModerationReportItem,
+  dismissReportAction,
+  deleteReportedPostAction,
+  banUserAction,
 } from "@/lib/actions/moderation";
 import { Button, Card, Stack, Text, Title, Image, Group, Divider, Flex, Badge } from "@mantine/core";
 import { IconFlagFilled, IconReport, IconSpeakerphone, IconTrash, IconX } from "@tabler/icons-react";
@@ -14,25 +18,41 @@ interface LSModerationReportCardProps {
 
 export function LSModerationReportCard({ report }: LSModerationReportCardProps) {
   const handleDismiss = async () => {
-    // TODO: implement
+    const formData = new FormData();
+    formData.append("reportId", String(report.reportId));
+    await dismissReportAction(formData);
   };
 
   const handleDeletePost = async () => {
-    // TODO: implement
+    const formData = new FormData();
+    formData.append("reportId", String(report.reportId));
+    formData.append("postId", String(report.postId));
+    await deleteReportedPostAction(formData);
   };
 
   const handleBanUser = async () => {
-    // TODO: implement
+    const formData = new FormData();
+    if (report.reportedUserId) {
+      formData.append("reportedUserId", report.reportedUserId);
+    }
+    formData.append("reportId", String(report.reportId));
+    await banUserAction(formData);
   };
 
   return (
-    <Card
-      bg="gray.0"
-      padding="md"
-      radius="md"
-      shadow="lg"
-      style={{ overflow: "hidden" }}
-    >
+    <>
+      <style>{`
+        .hover-underline:hover {
+          text-decoration: underline;
+        }
+      `}</style>
+      <Card
+        bg="gray.0"
+        padding="md"
+        radius="md"
+        shadow="lg"
+        style={{ overflow: "hidden" }}
+      >
       <Flex gap="sm" align="center" justify="start">
         <Text>
           <Text span fz={"h2"} fw={"lighter"} c={"gray.6"}>{"#"}</Text>
@@ -48,9 +68,25 @@ export function LSModerationReportCard({ report }: LSModerationReportCardProps) 
 
       { /* reporter -> reportee */}
       <Flex direction="row" gap={8} c="gray.6">
-        <Text>{report.reporterName}</Text>
+        {report.reporterId ? (
+          <Link href={`/profile/${report.reporterId}`} style={{ textDecoration: "none" }}>
+            <Text c="gray.6" style={{ cursor: "pointer" }} className="hover-underline">
+              {report.reporterName}
+            </Text>
+          </Link>
+        ) : (
+          <Text>{report.reporterName}</Text>
+        )}
         <IconSpeakerphone width={18} />
-        <Text fw="bold" c="red">{report.reportedUserName}</Text>
+        {report.reportedUserId ? (
+          <Link href={`/profile/${report.reportedUserId}`} style={{ textDecoration: "none" }}>
+            <Text fw="bold" c="red" style={{ cursor: "pointer" }} className="hover-underline">
+              {report.reportedUserName}
+            </Text>
+          </Link>
+        ) : (
+          <Text fw="bold" c="red">{report.reportedUserName}</Text>
+        )}
       </Flex>
 
 
@@ -73,25 +109,32 @@ export function LSModerationReportCard({ report }: LSModerationReportCardProps) 
 
         <Divider my={8} />
 
-        <Group gap={12}>
-          <Text>
-            <Text span c="red" fw="bold">{report.reportedUserName}{": "}</Text>
-            <Text
-              span c={"gray.7"}
-            >
-              {`"${report.postText ?? "(no post text)"}"`}
+        <Stack gap={12}>
+          <Link href={`/posts/${report.postId}`} style={{ textDecoration: "none" }}>
+            <Text style={{ cursor: "pointer" }}>
+              <Text span c="red" fw="bold">{report.reportedUserName}{": "}</Text>
+              <Text
+                span c={"gray.7"}
+              >
+                {`"${report.postText ?? "(no post text)"}"`}
+              </Text>
             </Text>
-          </Text>
+          </Link>
 
           {/* post media */}
           {report.postMediaUrl &&
-            <Image
-              src={report.postMediaUrl}
-              radius={"sm"}
-              alt="Reported post media"
-            />
+            <Link href={`/posts/${report.postId}`}>
+              <Image
+                src={report.postMediaUrl}
+                radius={"sm"}
+                alt="Reported post media"
+                maw={500}
+                fit="contain"
+                style={{ cursor: "pointer" }}
+              />
+            </Link>
           }
-        </Group>
+        </Stack>
 
         <Card bg="gray.2" c="gray.7" shadow="none" radius="sm" mt={4}>
           <Text>
@@ -118,5 +161,6 @@ export function LSModerationReportCard({ report }: LSModerationReportCardProps) 
       </Flex>
 
     </Card >
+    </>
   );
 }
