@@ -38,6 +38,9 @@ export function HomeFeed(props: HomeFeedProps) {
     handleToggleCommentLike,
     handleDeletePost,
     currentUserId,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useHomeFeed(props);
 
   return (
@@ -177,6 +180,13 @@ export function HomeFeed(props: HomeFeedProps) {
           </LSPostCard>
         ))}
       </Stack>
+
+      {/*This was for testing you can change it, remove it, make it into a scroll to the bottom to autoload. whatever.*/}
+      {true && (
+        <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+          {isFetchingNextPage ? "Loading..." : "Load more"}
+        </Button>
+      )}
     </Stack>
   );
 }
