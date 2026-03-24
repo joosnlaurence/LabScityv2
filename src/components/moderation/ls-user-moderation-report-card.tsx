@@ -52,7 +52,7 @@ export function LSUserModerationReportCard({
 						</Badge>
 					)}
 					{resolved && report.status && (
-						<Badge tt="none" size="lg" color="gray">
+						<Badge tt="capitalize" size="lg" color="gray">
 							<Text style={{ whiteSpace: "normal", wordBreak: "break-word" }}>{report.status}</Text>
 						</Badge>
 					)}
@@ -106,6 +106,7 @@ export function LSUserModerationReportCard({
 								flex={1}
 								leftSection={<IconX width={18} />}
 								color={"red"}
+								c="gray.0"
 								p={4}
 								onClick={handleBanUser}
 							>
@@ -116,6 +117,7 @@ export function LSUserModerationReportCard({
 							flex={1}
 							variant={"filled"}
 							color={"gray.6"}
+							c="gray.0"
 							p={4}
 							onClick={handleDismiss}
 						>

@@ -6,7 +6,7 @@ import {
   getUserReportsAction,
 } from "@/lib/actions/moderation";
 import { LSModerationQueue } from "@/components/moderation/ls-moderation-queue";
-import { Stack, Title } from "@mantine/core";
+import { Box, Stack, Title } from "@mantine/core";
 
 export const metadata: Metadata = {
   title: "Moderation | LabScity",
@@ -54,17 +54,19 @@ export default async function ModerationPage() {
   }
 
   return (
-    <Stack
-      gap={0}
-      p={12}
-      pr={18}
-      style={{ overflowX: "hidden" }}
-    >
-      <Title c="gray.8" my={12} fw={"normal"}>Reports</Title>
-      <LSModerationQueue
-        feedReports={feedResult.data}
-        userReports={userResult.data}
-      />
-    </Stack>
+    <Box maw={1080} mx="auto" p="md">
+      <Stack
+        gap={0}
+        maw={640}
+        mx="auto"
+        style={{ overflowX: "hidden" }}
+      >
+        <Title c="gray.8" my={12} fw={"normal"}>Reports</Title>
+        <LSModerationQueue
+          feedReports={feedResult.data}
+          userReports={userResult.data}
+        />
+      </Stack>
+    </Box>
   );
 }

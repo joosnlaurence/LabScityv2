@@ -6,11 +6,12 @@ import {
   Select,
   Textarea,
   Stack,
-  Alert,
   Group,
 } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { useState } from "react";
+import { notifications } from "@mantine/notifications";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
 import { createUserReport } from "@/lib/actions/profile";
 import type { CreateUserReportValues } from "@/lib/validations/profile";
 import { createUserReportSchema } from "@/lib/validations/profile";
@@ -43,78 +44,70 @@ export function LSUserReportOverlay({
   targetUserName,
   onClose,
 }: LSUserReportOverlayProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const form = useForm<CreateUserReportValues>({
-    initialValues: {
-      type: "" as const,
-      reason: "",
-    },
-    validate: {
-      type: (value: string) =>
-        !value || value === "" ? "Report type is required" : null,
-      reason: (value: string) => {
-        if (!value) return "Reason is required";
-        if (value.length > 2000) return "Reason must be less than 2000 characters";
-        return null;
-      },
-    },
+  const {
+    handleSubmit,
+    register,
+    reset,
+    control,
+    formState: { errors, isValid },
+  } = useForm<CreateUserReportValues>({
+    resolver: zodResolver(createUserReportSchema),
+    mode: "onChange",
+    defaultValues: { type: "", reason: "" },
   });
 
-  const handleSubmit = async (values: CreateUserReportValues) => {
-    try {
-      setIsSubmitting(true);
-      setSubmitError(null);
-
-      // Validate with Zod schema
-      const validated = createUserReportSchema.parse(values);
-
-      const result = await createUserReport(targetUserId, validated);
-
-      if (!result.success) {
-        setSubmitError(result.error || "Failed to submit report");
-        return;
-      }
-
-      // Success: reset form and close
-      form.reset();
+  const reportMutation = useMutation({
+    mutationFn: async (values: CreateUserReportValues) => {
+      const result = await createUserReport(targetUserId, values);
+      if (!result.success) throw new Error(result.error ?? "Failed to submit report");
+      return result;
+    },
+    onSuccess: () => {
+      reset();
       onClose();
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "An unexpected error occurred"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      notifications.show({
+        title: "Report submitted",
+        message: "Thank you. We will review this report.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: "Could not submit report",
+        message: error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
 
   return (
     <Modal
       opened={open}
       onClose={() => {
-        form.reset();
+        reset();
         onClose();
       }}
       title={`Report ${targetUserName}`}
       centered
       size="lg"
     >
-      <form onSubmit={form.onSubmit(handleSubmit)}>
+      <form onSubmit={handleSubmit((values) => reportMutation.mutateAsync(values))}>
         <Stack gap="md">
-          {submitError && (
-            <Alert color="red" title="Error">
-              {submitError}
-            </Alert>
-          )}
-
-          <Select
-            label="Report Type"
-            placeholder="Select reason for report"
-            data={REPORT_TYPES}
-            searchable
-            required
-            {...form.getInputProps("type")}
+          <Controller
+            name="type"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label="Report Type"
+                placeholder="Select reason for report"
+                data={REPORT_TYPES}
+                searchable
+                required
+                value={field.value || ""}
+                onChange={(value) => field.onChange(value ?? "")}
+                error={errors.type?.message}
+              />
+            )}
           />
 
           <Textarea
@@ -122,25 +115,26 @@ export function LSUserReportOverlay({
             placeholder="Provide more details about why you're reporting this user..."
             minRows={4}
             required
-            {...form.getInputProps("reason")}
+            error={errors.reason?.message}
+            {...register("reason")}
           />
 
           <Group justify="space-between">
             <Button
               variant="outline"
               onClick={() => {
-                form.reset();
+                reset();
                 onClose();
               }}
-              disabled={isSubmitting}
+              disabled={reportMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               color="red"
-              loading={isSubmitting}
-              disabled={!form.isValid()}
+              loading={reportMutation.isPending}
+              disabled={!isValid}
             >
               Report User
             </Button>

@@ -66,7 +66,7 @@ export function LSModerationReportCard({ report, resolved = false }: LSModeratio
           </Badge>
         }
         {resolved && report.status &&
-          <Badge tt="none" size="lg" color="gray">
+          <Badge tt="capitalize" size="lg" color="gray">
             <Text style={{ whiteSpace: "normal", wordBreak: "break-word" }}>{report.status}</Text>
           </Badge>
         }
@@ -160,11 +160,11 @@ export function LSModerationReportCard({ report, resolved = false }: LSModeratio
       {/* actions */}
     {!resolved && (
       <Flex direction={"row"} gap={2} mt={8}>
-        <Button flex={1} leftSection={<IconTrash width={18} />} color={"red"} p={4} onClick={handleDeletePost}>Delete</Button>
+        <Button flex={1} leftSection={<IconTrash width={18} />} color={"red"} c="gray.0" p={4} onClick={handleDeletePost}>Delete</Button>
         {report.reportedUserId &&
-          <Button flex={1} leftSection={<IconX width={18} />} color={"red"} p={4} onClick={handleBanUser}>Ban User</Button>
+          <Button flex={1} leftSection={<IconX width={18} />} color={"red"} c="gray.0" p={4} onClick={handleBanUser}>Ban User</Button>
         }
-        <Button flex={1} variant={"filled"} color={"gray.6"} p={4} onClick={handleDismiss}>Dismiss</Button>
+        <Button flex={1} variant={"filled"} color={"gray.6"} c="gray.0" p={4} onClick={handleDismiss}>Dismiss</Button>
       </Flex>
     )}
     </Card >

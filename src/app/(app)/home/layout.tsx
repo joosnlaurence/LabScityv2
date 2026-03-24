@@ -26,7 +26,7 @@ export default function HomeLayout({
           </Flex>
 
           {/* trending + sidecards */}
-          <Flex flex={4} {...isMobile && { miw: "100%" }}> {/* mobile miw makes box take full width */}
+          <Flex flex={4} {...isMobile && { miw: "100%" }} style={{ position: "sticky", top: "1rem", alignSelf: "flex-start" }}> {/* mobile miw makes box take full width */}
             <TrendingWidget />
           </Flex>
 
