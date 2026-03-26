@@ -1115,38 +1115,11 @@ export async function respondToGroupInvite(
       return { success: true, data: null };
     }
 
-    const { data: existingMember } = await supabase
-      .from("group_members")
-      .select("user_id")
-      .eq("group_id", parsed.groupId)
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (existingMember) {
-      const { error } = await supabase
-        .from("invites")
-        .update({ status: "accepted" })
-        .eq("group_id", parsed.groupId)
-        .eq("user_id", userId);
-      if (error) {
-        return { success: false, error: error.message };
-      }
-      return { success: true, data: null };
-    }
-
-    const joinResult = await joinGroup(parsed.groupId, supabase);
-    if (!joinResult.success) {
-      return joinResult;
-    }
-
-    const { error: updErr } = await supabase
-      .from("invites")
-      .update({ status: "accepted" })
-      .eq("group_id", parsed.groupId)
-      .eq("user_id", userId);
-
-    if (updErr) {
-      return { success: false, error: updErr.message };
+    const { error: acceptErr } = await supabase.rpc("accept_group_invite", {
+      target_group_id: parsed.groupId,
+    });
+    if (acceptErr) {
+      return { success: false, error: acceptErr.message };
     }
 
     return { success: true, data: null };
