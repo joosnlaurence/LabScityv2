@@ -66,13 +66,20 @@ export const updateGroupSchema = z
       .max(5, { message: "At most 5 topics" })
       .optional(),
     privacy: z.enum(["public", "private"]).optional(),
+    /** Storage path under `profile_pictures` (see `createGroupAvatarUploadUrl`). */
+    avatarStoragePath: z
+      .string()
+      .min(1)
+      .max(512, { message: "Avatar path is too long" })
+      .optional(),
   })
   .refine(
     (data) =>
       data.name !== undefined ||
       data.description !== undefined ||
       data.topics !== undefined ||
-      data.privacy !== undefined,
+      data.privacy !== undefined ||
+      data.avatarStoragePath !== undefined,
     { message: "Provide at least one field to update", path: ["groupId"] },
   );
 

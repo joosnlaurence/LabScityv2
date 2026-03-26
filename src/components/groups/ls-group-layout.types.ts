@@ -9,6 +9,7 @@ import type {
 import type {
   addMemberByEmail,
   createGroup,
+  createGroupAvatarUploadUrl,
   deleteGroup,
   inviteUsersToGroup,
   joinGroup,
@@ -25,6 +26,8 @@ export type InviteUsersToGroupAction = typeof inviteUsersToGroup;
 export type DeleteGroupAction = typeof deleteGroup;
 export type RemoveMemberAction = typeof removeMember;
 export type UpdateGroupAction = typeof updateGroup;
+export type CreateGroupAvatarUploadUrlAction =
+  typeof createGroupAvatarUploadUrl;
 export type CreatePostAction = typeof createPost;
 export type CreatePostImageUploadUrlAction = typeof createPostImageUploadUrl;
 export type CreateCommentAction = typeof createComment;
@@ -34,6 +37,7 @@ export type LikeCommentAction = typeof likeComment;
 
 export interface LSGroupLayoutProps {
   activeGroupId?: number;
+  createGroupAvatarUploadUrlAction: CreateGroupAvatarUploadUrlAction;
   createGroupAction: CreateGroupAction;
   joinGroupAction: JoinGroupAction;
   leaveGroupAction: LeaveGroupAction;

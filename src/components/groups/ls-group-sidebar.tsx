@@ -100,7 +100,12 @@ export function LSGroupSidebar({
                     </Text>
                   }
                   leftSection={
-                    <Avatar color="navy.7" bg="navy.7" radius="xl">
+                    <Avatar
+                      color="navy.7"
+                      bg="navy.7"
+                      radius="xl"
+                      src={group.avatar_url ?? undefined}
+                    >
                       {(group.name || "?")
                         .split(" ")
                         .filter(Boolean)

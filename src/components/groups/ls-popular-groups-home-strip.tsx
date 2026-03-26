@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Avatar,
   Badge,
   Box,
   Button,
@@ -24,6 +25,16 @@ import type {
 import { groupKeys } from "@/lib/query-keys";
 
 const POPULAR_LIMIT = 6;
+
+function stripInitials(name: string) {
+  return (name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export interface LSPopularGroupsHomeStripProps {
   searchPublicGroupsAction: typeof searchPublicGroups;
@@ -164,9 +175,26 @@ export function LSPopularGroupsHomeStrip({
               }}
             >
               <Stack gap={6}>
-                <Text fw={600} c="navy.7" size="sm" lineClamp={2}>
-                  {g.name}
-                </Text>
+                <Group gap="xs" align="center" wrap="nowrap">
+                  <Avatar
+                    size={36}
+                    radius="md"
+                    color="navy.7"
+                    bg="navy.7"
+                    src={g.avatar_url ?? undefined}
+                  >
+                    {stripInitials(g.name)}
+                  </Avatar>
+                  <Text
+                    fw={600}
+                    c="navy.7"
+                    size="sm"
+                    lineClamp={2}
+                    style={{ flex: 1 }}
+                  >
+                    {g.name}
+                  </Text>
+                </Group>
                 {g.topics.length > 0 ? (
                   <Group gap={4} wrap="wrap">
                     {g.topics.slice(0, 2).map((t) => (

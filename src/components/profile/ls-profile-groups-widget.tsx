@@ -93,8 +93,19 @@ export function LSProfileGroupsWidget({
                   boxShadow: "var(--mantine-shadow-xs)",
                 }}
               >
-                <Group justify="flex-start" wrap="nowrap" gap="sm" align="flex-start">
-                  <Avatar size={40} radius="md" color="navy.7" bg="navy.7">
+                <Group
+                  justify="flex-start"
+                  wrap="nowrap"
+                  gap="sm"
+                  align="flex-start"
+                >
+                  <Avatar
+                    size={40}
+                    radius="md"
+                    color="navy.7"
+                    bg="navy.7"
+                    src={g.avatar_url ?? undefined}
+                  >
                     {groupInitials(g.name)}
                   </Avatar>
                   <Box style={{ flex: 1, minWidth: 0 }}>

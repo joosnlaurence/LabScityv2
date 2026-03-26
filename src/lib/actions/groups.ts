@@ -29,6 +29,49 @@ import { createClient } from "@/supabase/server";
 
 type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
 
+/**
+ * Use `profile_pictures` (not `post_images`) so `getPublicUrl` matches a bucket that is
+ * readable for `<img>` / Mantine `Avatar` — `post_images` is often private with signed URLs only.
+ * Paths: `{uid}/group_{groupId}_{uuid}.ext` under the uploader’s folder (same RLS pattern as profile pics).
+ */
+const groupAvatarBucket = "profile_pictures";
+const allowedGroupAvatarMime = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+
+function extensionFromGroupAvatarMime(mimeType: string) {
+  switch (mimeType) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    default:
+      return "bin";
+  }
+}
+
+function resolveGroupAvatarPublicUrl(
+  supabase: ServerSupabase,
+  stored: string | null | undefined,
+): string | null {
+  if (stored == null || String(stored).trim() === "") return null;
+  const s = String(stored).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  return supabase.storage.from(groupAvatarBucket).getPublicUrl(s).data
+    .publicUrl;
+}
+
+function expectedGroupAvatarPathPrefix(userId: string, groupId: number) {
+  return `${userId}/group_${groupId}_`;
+}
+
 /** Direct insert when `join_public_group` RPC is not applicable (e.g. private group + invite). */
 async function insertDirectGroupMembership(
   supabase: ServerSupabase,
@@ -98,7 +141,7 @@ export async function getGroups(
     const { data: groups, error: groupsError } = await supabase
       .from("groups")
       .select(
-        "group_id, name, description, created_at, conversation_id, topics, privacy",
+        "group_id, name, description, created_at, conversation_id, topics, privacy, avatar_url",
       )
       .in("group_id", groupIds)
       .order("name");
@@ -138,6 +181,7 @@ export async function getGroups(
       topics: Array.isArray(g.topics) ? (g.topics as string[]) : [],
       privacy: g.privacy === "private" ? "private" : "public",
       memberCount: countMap[g.group_id] ?? 0,
+      avatar_url: resolveGroupAvatarPublicUrl(supabase, g.avatar_url),
     }));
 
     return { success: true, data: result };
@@ -195,7 +239,7 @@ export async function getProfileVisibleGroups(
     const { data: groups, error: groupsError } = await supabase
       .from("groups")
       .select(
-        "group_id, name, description, created_at, conversation_id, topics, privacy",
+        "group_id, name, description, created_at, conversation_id, topics, privacy, avatar_url",
       )
       .in("group_id", groupIds)
       .order("name");
@@ -241,6 +285,7 @@ export async function getProfileVisibleGroups(
       topics: Array.isArray(g.topics) ? (g.topics as string[]) : [],
       privacy: g.privacy === "private" ? "private" : "public",
       memberCount: countMap[g.group_id] ?? 0,
+      avatar_url: resolveGroupAvatarPublicUrl(supabase, g.avatar_url),
     }));
 
     return { success: true, data: result };
@@ -281,7 +326,7 @@ export async function getGroupDetails(
     const { data: group, error: groupError } = await supabase
       .from("groups")
       .select(
-        "group_id, name, description, created_at, conversation_id, topics, privacy",
+        "group_id, name, description, created_at, conversation_id, topics, privacy, avatar_url",
       )
       .eq("group_id", groupId)
       .single();
@@ -352,6 +397,7 @@ export async function getGroupDetails(
       conversation_id: group.conversation_id,
       topics: Array.isArray(group.topics) ? (group.topics as string[]) : [],
       privacy: group.privacy === "private" ? "private" : "public",
+      avatar_url: resolveGroupAvatarPublicUrl(supabase, group.avatar_url),
       members: formattedMembers,
       memberCount: formattedMembers.length,
     };
@@ -393,7 +439,7 @@ export async function searchPublicGroups(
 
     let q = supabase
       .from("groups")
-      .select("group_id, name, description, topics, privacy")
+      .select("group_id, name, description, topics, privacy, avatar_url")
       .eq("privacy", "public");
 
     const term = parsed.query.trim();
@@ -424,6 +470,7 @@ export async function searchPublicGroups(
       description: g.description ?? "",
       topics: Array.isArray(g.topics) ? (g.topics as string[]) : [],
       privacy: g.privacy === "private" ? "private" : "public",
+      avatar_url: resolveGroupAvatarPublicUrl(supabase, g.avatar_url),
     }));
 
     return { success: true, data: result };
@@ -678,8 +725,87 @@ export async function leaveGroup(
   }
 }
 
+const groupAvatarContentTypeSchema = z
+  .string()
+  .refine(
+    (v) =>
+      allowedGroupAvatarMime.includes(
+        v as (typeof allowedGroupAvatarMime)[number],
+      ),
+    { message: "Only JPG, PNG, WEBP, and GIF images are allowed" },
+  );
+
 /**
- * Updates group fields (name, description, topics, privacy). Only Admins may call.
+ * Signed upload URL for a group avatar (stored under `profile_pictures` as
+ * `{uid}/group_{groupId}_{uuid}.ext`). Admin only.
+ */
+export async function createGroupAvatarUploadUrl(
+  groupId: number,
+  contentType: string,
+): Promise<DataResponse<{ path: string; token: string; maxBytes: number }>> {
+  try {
+    groupIdSchema.parse(groupId);
+    const validatedType = groupAvatarContentTypeSchema.parse(contentType);
+
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const { data: roleRow, error: roleError } = await supabase
+      .from("group_members")
+      .select("role")
+      .eq("group_id", groupId)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+
+    if (roleError) {
+      return { success: false, error: roleError.message };
+    }
+    if (roleRow?.role !== "Admin") {
+      return {
+        success: false,
+        error: "Only group admins can change the group photo",
+      };
+    }
+
+    const extension = extensionFromGroupAvatarMime(validatedType);
+    const path = `${authData.user.id}/group_${groupId}_${crypto.randomUUID()}.${extension}`;
+
+    const { data, error } = await supabase.storage
+      .from(groupAvatarBucket)
+      .createSignedUploadUrl(path);
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: error?.message ?? "Failed to prepare image upload",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        path,
+        token: data.token,
+        maxBytes: 1024 * 1024,
+      },
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to prepare image upload" };
+  }
+}
+
+/**
+ * Updates group fields (name, description, topics, privacy, avatar path). Only Admins may call.
  */
 export async function updateGroup(
   values: UpdateGroupValues,
@@ -711,11 +837,48 @@ export async function updateGroup(
       };
     }
 
+    if (parsed.avatarStoragePath !== undefined) {
+      const prefix = expectedGroupAvatarPathPrefix(
+        authData.user.id,
+        parsed.groupId,
+      );
+      if (!parsed.avatarStoragePath.startsWith(prefix)) {
+        return {
+          success: false,
+          error: "Invalid avatar image path",
+        };
+      }
+    }
+
+    let previousAvatarPathToRemove: string | null = null;
+    if (parsed.avatarStoragePath !== undefined) {
+      const { data: existingGroup, error: existingErr } = await supabase
+        .from("groups")
+        .select("avatar_url")
+        .eq("group_id", parsed.groupId)
+        .maybeSingle();
+
+      if (existingErr) {
+        return { success: false, error: existingErr.message };
+      }
+
+      const oldPath = existingGroup?.avatar_url?.trim();
+      if (
+        oldPath &&
+        oldPath !== parsed.avatarStoragePath &&
+        !/^https?:\/\//i.test(oldPath) &&
+        oldPath.startsWith(`${authData.user.id}/`)
+      ) {
+        previousAvatarPathToRemove = oldPath;
+      }
+    }
+
     const patch: {
       name?: string;
       description?: string;
       topics?: string[];
       privacy?: "public" | "private";
+      avatar_url?: string;
     } = {};
     if (parsed.name !== undefined) patch.name = parsed.name;
     if (parsed.description !== undefined) {
@@ -723,6 +886,9 @@ export async function updateGroup(
     }
     if (parsed.topics !== undefined) patch.topics = parsed.topics;
     if (parsed.privacy !== undefined) patch.privacy = parsed.privacy;
+    if (parsed.avatarStoragePath !== undefined) {
+      patch.avatar_url = parsed.avatarStoragePath;
+    }
 
     const { error: updateError } = await supabase
       .from("groups")
@@ -731,6 +897,16 @@ export async function updateGroup(
 
     if (updateError) {
       return { success: false, error: updateError.message };
+    }
+
+    if (previousAvatarPathToRemove) {
+      const legacyBuckets = ["profile_pictures", "post_images"] as const;
+      for (const bucket of legacyBuckets) {
+        const { error: rmErr } = await supabase.storage
+          .from(bucket)
+          .remove([previousAvatarPathToRemove]);
+        void rmErr;
+      }
     }
 
     return { success: true, data: null };

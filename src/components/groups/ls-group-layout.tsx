@@ -46,6 +46,7 @@ import { useGroupLayout } from "./use-group-layout";
 export function LSGroupLayout(props: LSGroupLayoutProps) {
   const {
     activeGroupId,
+    createGroupAvatarUploadUrlAction,
     createGroupAction,
     joinGroupAction,
     leaveGroupAction,
@@ -157,7 +158,13 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
           <Box flex={5}>
             <Paper p="lg" radius="md" shadow="sm" bg="white">
               <Group gap="md" align="flex-start">
-                <Avatar size={72} radius="xl" color="navy.7" bg="navy.7">
+                <Avatar
+                  size={72}
+                  radius="xl"
+                  color="navy.7"
+                  bg="navy.7"
+                  src={groupDetails.avatar_url ?? undefined}
+                >
                   {groupInitials}
                 </Avatar>
                 <Stack gap={4} style={{ flex: 1 }}>
@@ -378,6 +385,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
           onClose={closeEditGroup}
           group={groupDetails}
           updateGroupMutation={updateGroupMutation}
+          createGroupAvatarUploadUrlAction={createGroupAvatarUploadUrlAction}
         />
       )}
 

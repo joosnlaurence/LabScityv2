@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
+import { Avatar, Badge, Button, Card, Group, Stack, Text } from "@mantine/core";
 import type { GroupDiscoverItem } from "@/lib/types/groups";
 
 export interface LSGroupCardProps {
@@ -12,6 +12,16 @@ export interface LSGroupCardProps {
 }
 
 const DESC_MAX = 160;
+
+function cardInitials(name: string) {
+  return (name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 /**
  * Compact preview card for a public group on the Discover tab.
@@ -46,9 +56,26 @@ export function LSGroupCard({
     >
       <Stack gap="sm" justify="space-between" h="100%">
         <Stack gap="xs">
-          <Text fw={600} size="lg" c="navy.7" lineClamp={2}>
-            {group.name}
-          </Text>
+          <Group gap="sm" align="center" wrap="nowrap">
+            <Avatar
+              size={44}
+              radius="md"
+              color="navy.7"
+              bg="navy.7"
+              src={group.avatar_url ?? undefined}
+            >
+              {cardInitials(group.name)}
+            </Avatar>
+            <Text
+              fw={600}
+              size="lg"
+              c="navy.7"
+              lineClamp={2}
+              style={{ flex: 1 }}
+            >
+              {group.name}
+            </Text>
+          </Group>
           {desc ? (
             <Text size="sm" c="dimmed" lineClamp={4}>
               {desc}

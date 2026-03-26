@@ -2,7 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Avatar,
   Button,
+  FileInput,
+  Group,
   Modal,
   Select,
   Stack,
@@ -10,8 +13,9 @@ import {
   Textarea,
   TextInput,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
 import type { DataResponse } from "@/lib/types/data";
@@ -21,8 +25,29 @@ import {
   type UpdateGroupValues,
   updateGroupSchema,
 } from "@/lib/validations/groups";
+import { createClient } from "@/supabase/client";
+import type { CreateGroupAvatarUploadUrlAction } from "./ls-group-layout.types";
 
 type EditGroupFormInput = z.input<typeof editGroupFormSchema>;
+
+const groupAvatarBucket = "profile_pictures";
+const allowedGroupAvatarTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+const maxGroupAvatarBytes = 1024 * 1024;
+
+function groupNameInitials(name: string) {
+  return (name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export interface LSEditGroupModalProps {
   opened: boolean;
@@ -33,17 +58,21 @@ export interface LSEditGroupModalProps {
     Error,
     UpdateGroupValues
   >;
+  createGroupAvatarUploadUrlAction: CreateGroupAvatarUploadUrlAction;
 }
 
 /**
- * Admin-only modal to edit group name, description, topics, and privacy.
+ * Admin-only modal to edit group name, description, topics, privacy, and photo.
  */
 export function LSEditGroupModal({
   opened,
   onClose,
   group,
   updateGroupMutation,
+  createGroupAvatarUploadUrlAction,
 }: LSEditGroupModalProps) {
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+
   const {
     control,
     handleSubmit,
@@ -88,6 +117,59 @@ export function LSEditGroupModal({
     });
   };
 
+  const handleAvatarFile = async (file: File | null) => {
+    if (!file || !group) return;
+    if (!allowedGroupAvatarTypes.has(file.type)) {
+      notifications.show({
+        title: "Invalid file type",
+        message: "Only JPG, PNG, WEBP, and GIF images are allowed",
+        color: "red",
+      });
+      return;
+    }
+    if (file.size > maxGroupAvatarBytes) {
+      notifications.show({
+        title: "File too large",
+        message: "Group photo must be 1 MB or smaller",
+        color: "red",
+      });
+      return;
+    }
+
+    setIsAvatarUploading(true);
+    try {
+      const uploadInfo = await createGroupAvatarUploadUrlAction(
+        group.group_id,
+        file.type,
+      );
+      if (!uploadInfo.success || !uploadInfo.data) {
+        throw new Error(uploadInfo.error ?? "Could not prepare image upload");
+      }
+
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from(groupAvatarBucket)
+        .uploadToSignedUrl(uploadInfo.data.path, uploadInfo.data.token, file);
+      if (uploadError) {
+        throw new Error(uploadError.message || "Image upload failed");
+      }
+
+      await updateGroupMutation.mutateAsync({
+        groupId: group.group_id,
+        avatarStoragePath: uploadInfo.data.path,
+      });
+    } catch (error: unknown) {
+      notifications.show({
+        title: "Could not update group photo",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    } finally {
+      setIsAvatarUploading(false);
+    }
+  };
+
   return (
     <Modal
       opened={opened}
@@ -99,6 +181,28 @@ export function LSEditGroupModal({
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="md">
+          {group ? (
+            <Group align="flex-start" gap="md" wrap="nowrap">
+              <Avatar
+                size={72}
+                radius="md"
+                color="navy.7"
+                bg="navy.7"
+                src={group.avatar_url ?? undefined}
+              >
+                {groupNameInitials(group.name)}
+              </Avatar>
+              <FileInput
+                flex={1}
+                label="Group photo"
+                placeholder="Choose image"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                disabled={isAvatarUploading || updateGroupMutation.isPending}
+                onChange={handleAvatarFile}
+              />
+            </Group>
+          ) : null}
+
           <Controller
             name="name"
             control={control}
@@ -157,7 +261,7 @@ export function LSEditGroupModal({
             type="submit"
             color="navy"
             fullWidth
-            loading={updateGroupMutation.isPending}
+            loading={updateGroupMutation.isPending && !isAvatarUploading}
           >
             Save changes
           </Button>

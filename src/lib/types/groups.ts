@@ -8,6 +8,7 @@ export type GroupPrivacy = "public" | "private";
 export type GroupRole = "Admin" | "Moderator" | "Member";
 
 /** Row from the `groups` table. */
+/** Resolved public image URL for the group (from storage path or legacy full URL). */
 export interface Group {
   group_id: number;
   name: string;
@@ -16,6 +17,7 @@ export interface Group {
   conversation_id: number | null;
   topics: string[];
   privacy: GroupPrivacy;
+  avatar_url?: string | null;
 }
 
 /** Pending or settled group invitation (public.invites). */
@@ -59,4 +61,5 @@ export interface GroupDiscoverItem {
   description: string;
   topics: string[];
   privacy: GroupPrivacy;
+  avatar_url?: string | null;
 }

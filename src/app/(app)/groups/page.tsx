@@ -17,6 +17,7 @@ import {
 import {
   addMemberByEmail,
   createGroup,
+  createGroupAvatarUploadUrl,
   deleteGroup,
   getGroupDetails,
   getGroups,
@@ -93,6 +94,7 @@ export default async function GroupsPage({
       <LSGroupsPageShell
         defaultTab={defaultTab}
         activeGroupId={activeGroupId}
+        createGroupAvatarUploadUrlAction={createGroupAvatarUploadUrl}
         createGroupAction={createGroup}
         joinGroupAction={joinGroup}
         leaveGroupAction={leaveGroup}

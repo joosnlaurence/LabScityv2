@@ -5,7 +5,7 @@ import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { getGroupDetails, getGroups } from "@/lib/actions/groups";
-import { chatKeys, groupKeys } from "@/lib/query-keys";
+import { chatKeys, groupKeys, profileKeys } from "@/lib/query-keys";
 import type { GroupListItem, GroupWithMembers } from "@/lib/types/groups";
 import type {
   AddMemberValues,
@@ -138,13 +138,13 @@ export function useGroupLayout({
       }
       return result;
     },
-    onSuccess: () => {
-      if (activeGroupId) {
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.all });
+      if (variables.avatarStoragePath !== undefined) {
         queryClient.invalidateQueries({
-          queryKey: groupKeys.detail(activeGroupId),
+          queryKey: [...profileKeys.all, "groups"],
         });
       }
-      queryClient.invalidateQueries({ queryKey: groupKeys.list() });
       notifications.show({
         title: "Group updated",
         message: "Your changes have been saved.",
