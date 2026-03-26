@@ -4,6 +4,7 @@ import { ActionIcon, Button, Group, Paper, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCircleFilled, IconUsers, IconX } from "@tabler/icons-react";
 import Link from "next/link";
+import { groupsPath } from "@/lib/utils/groups-url";
 import type { Notification } from "@/store/notificationStore";
 import { useRespondToGroupInvite } from "./use-notifications";
 
@@ -36,7 +37,7 @@ export function LSGroupInviteNotificationCard({
   onDismiss: (id: string) => void;
 }) {
   const respondMutation = useRespondToGroupInvite();
-  const groupHref = `/groups?group=${groupId}`;
+  const groupHref = groupsPath({ tab: "mine", groupId });
   const busy =
     respondMutation.isPending && respondMutation.variables?.groupId === groupId;
 

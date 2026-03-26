@@ -61,7 +61,7 @@ export function LSGroupCard({
               size={44}
               radius="md"
               color="navy.7"
-              bg="navy.7"
+              bg={group.avatar_url ? undefined : "navy.7"}
               src={group.avatar_url ?? undefined}
             >
               {cardInitials(group.name)}

@@ -15,6 +15,7 @@ import {
 import { IconPlus } from "@tabler/icons-react";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import type { GroupListItem } from "@/lib/types/groups";
+import { groupsPath } from "@/lib/utils/groups-url";
 
 function formatMembers(count: number) {
   return `${count} member${count === 1 ? "" : "s"}`;
@@ -77,7 +78,10 @@ export function LSGroupSidebar({
             </Text>
           ) : (
             groups.map((group) => {
-              const href = `/groups?group=${group.group_id}`;
+              const href = groupsPath({
+                tab: "mine",
+                groupId: group.group_id,
+              });
               const active = group.group_id === activeGroupId;
 
               return (
@@ -102,7 +106,7 @@ export function LSGroupSidebar({
                   leftSection={
                     <Avatar
                       color="navy.7"
-                      bg="navy.7"
+                      bg={group.avatar_url ? undefined : "navy.7"}
                       radius="xl"
                       src={group.avatar_url ?? undefined}
                     >

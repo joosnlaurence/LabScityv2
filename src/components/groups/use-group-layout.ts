@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { getGroupDetails, getGroups } from "@/lib/actions/groups";
 import { chatKeys, groupKeys, profileKeys } from "@/lib/query-keys";
 import type { GroupListItem, GroupWithMembers } from "@/lib/types/groups";
+import { groupsPath } from "@/lib/utils/groups-url";
 import type {
   AddMemberValues,
   InviteMembersValues,
@@ -141,6 +142,9 @@ export function useGroupLayout({
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: groupKeys.all });
       if (variables.avatarStoragePath !== undefined) {
+        queryClient.invalidateQueries({
+          queryKey: groupKeys.detail(variables.groupId),
+        });
         queryClient.invalidateQueries({
           queryKey: [...profileKeys.all, "groups"],
         });
@@ -338,7 +342,7 @@ export function useGroupLayout({
   const handleGroupCreated = (groupId: number) => {
     closeCreateModal();
     queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    router.push(`/groups?group=${groupId}`);
+    router.push(groupsPath({ tab: "mine", groupId }));
   };
 
   return {

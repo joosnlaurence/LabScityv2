@@ -417,6 +417,9 @@ export async function getGroupDetails(
 /**
  * Browse/search **public** groups (discovery tab).
  *
+ * Results are ordered by `last_activity_at` descending (see query below)—used
+ * as-is for the home “Popular groups” strip when query/filters are empty.
+ *
  * **RLS:** If this always returns empty, add a `SELECT` policy on `public.groups`
  * allowing authenticated users to read rows where `privacy = 'public'` (in
  * addition to any member-only policy).

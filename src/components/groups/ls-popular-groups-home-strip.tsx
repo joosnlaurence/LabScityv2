@@ -23,6 +23,7 @@ import type {
   searchPublicGroups,
 } from "@/lib/actions/groups";
 import { groupKeys } from "@/lib/query-keys";
+import { groupsPath } from "@/lib/utils/groups-url";
 
 const POPULAR_LIMIT = 6;
 
@@ -43,7 +44,9 @@ export interface LSPopularGroupsHomeStripProps {
 }
 
 /**
- * Compact “trending” public groups on the home feed (active groups first).
+ * Home sidebar: public groups ordered by `groups.last_activity_at` desc (see
+ * `searchPublicGroups` with empty query/filters)—i.e. recently active public
+ * groups, not a separate popularity score.
  */
 export function LSPopularGroupsHomeStrip({
   searchPublicGroupsAction,
@@ -97,7 +100,7 @@ export function LSPopularGroupsHomeStrip({
         message: "Open it from Groups anytime.",
         color: "green",
       });
-      router.push(`/groups?group=${groupId}`);
+      router.push(groupsPath({ tab: "mine", groupId }));
     },
     onError: (err: Error) => {
       notifications.show({
@@ -128,8 +131,12 @@ export function LSPopularGroupsHomeStrip({
       shadow="sm"
       radius="md"
       p="lg"
+      w="100%"
+      maw="100%"
       styles={{
         root: {
+          minWidth: 0,
+          maxWidth: "100%",
           background:
             "linear-gradient(180deg, var(--mantine-color-gray-0) 0%, white 100%)",
         },
@@ -142,14 +149,14 @@ export function LSPopularGroupsHomeStrip({
         gap="sm"
         mb="md"
       >
-        <div>
+        <Box style={{ flex: 1, minWidth: 0 }}>
           <Title order={5} c="navy.7">
             Popular groups
           </Title>
           <Text size="xs" c="dimmed">
-            Active public communities you can join
+            Recently active public groups you can join
           </Text>
-        </div>
+        </Box>
         <Button
           component={Link}
           href="/groups?tab=discover"
@@ -175,12 +182,12 @@ export function LSPopularGroupsHomeStrip({
               }}
             >
               <Stack gap={6}>
-                <Group gap="xs" align="center" wrap="nowrap">
+                <Group gap="xs" align="center" wrap="nowrap" w="100%">
                   <Avatar
                     size={36}
                     radius="md"
                     color="navy.7"
-                    bg="navy.7"
+                    bg={g.avatar_url ? undefined : "navy.7"}
                     src={g.avatar_url ?? undefined}
                   >
                     {stripInitials(g.name)}
@@ -190,7 +197,7 @@ export function LSPopularGroupsHomeStrip({
                     c="navy.7"
                     size="sm"
                     lineClamp={2}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, minWidth: 0 }}
                   >
                     {g.name}
                   </Text>
@@ -198,7 +205,21 @@ export function LSPopularGroupsHomeStrip({
                 {g.topics.length > 0 ? (
                   <Group gap={4} wrap="wrap">
                     {g.topics.slice(0, 2).map((t) => (
-                      <Badge key={t} size="xs" variant="light" color="navy">
+                      <Badge
+                        key={t}
+                        size="xs"
+                        variant="light"
+                        color="navy"
+                        maw="100%"
+                        styles={{
+                          label: {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            maxWidth: 140,
+                          },
+                        }}
+                      >
                         {t}
                       </Badge>
                     ))}
@@ -211,7 +232,7 @@ export function LSPopularGroupsHomeStrip({
                     color="navy"
                     fullWidth
                     component={Link}
-                    href={`/groups?group=${g.group_id}`}
+                    href={groupsPath({ tab: "mine", groupId: g.group_id })}
                   >
                     View
                   </Button>

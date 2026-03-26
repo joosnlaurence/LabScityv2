@@ -162,7 +162,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                   size={72}
                   radius="xl"
                   color="navy.7"
-                  bg="navy.7"
+                  bg={groupDetails.avatar_url ? undefined : "navy.7"}
                   src={groupDetails.avatar_url ?? undefined}
                 >
                   {groupInitials}

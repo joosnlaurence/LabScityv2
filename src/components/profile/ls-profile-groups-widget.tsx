@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/use-auth";
 import { useProfileGroups } from "@/components/profile/use-profile";
 import { LSSpinner } from "@/components/ui/ls-spinner";
+import { groupsPath } from "@/lib/utils/groups-url";
 
 function groupInitials(name: string) {
   return (name || "?")
@@ -81,7 +82,7 @@ export function LSProfileGroupsWidget({
             <UnstyledButton
               key={g.group_id}
               component={Link}
-              href={`/groups?group=${g.group_id}`}
+              href={groupsPath({ tab: "mine", groupId: g.group_id })}
               w="100%"
             >
               <Box
@@ -103,7 +104,7 @@ export function LSProfileGroupsWidget({
                     size={40}
                     radius="md"
                     color="navy.7"
-                    bg="navy.7"
+                    bg={g.avatar_url ? undefined : "navy.7"}
                     src={g.avatar_url ?? undefined}
                   >
                     {groupInitials(g.name)}

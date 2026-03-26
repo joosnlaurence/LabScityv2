@@ -1,10 +1,13 @@
+import { Box, Center } from "@mantine/core";
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { LSGroupsPageShell } from "@/components/groups/ls-groups-page-shell";
+import { LSSpinner } from "@/components/ui/ls-spinner";
 import {
   createComment,
   createPost,
@@ -41,9 +44,8 @@ export default async function GroupsPage({
 }: {
   searchParams: Promise<{ group?: string; tab?: string }>;
 }) {
-  const { group, tab } = await searchParams;
+  const { group } = await searchParams;
   const activeGroupId = group ? Number(group) : undefined;
-  const defaultTab = tab === "discover" ? "discover" : "mine";
 
   const queryClient = new QueryClient();
 
@@ -91,27 +93,36 @@ export default async function GroupsPage({
 
   return (
     <HydrationBoundary state={dehydratedState}>
-      <LSGroupsPageShell
-        defaultTab={defaultTab}
-        activeGroupId={activeGroupId}
-        createGroupAvatarUploadUrlAction={createGroupAvatarUploadUrl}
-        createGroupAction={createGroup}
-        joinGroupAction={joinGroup}
-        leaveGroupAction={leaveGroup}
-        deleteGroupAction={deleteGroup}
-        addMemberByEmailAction={addMemberByEmail}
-        inviteUsersToGroupAction={inviteUsersToGroup}
-        removeMemberAction={removeMember}
-        updateGroupAction={updateGroup}
-        createPostAction={createPost}
-        createPostImageUploadUrlAction={createPostImageUploadUrl}
-        createCommentAction={createComment}
-        createReportAction={createReport}
-        likePostAction={likePost}
-        likeCommentAction={likeComment}
-        searchPublicGroupsAction={searchPublicGroups}
-        getGroupsAction={getGroups}
-      />
+      <Suspense
+        fallback={
+          <Box p="xl">
+            <Center>
+              <LSSpinner />
+            </Center>
+          </Box>
+        }
+      >
+        <LSGroupsPageShell
+          activeGroupId={activeGroupId}
+          createGroupAvatarUploadUrlAction={createGroupAvatarUploadUrl}
+          createGroupAction={createGroup}
+          joinGroupAction={joinGroup}
+          leaveGroupAction={leaveGroup}
+          deleteGroupAction={deleteGroup}
+          addMemberByEmailAction={addMemberByEmail}
+          inviteUsersToGroupAction={inviteUsersToGroup}
+          removeMemberAction={removeMember}
+          updateGroupAction={updateGroup}
+          createPostAction={createPost}
+          createPostImageUploadUrlAction={createPostImageUploadUrl}
+          createCommentAction={createComment}
+          createReportAction={createReport}
+          likePostAction={likePost}
+          likeCommentAction={likeComment}
+          searchPublicGroupsAction={searchPublicGroups}
+          getGroupsAction={getGroups}
+        />
+      </Suspense>
     </HydrationBoundary>
   );
 }

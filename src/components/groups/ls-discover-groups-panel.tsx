@@ -22,6 +22,7 @@ import type {
   searchPublicGroups,
 } from "@/lib/actions/groups";
 import { groupKeys } from "@/lib/query-keys";
+import { groupsPath } from "@/lib/utils/groups-url";
 import { LSGroupCard } from "./ls-group-card";
 
 export interface LSDiscoverGroupsPanelProps {
@@ -104,7 +105,7 @@ export function LSDiscoverGroupsPanel({
         message: "You can open it from My groups.",
         color: "green",
       });
-      router.push(`/groups?group=${groupId}`);
+      router.push(groupsPath({ tab: "mine", groupId }));
     },
     onError: (err: Error) => {
       notifications.show({
@@ -169,7 +170,9 @@ export function LSDiscoverGroupsPanel({
                 joinMutation.isPending && joinMutation.variables === g.group_id
               }
               onJoin={(id) => joinMutation.mutate(id)}
-              onView={(id) => router.push(`/groups?group=${id}`)}
+              onView={(id) =>
+                router.push(groupsPath({ tab: "mine", groupId: id }))
+              }
             />
           ))}
         </SimpleGrid>

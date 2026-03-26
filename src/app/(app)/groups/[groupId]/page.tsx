@@ -6,7 +6,7 @@ interface GroupIdRedirectPageProps {
 
 /**
  * Normalizes `/groups/:id` (e.g. from DB notification links) to the main
- * groups UI at `/groups?group=:id`.
+ * groups UI at `/groups?tab=mine&group=:id`.
  */
 export default async function GroupIdRedirectPage({
   params,
@@ -16,5 +16,5 @@ export default async function GroupIdRedirectPage({
   if (!Number.isFinite(id) || id <= 0) {
     redirect("/groups");
   }
-  redirect(`/groups?group=${id}`);
+  redirect(`/groups?tab=mine&group=${id}`);
 }

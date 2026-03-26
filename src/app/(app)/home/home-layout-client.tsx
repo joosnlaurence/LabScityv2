@@ -4,7 +4,11 @@ import { Box, Flex, Stack } from "@mantine/core";
 import { useIsMobile } from "@/app/use-is-mobile";
 import { LSPopularGroupsHomeStrip } from "@/components/groups/ls-popular-groups-home-strip";
 import { TrendingWidget } from "@/components/sidebar/trending-widget";
-import type { getGroups, joinGroup, searchPublicGroups } from "@/lib/actions/groups";
+import type {
+  getGroups,
+  joinGroup,
+  searchPublicGroups,
+} from "@/lib/actions/groups";
 
 export type HomePopularGroupsActions = {
   searchPublicGroupsAction: typeof searchPublicGroups;
@@ -38,9 +42,11 @@ export function HomeLayoutClient({
               position: "sticky",
               top: "1rem",
               alignSelf: "flex-start",
+              minWidth: 0,
+              maxWidth: "100%",
             }}
           >
-            <Stack gap="lg" w="100%">
+            <Stack gap="lg" w="100%" maw="100%" style={{ minWidth: 0 }}>
               <TrendingWidget />
               {popularGroupsActions ? (
                 <LSPopularGroupsHomeStrip
