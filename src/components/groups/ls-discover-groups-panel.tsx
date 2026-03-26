@@ -32,6 +32,11 @@ export interface LSDiscoverGroupsPanelProps {
 
 /**
  * Discover tab: debounced search + topic filters over public groups.
+ *
+ * **Parity with the top bar:** Same interaction pattern (debounced input → server action), not the
+ * same search backend. Discover uses `searchPublicGroups` (public groups, `ilike` + topic contains);
+ * global search uses `searchUserContent` (users, posts, groups). A single SQL path (e.g. `search_groups`)
+ * would be a separate product/DB decision.
  */
 export function LSDiscoverGroupsPanel({
   searchPublicGroupsAction,
@@ -111,7 +116,7 @@ export function LSDiscoverGroupsPanel({
   });
 
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" w="100%" px={{ base: "md" }}>
       <Paper radius="md" p="md" withBorder bg="white">
         <Stack gap="md">
           <div>
