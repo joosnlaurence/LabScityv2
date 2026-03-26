@@ -187,8 +187,8 @@ const LSProfileMobileLayout = ({
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      actions.handleToggleCommentLike(commentId)
+                    onLikeClick={() =>
+                      actions.handleToggleCommentLike({postId, commentId: comment.id})
                     }
                     showMenu={false}
                   />
@@ -322,7 +322,6 @@ const LSProfileDesktopLayout = ({
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
     const comments = post.comments ?? [];
-
     return (
       <li key={postId}>
         <LSPostCard
@@ -364,7 +363,7 @@ const LSProfileDesktopLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike(comment.id)
+                      actions.handleToggleCommentLike({postId, commentId: comment.id})
                     }
                     showMenu={false}
                   />
