@@ -288,7 +288,7 @@ export async function deleteReportedPostAction(formData: FormData): Promise<void
 
       const { error: resolveCommentReportError } = await supabase
         .from("feed_report")
-        .update({ status: "taken_down" })
+        .update({ status: "taken down" })
         .eq("report_id", parsed.reportId);
 
       if (resolveCommentReportError) {
@@ -312,7 +312,7 @@ export async function deleteReportedPostAction(formData: FormData): Promise<void
 
     const { error: resolveReportError } = await supabase
       .from("feed_report")
-      .update({ status: "taken_down" })
+      .update({ status: "taken down" })
       .eq("report_id", parsed.reportId);
 
     if (resolveReportError) {
