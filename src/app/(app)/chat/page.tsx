@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/supabase/server' // Use your server-side Supabase client
 import { Container, Center, Text, Stack } from '@mantine/core'
 import { IconMessageCircleOff } from '@tabler/icons-react'
+import NewChatButton from '@/components/chat/new-chat-button'
 
 export default async function ChatIndexPage() {
 
@@ -30,7 +31,7 @@ export default async function ChatIndexPage() {
         <Stack align="center" gap="xs">
           <IconMessageCircleOff size="3rem" color="gray" />
           <Text size="lg" fw={500} c="dimmed">No conversations yet</Text>
-          <Text size="sm" c="dimmed">Select a user to start chatting!</Text>
+          <NewChatButton />
         </Stack>
       </Center>
     </Container>
