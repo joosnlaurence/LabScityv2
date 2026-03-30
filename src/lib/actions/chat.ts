@@ -134,7 +134,7 @@ export async function getChatsWithPreview(): Promise<
     .select("*")
     .order("last_message_at", { ascending: false });
 
-  if (error) console.log(error);
+  if (error) return { success: false, error: error.message };
 
   return { success: true, data: data as ChatPreview[] };
 }
@@ -342,4 +342,48 @@ export async function editMessage(
   }
 
   return { success: true, data: editedMessage as Message };
+}
+
+/**
+ * Marks a conversation as read by updating the last_read_at timestamp.
+ * Uses upsert to create or update the read status.
+ *
+ * @param conversation_id - The ID of the conversation to mark as read
+ * @returns Promise resolving to DataResponse indicating success or failure
+ *
+ * @example
+ * ```typescript
+ * const result = await markConversationAsRead(123);
+ * if (result.success) {
+ *   console.log("Conversation marked as read");
+ * }
+ * ```
+ */
+export async function markConversationAsRead(
+  conversation_id: number,
+): Promise<DataResponse<null>> {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData.user) {
+    return { success: false, error: "Authentication required" };
+  }
+
+  const { error } = await supabase.from("conversation_reads").upsert(
+    {
+      user_id: authData.user.id,
+      conversation_id,
+      last_read_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "user_id,conversation_id",
+    },
+  );
+
+  if (error) {
+    console.error("Error marking conversation as read:", error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data: null };
 }
