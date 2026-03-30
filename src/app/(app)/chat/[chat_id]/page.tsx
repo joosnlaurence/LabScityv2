@@ -3,7 +3,6 @@
 import {
   ActionIcon,
   Avatar,
-  Badge,
   Box,
   Button,
   Center,
@@ -12,7 +11,6 @@ import {
   Indicator,
   Loader,
   Modal,
-  NavLink,
   Paper,
   ScrollArea,
   Stack,
@@ -20,25 +18,16 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconInfoCircle, IconPlus, IconSend } from "@tabler/icons-react";
-import { useParams, useRouter } from "next/navigation";
+import { IconInfoCircle, IconSend } from "@tabler/icons-react";
 import { memo, useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
-  useCreateChat,
-  useGetChatsWithPreview,
   useGetOldMessages,
   useLeaveConversation,
   useUpdateConversationName,
 } from "@/components/chat/use-chat";
-import {
-  type ChatPreview,
-  getOldMessages,
-  markConversationAsRead,
-} from "@/lib/actions/chat";
-import { searchForUsers } from "@/lib/actions/data";
-import type { User } from "@/lib/types/feed";
+import { getChatsWithPreview, getOldMessages, markConversationAsRead } from "@/lib/actions/chat";
 import { createClient } from "@/supabase/client";
 
 interface Message {
@@ -48,43 +37,6 @@ interface Message {
   content: string;
   created_at: string;
 }
-
-const ChatNavLink = memo(function ChatNavLink({
-  chat,
-  isActive,
-}: {
-  chat: ChatPreview;
-  isActive: boolean;
-}) {
-  return (
-    <NavLink
-      href={`/chat/${chat.conversation_id}`}
-      active={isActive}
-      styles={{
-        root: { "--nav-active-bg": "var(--mantine-color-navy-3)" },
-      }}
-      c="navy.7"
-      px="md"
-      py="sm"
-      label={
-        <Text fw={600}>{chat.name || `Chat #${chat.conversation_id}`}</Text>
-      }
-      description={
-        <Text size="xs" c="dimmed">
-          {chat.message?.content || "No messages yet"}
-        </Text>
-      }
-      leftSection={<Avatar radius="xl" size="md" color="navy.7" bg="navy.7" />}
-      rightSection={
-        (chat.unread_count ?? 0) > 0 ? (
-          <Badge size="sm" color="blue" variant="filled">
-            {(chat.unread_count ?? 0) > 99 ? "99+" : chat.unread_count}
-          </Badge>
-        ) : null
-      }
-    />
-  );
-});
 
 const MessageBubble = memo(function MessageBubble({
   msg,
@@ -121,10 +73,10 @@ export default function ChatPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [inputText, setInputText] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
-  const [optimisticIds, setOptimisticIds] = useState<Set<number>>(new Set());
-
-  // -- CHATS SIDEBAR QUERY --
-  const { data: chatsData } = useGetChatsWithPreview();
+  const [optimisticIds, setOptimisticIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [chatTitle, setChatTitle] = useState<string>("");
 
   // -- PAGINATION STATE --
   const [hasMore, setHasMore] = useState(true);
@@ -132,21 +84,9 @@ export default function ChatPage() {
 
   // -- MODAL STATE --
   const [infoModalOpen, setInfoModalOpen] = useState(false);
-  const [newChatModalOpen, setNewChatModalOpen] = useState(false);
 
   // -- RENAME STATE --
   const [chatName, setChatName] = useState("");
-
-  // Search state
-  const [query, setQuery] = useState("");
-  const [debounced] = useDebouncedValue(query, 300);
-  const [results, setResults] = useState<User[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // -- NEW CHAT MUTATION --
-  const createChatMutation = useCreateChat();
 
   // -- LEAVE CHAT MUTATION --
   const leaveConversationMutation = useLeaveConversation();
@@ -160,21 +100,6 @@ export default function ChatPage() {
   const scrollReason = useRef<"init" | "new_message" | "pagination">("init");
   // Track optimistic message IDs to avoid stale closure in realtime handler
   const optimisticIdsRef = useRef<Set<number>>(new Set());
-
-  // NOTE: debounced runs automatically after 300ms when query is been updated
-  useEffect(() => {
-    if (!debounced.trim()) {
-      setResults([]);
-      return;
-    }
-    setSearching(true);
-    // NOTE: debounced is the search query
-    // searchForUsers returns User[] - User is defined in types/feed.ts
-    searchForUsers({ query: debounced }).then((res) => {
-      setResults(res.success ? (res.data ?? []) : []);
-      setSearching(false);
-    });
-  }, [debounced]);
 
   // 0. CLEAR MESSAGES ON CHAT SWITCH
   useEffect(() => {
@@ -211,6 +136,26 @@ export default function ChatPage() {
       }
     }
   }, [messagesResult, chat_id]);
+
+  // Fetch chat title for header
+  useEffect(() => {
+    if (!chat_id) return;
+
+    const fetchChatTitle = async () => {
+      try {
+        const { data: chatsData } = await getChatsWithPreview();
+        if (!chatsData) return;
+        const activeChat = chatsData.find(
+          (c) => c.conversation_id.toString() === chat_id
+        );
+        setChatTitle(activeChat?.name || `Chat #${chat_id}`);
+      } catch (error) {
+        console.error("Error fetching chat title:", error);
+      }
+    };
+
+    fetchChatTitle();
+  }, [chat_id]);
 
   // 3. REALTIME
   useEffect(() => {
@@ -377,18 +322,6 @@ export default function ChatPage() {
     }
   };
 
-  // NOTE: This takes in an arry of user_id's
-  const handleCreateChat = () => {
-    if (!query.trim()) return;
-    // searchQuery is the user ID to invite — replace with real user lookup later
-    createChatMutation.mutate([query.trim()], {
-      onSuccess: () => {
-        setNewChatModalOpen(false);
-        setQuery("");
-      },
-    });
-  };
-
   if (!chat_id)
     return (
       <Center h="100vh">
@@ -397,179 +330,7 @@ export default function ChatPage() {
     );
 
   return (
-    <Group
-      align="stretch"
-      gap={0}
-      h="calc(100vh - 60px)"
-      bg="gray.3"
-      style={{ overflow: "hidden" }}
-    >
-      {/* SIDEBAR */}
-      <Box w={320} p="md" bg="gray.3" style={{ flexShrink: 0, height: "100%" }}>
-        <Paper
-          radius="lg"
-          shadow="sm"
-          h="100%"
-          withBorder
-          bg="gray.2"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            p="md"
-            pb="sm"
-            style={{ display: "flex", justifyContent: "center" }}
-          >
-            <Title order={3} c="navy.7" ta="center">
-              My Conversations
-            </Title>
-          </Box>
-
-          <ScrollArea flex={1}>
-            {chatsData === undefined ? (
-              <Center p="xl">
-                <Loader size="sm" />
-              </Center>
-            ) : !chatsData?.data || chatsData.data.length === 0 ? (
-              <Center p="xl">
-                <Text c="dimmed">No chats found.</Text>
-              </Center>
-            ) : (
-              chatsData.data.map((chat) => (
-                <ChatNavLink
-                  key={chat.conversation_id}
-                  chat={chat}
-                  isActive={chat.conversation_id + "" === chat_id}
-                />
-              ))
-            )}
-          </ScrollArea>
-
-          {/* NEW CHAT BUTTON */}
-          <Box p="md">
-            <Button
-              fullWidth
-              color="navy.7"
-              variant="filled"
-              radius="xl"
-              leftSection={<IconPlus size="1rem" />}
-              onClick={() => setNewChatModalOpen(true)}
-            >
-              New Chat
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-
-      {/* NEW CHAT MODAL */}
-      <Modal
-        opened={newChatModalOpen}
-        onClose={() => {
-          setNewChatModalOpen(false);
-          setQuery("");
-          setSelectedUsers([]);
-        }}
-        title={
-          <Title order={4} c="navy.7">
-            New Conversation
-          </Title>
-        }
-        centered
-      >
-        <Stack gap="md">
-          <TextInput
-            placeholder="Search by name"
-            value={query}
-            // NOTE: the search function is called every 300ms after the query is set so you don't really have to do much here to get it to work
-            onChange={(e) => setQuery(e.target.value)}
-            radius="xl"
-            size="md"
-          />
-          {searching && (
-            <Center>
-              <Loader size="sm" />
-            </Center>
-          )}
-          {results.length > 0 && (
-            <Stack gap={0}>
-              {results.map((user) => {
-                const isSelected = selectedUsers.some(
-                  (u) => u.user_id === user.user_id,
-                );
-                return (
-                  <NavLink
-                    key={user.user_id}
-                    label={
-                      <Text fw={600} c="navy.7">
-                        {user.first_name} {user.last_name}
-                      </Text>
-                    }
-                    leftSection={
-                      <Avatar
-                        radius="xl"
-                        size="md"
-                        color="navy.7"
-                        bg="navy.7"
-                        src={user.avatar_url}
-                      />
-                    }
-                    active={isSelected}
-                    styles={{
-                      root: {
-                        "--nav-active-bg": "var(--mantine-color-navy-3)",
-                      },
-                    }}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedUsers((current) =>
-                          current.filter((u) => u.user_id !== user.user_id),
-                        );
-                      } else {
-                        setSelectedUsers((current) => [...current, user]);
-                      }
-                    }}
-                    style={{ borderRadius: 8 }}
-                  />
-                );
-              })}
-            </Stack>
-          )}
-          {query.trim() && !searching && results.length === 0 && (
-            <Text size="sm" c="dimmed" ta="center">
-              No users found
-            </Text>
-          )}
-          <Button
-            fullWidth
-            color="navy.7"
-            variant="filled"
-            radius="xl"
-            loading={createChatMutation.isPending}
-            disabled={selectedUsers.length === 0}
-            onClick={() =>
-              createChatMutation.mutate(
-                selectedUsers.map((u) => u.user_id),
-                {
-                  onSuccess: () => {
-                    setNewChatModalOpen(false);
-                    setQuery("");
-                    setSelectedUsers([]);
-                  },
-                },
-              )
-            }
-          >
-            Start Chat
-          </Button>
-        </Stack>
-      </Modal>
-
-      {/* MAIN CHAT */}
-      <Box style={{ flex: 1, overflow: "hidden" }}>
-        <Container fluid h="calc(100vh - 60px)" p={0}>
+    <Container fluid h="calc(100vh - 60px)" p={0}>
           <Stack h="100%" gap={0} bg="gray.1">
             {/* HEADER */}
             <Paper
@@ -584,9 +345,7 @@ export default function ChatPage() {
                 <Box w={36} />
                 <Stack gap={4} align="center">
                   <Title order={3} c="navy.7" style={{ margin: 0 }}>
-                    {chatsData?.data?.find(
-                      (c) => c.conversation_id + "" === chat_id,
-                    )?.name || `Chat #${chat_id}`}
+                    {chatTitle || `Chat #${chat_id}`}
                   </Title>
                   <Group align="center" style={{ gap: 6 }}>
                     <Indicator
@@ -617,9 +376,7 @@ export default function ChatPage() {
               onClose={() => setInfoModalOpen(false)}
               title={
                 <Title order={4} c="navy.7">
-                  {chatsData?.data?.find(
-                    (c) => c.conversation_id + "" === chat_id,
-                  )?.name || `Chat #${chat_id}`}
+                  {chatTitle || `Chat #${chat_id}`}
                 </Title>
               }
               centered
@@ -642,7 +399,7 @@ export default function ChatPage() {
                     Members
                   </Text>
                   <Text size="sm" c="dimmed">
-                    Coming soon
+                    Placeholder
                   </Text>
                 </Box>
 
@@ -672,6 +429,7 @@ export default function ChatPage() {
                           { id: parseInt(chat_id), newName: chatName.trim() },
                           {
                             onSuccess: () => {
+                              setChatTitle(chatName.trim());
                               setChatName("");
                             },
                           },
@@ -730,7 +488,13 @@ export default function ChatPage() {
 
                 {messages.map((msg) => {
                   const isMe = msg.sender_id === userId;
-                  return <MessageBubble key={msg.id} msg={msg} isMe={isMe} />;
+                  return (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      isMe={isMe}
+                    />
+                  );
                 })}
               </Stack>
             </ScrollArea>
@@ -761,8 +525,6 @@ export default function ChatPage() {
               </Group>
             </Paper>
           </Stack>
-        </Container>
-      </Box>
-    </Group>
+    </Container>
   );
 }

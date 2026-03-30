@@ -25,7 +25,7 @@ export default async function ChatIndexPage() {
 
   // 4. If they have NO chats, render a friendly "Empty State" UI
   return (
-    <Container h="100vh" fluid p={0}>
+    <Container h="100%" fluid p={0}>
       <Center h="100%" bg="gray.0">
         <Stack align="center" gap="xs">
           <IconMessageCircleOff size="3rem" color="gray" />
