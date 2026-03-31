@@ -443,12 +443,6 @@ export default function ChatPage() {
                   </Text>
                 )}
 
-                {/* TODO: figure out how to get participants */}
-                <Box>
-                  <Text size="sm" fw={600} c="navy.7" mb={6}>Members</Text>
-                  <Text size="sm" c="dimmed">Placeholder</Text>
-                </Box>
-
                 {/* Update Chat Name */}
                 <Box>
                   <Text size="sm" fw={600} c="navy.7" mb={6}>Update Chat Name</Text>
