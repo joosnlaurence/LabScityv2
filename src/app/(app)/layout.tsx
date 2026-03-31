@@ -20,12 +20,21 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
-  // 3. if auth OK, render layout; pass userid to clientside components so they can request the data they need based on it (e.g. profiles) 
+  // 3. check if the user is a moderator
+  const { data: moderatorRow } = await supabase
+    .from("moderators")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const isModerator = !!moderatorRow;
+
+  // 4. if auth OK, render layout; pass userid to clientside components so they can request the data they need based on it (e.g. profiles)
   return (
     <Box style={{ minHeight: "100vh" }}>
       <NotificationProvider>
         {/* lots of interactivity with app layout so we offload this to clientside */}
-        <LSAppLayout userId={user.id} children={children} />
+        <LSAppLayout userId={user.id} isModerator={isModerator} children={children} />
       </NotificationProvider>
     </Box>
   );
