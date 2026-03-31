@@ -356,27 +356,34 @@ export default function ChatPage() {
     );
 
   return (
-    <Stack h="100%" gap={0} bg="gray.2">
+    <Stack h="100%" gap={0} bg="gray.1" style={{ overflow: "hidden" }}>
       {/* HEADER */}
       <Paper
         p={isMobile ? "sm" : "md"}
         shadow="sm"
         radius={0}
         withBorder
-        bg="gray.1"
-        style={{ zIndex: 10 }}
+        bg="gray.2"
+        style={{ zIndex: 10, flexShrink: 0, position: "relative" }}
       >
-        <Group justify="space-between" align="center" wrap="nowrap">
-          <Group gap="xs">
-            <Title order={4} c="navy.7" style={{ margin: 0 }}>
-              {chatTitle || `Chat #${chat_id}`}
-            </Title>
-            <Indicator
-              color={isConnected ? "green" : "yellow"}
-              size={8}
-              processing
-            />
-          </Group>
+        <Group justify="center" align="center" gap="xs">
+          <Title order={4} c="navy.7" style={{ margin: 0 }}>
+            {chatTitle || `Chat #${chat_id}`}
+          </Title>
+          <Indicator
+            color={isConnected ? "green" : "yellow"}
+            size={8}
+            processing
+          />
+        </Group>
+        <Box
+          style={{
+            position: "absolute",
+            right: isMobile ? 8 : 16,
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}
+        >
           <ActionIcon
             variant="subtle"
             color="navy.7"
@@ -386,7 +393,7 @@ export default function ChatPage() {
           >
             <IconInfoCircle size="1.2rem" />
           </ActionIcon>
-        </Group>
+        </Box>
       </Paper>
 
       {/* INFO MODAL */}
@@ -487,7 +494,7 @@ export default function ChatPage() {
         viewportRef={viewport}
         style={{ overflowX: "hidden" }}
       >
-        <Stack gap="md" maw={640} mx="auto">
+        <Stack gap="md">
           {hasMore && messages.length > 0 && (
             <Center mb="sm">
               <Button
@@ -533,8 +540,14 @@ export default function ChatPage() {
       </ScrollArea>
 
       {/* INPUT */}
-      <Paper p={isMobile ? "sm" : "md"} withBorder radius={0} bg="gray.1">
-        <Group align="flex-end" maw={640} mx="auto">
+      <Paper
+        p={isMobile ? "sm" : "md"}
+        withBorder
+        radius={0}
+        bg="gray.2"
+        style={{ flexShrink: 0 }}
+      >
+        <Group align="flex-end">
           <TextInput
             placeholder="Type a message..."
             value={inputText}

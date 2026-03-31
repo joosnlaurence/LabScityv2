@@ -63,22 +63,28 @@ export default function ChatLayout({
       return;
     }
 
-    let mounted = true;
+    let isMounted = true;
     setSearching(true);
 
     searchForUsers({ query: debounced }).then((res) => {
-      if (!mounted) return;
+      if (!isMounted) return;
       setResults(res.success ? (res.data ?? []) : []);
       setSearching(false);
     });
 
     return () => {
-      mounted = false;
+      isMounted = false;
     };
   }, [debounced]);
 
+  useEffect(() => {
+    if (isMobile) {
+      setDrawerOpened(true);
+    }
+  }, [isMobile]);
+
   const sidebarContent = (
-    <Stack gap={0} h="100%">
+    <Stack gap={0} h="100dvh">
       <Box
         p="md"
         style={{ borderBottom: "1px solid var(--mantine-color-navy-1)" }}
@@ -106,7 +112,7 @@ export default function ChatLayout({
         </Group>
       </Box>
 
-      <ScrollArea h={{ base: 240, md: "calc(100vh - 60px - 89px)" }}>
+      <ScrollArea h="100%">
         <Stack gap={0}>
           {isLoading ? (
             <Center h={100}>
@@ -171,172 +177,65 @@ export default function ChatLayout({
     </Stack>
   );
 
-  if (isMobile) {
-    return (
-      <>
-        <Drawer
-          opened={drawerOpened}
-          onClose={() => setDrawerOpened(false)}
-          padding={0}
-          size="xs"
-          title=""
-          withCloseButton
-        >
-          {sidebarContent}
-        </Drawer>
-
-        <Stack gap={0} h="calc(100vh - 60px)" bg="gray.0">
-          <Box p="xs">
-            <Button
-              variant="subtle"
-              size="compact-sm"
-              leftSection={<IconMenu2 size={18} />}
-              onClick={() => setDrawerOpened(true)}
-              c="navy.7"
-            >
-              Chats
-            </Button>
-          </Box>
-
-          <Box flex={1} py="md" px="md" style={{ overflow: "auto" }}>
-            {children}
-          </Box>
-        </Stack>
-
-        <Modal
-          opened={newChatModalOpen}
-          onClose={() => {
-            setNewChatModalOpen(false);
-            setQuery("");
-            setSelectedUsers([]);
-          }}
-          title={
-            <Title order={4} c="navy.7">
-              New Conversation
-            </Title>
-          }
-          centered
-        >
-          <Stack gap="md">
-            <TextInput
-              placeholder="Search by name"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              radius="xl"
-              size="md"
-            />
-
-            {searching && (
-              <Center>
-                <Loader size="sm" />
-              </Center>
-            )}
-
-            {results.length > 0 && (
-              <Stack gap={0}>
-                {results.map((user) => {
-                  const isSelected = selectedUsers.some(
-                    (u) => u.user_id === user.user_id,
-                  );
-
-                  return (
-                    <NavLink
-                      key={user.user_id}
-                      label={
-                        <Text fw={600} c="navy.7">
-                          {user.first_name} {user.last_name}
-                        </Text>
-                      }
-                      leftSection={
-                        <Avatar
-                          radius="xl"
-                          size="md"
-                          color="navy.7"
-                          bg="navy.7"
-                          src={user.avatar_url}
-                        />
-                      }
-                      active={isSelected}
-                      styles={{
-                        root: {
-                          "--nav-active-bg": "var(--mantine-color-navy-3)",
-                        },
-                      }}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelectedUsers((current) =>
-                            current.filter((u) => u.user_id !== user.user_id),
-                          );
-                        } else {
-                          setSelectedUsers((current) => [...current, user]);
-                        }
-                      }}
-                      style={{ borderRadius: 8 }}
-                    />
-                  );
-                })}
-              </Stack>
-            )}
-
-            {query.trim() && !searching && results.length === 0 && (
-              <Text size="sm" c="dimmed" ta="center">
-                No users found
-              </Text>
-            )}
-
-            <Button
-              fullWidth
-              color="navy.7"
-              variant="filled"
-              radius="xl"
-              loading={createChatMutation.isPending}
-              disabled={selectedUsers.length === 0}
-              onClick={() =>
-                createChatMutation.mutate(
-                  selectedUsers.map((u) => u.user_id),
-                  {
-                    onSuccess: () => {
-                      setNewChatModalOpen(false);
-                      setQuery("");
-                      setSelectedUsers([]);
-                    },
-                  },
-                )
-              }
-            >
-              Start Chat
-            </Button>
-          </Stack>
-        </Modal>
-      </>
-    );
-  }
-
   return (
     <>
-      <Flex h="calc(100vh - 60px)" bg="gray.0">
-        <Paper
-          w={320}
-          miw={320}
-          radius={0}
-          h="100%"
-          bg="gray.1"
-          style={{
-            borderRight: "1px solid var(--mantine-color-gray-3)",
-          }}
-        >
-          {sidebarContent}
-        </Paper>
+      {isMobile ? (
+        <>
+          <Drawer
+            opened={drawerOpened}
+            onClose={() => setDrawerOpened(false)}
+            padding={0}
+            size="100%"
+            title=""
+            withCloseButton={false}
+            transitionProps={{ duration: 0 }}
+          >
+            {sidebarContent}
+          </Drawer>
 
-        <Box
-          flex={1}
-          py={24}
-          px={{ base: "md", md: "xl", lg: 80 }}
-          style={{ overflow: "auto" }}
-        >
-          {children}
-        </Box>
-      </Flex>
+          <Flex
+            direction="column"
+            h="calc(100dvh - 60px - 60px)"
+            bg="gray.0"
+            style={{ overflow: "hidden" }}
+          >
+            <Box p="xs" style={{ flexShrink: 0 }}>
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                leftSection={<IconMenu2 size={18} />}
+                onClick={() => setDrawerOpened(true)}
+                c="navy.7"
+              >
+                Chats
+              </Button>
+            </Box>
+
+            <Box flex={1} style={{ overflow: "hidden" }}>
+              {children}
+            </Box>
+          </Flex>
+        </>
+      ) : (
+        <Flex h="calc(100vh - 60px)" bg="gray.0">
+          <Paper
+            w={320}
+            miw={320}
+            radius={0}
+            h="100%"
+            bg="gray.1"
+            style={{
+              borderRight: "1px solid var(--mantine-color-gray-3)",
+            }}
+          >
+            {sidebarContent}
+          </Paper>
+
+          <Box flex={1} h="100%" style={{ overflow: "hidden" }}>
+            {children}
+          </Box>
+        </Flex>
+      )}
 
       <Modal
         opened={newChatModalOpen}
