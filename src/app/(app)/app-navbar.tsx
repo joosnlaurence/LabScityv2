@@ -47,9 +47,9 @@ export default function LSAppNavbar({
 
   function isActive(item: (typeof navigation)[number]) {
     if (item.href === "/profile") {
-      return pathname === `/profile/${userId}`;
+      return pathname.startsWith(`/profile/${userId}`);
     }
-    return pathname === item.href;
+    return pathname === item.href || pathname.startsWith(item.href + "/");
   }
 
   return (

@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/supabase/server";
-import NotificationProvider from "@/components/notifications/LSNotificationProvider";
 import { Box } from "@mantine/core";
+import { redirect } from "next/navigation";
+import NotificationProvider from "@/components/notifications/LSNotificationProvider";
+import { createClient } from "@/supabase/server";
 import LSAppLayout from "./app-layout";
 
 // this code is running SERVERSIDE!!!
@@ -13,9 +13,11 @@ export default async function AuthenticatedLayout({
 }) {
   // 1. server checks auth
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // 2. if no auth, go to login 
+  // 2. if no auth, go to login
   if (!user) {
     redirect("/login");
   }
