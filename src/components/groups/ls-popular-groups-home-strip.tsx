@@ -143,8 +143,7 @@ export function LSPopularGroupsHomeStrip({
 
   return (
     <Card
-      withBorder
-      shadow="sm"
+      shadow="lg"
       radius="md"
       p="lg"
       w="100%"
@@ -169,7 +168,7 @@ export function LSPopularGroupsHomeStrip({
       >
         <Box style={{ flex: 1, minWidth: 0 }}>
           <Title order={5} c="navy.7">
-            Popular groups
+            Popular Groups
           </Title>
           <Text size="xs" c="dimmed">
             Recently active public groups you can join
