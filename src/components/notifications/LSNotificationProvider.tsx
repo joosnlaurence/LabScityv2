@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { chatKeys } from "@/lib/query-keys";
 import type { ChatPreview } from "@/lib/types/chat";
@@ -19,6 +20,7 @@ export default function NotificationProvider({
   const [supabase] = useState(() => createClient());
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const initializeNotifications = async () => {
@@ -47,13 +49,18 @@ export default function NotificationProvider({
           },
           (payload) => {
             const notification = payload.new as Notification;
-            addNotification(notification);
 
-            // Update chat sidebar when new message notification arrives
+            // Handle new_message notifications specially
             if (notification.type === "new_message" && notification.link) {
-              // Extract conversation ID from link (format: "/chat/123")
               const conversationId = notification.link.split("/").pop();
+              const isActiveChat = pathname === `/chat/${conversationId}`;
 
+              // Don't add to notification store if user is viewing this chat
+              if (!isActiveChat) {
+                addNotification(notification);
+              }
+
+              // Update chat sidebar cache
               if (conversationId) {
                 queryClient.setQueryData<{ data: ChatPreview[] } | undefined>(
                   chatKeys.chatsWithPreview(),
@@ -68,7 +75,10 @@ export default function NotificationProvider({
                             ...chat,
                             last_message: notification.content || "",
                             last_message_at: notification.created_at,
-                            unread_count: (chat.unread_count || 0) + 1,
+                            // Don't increment unread count if user is viewing this chat
+                            unread_count: isActiveChat
+                              ? chat.unread_count
+                              : (chat.unread_count || 0) + 1,
                           };
                         }
                         return chat;
@@ -77,6 +87,9 @@ export default function NotificationProvider({
                   },
                 );
               }
+            } else {
+              // Non-message notifications always get added
+              addNotification(notification);
             }
           },
         )
@@ -90,7 +103,7 @@ export default function NotificationProvider({
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [supabase, setNotifications, addNotification, queryClient]);
+  }, [supabase, setNotifications, addNotification, queryClient, pathname]);
 
   return <>{children}</>;
 }

@@ -20,14 +20,20 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconInfoCircle, IconSend } from "@tabler/icons-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import { memo, useEffect, useRef, useState } from "react";
 import {
   useGetOldMessages,
   useLeaveConversation,
   useUpdateConversationName,
 } from "@/components/chat/use-chat";
-import { getChatsWithPreview, getOldMessages, markConversationAsRead } from "@/lib/actions/chat";
+import {
+  getChatsWithPreview,
+  getOldMessages,
+  markConversationAsRead,
+} from "@/lib/actions/chat";
+import { chatKeys } from "@/lib/query-keys";
 import { createClient } from "@/supabase/client";
 
 interface Message {
@@ -41,10 +47,26 @@ interface Message {
 const MessageBubble = memo(function MessageBubble({
   msg,
   isMe,
+  isSending,
 }: {
   msg: Message;
   isMe: boolean;
+  isSending?: boolean;
 }) {
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
   return (
     <Group justify={isMe ? "flex-end" : "flex-start"} align="flex-end" gap="xs">
       {!isMe && <Avatar radius="xl" size="md" color="navy.7" bg="navy.7" />}
@@ -55,9 +77,15 @@ const MessageBubble = memo(function MessageBubble({
         bg={isMe ? "gray.6" : "navy.3"}
         c={isMe ? "navy.0" : "navy.7"}
         shadow="sm"
-        style={{ maxWidth: "70%" }}
+        style={{ maxWidth: "70%", opacity: isSending ? 0.7 : 1 }}
       >
         <Text size="sm">{msg.content}</Text>
+        <Group gap={4} justify={isMe ? "flex-end" : "flex-start"} mt={4}>
+          {isSending && <Loader size={8} />}
+          <Text size="xs" c="dimmed">
+            {isSending ? "Sending..." : formatTime(msg.created_at)}
+          </Text>
+        </Group>
       </Paper>
     </Group>
   );
@@ -73,9 +101,7 @@ export default function ChatPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [inputText, setInputText] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
-  const [optimisticIds, setOptimisticIds] = useState<Set<number>>(
-    new Set(),
-  );
+  const [optimisticIds, setOptimisticIds] = useState<Set<number>>(new Set());
   const [chatTitle, setChatTitle] = useState<string>("");
 
   // -- PAGINATION STATE --
@@ -93,6 +119,9 @@ export default function ChatPage() {
 
   // -- RENAME CHAT MUTATION --
   const updateConversationNameMutation = useUpdateConversationName();
+
+  // -- QUERY CLIENT --
+  const queryClient = useQueryClient();
 
   // -- REFS --
   const viewport = useRef<HTMLDivElement>(null);
@@ -133,9 +162,12 @@ export default function ChatPage() {
       setHasMore(messagesResult.data.length >= 50);
       if (chat_id) {
         markConversationAsRead(parseInt(chat_id));
+        queryClient.invalidateQueries({
+          queryKey: chatKeys.chatsWithPreview(),
+        });
       }
     }
-  }, [messagesResult, chat_id]);
+  }, [messagesResult, chat_id, queryClient]);
 
   // Fetch chat title for header
   useEffect(() => {
@@ -146,7 +178,7 @@ export default function ChatPage() {
         const { data: chatsData } = await getChatsWithPreview();
         if (!chatsData) return;
         const activeChat = chatsData.find(
-          (c) => c.conversation_id.toString() === chat_id
+          (c) => c.conversation_id.toString() === chat_id,
         );
         setChatTitle(activeChat?.name || `Chat #${chat_id}`);
       } catch (error) {
@@ -331,200 +363,202 @@ export default function ChatPage() {
 
   return (
     <Container fluid h="calc(100vh - 60px)" p={0}>
-          <Stack h="100%" gap={0} bg="gray.1">
-            {/* HEADER */}
-            <Paper
-              p="md"
-              shadow="sm"
-              radius="lg"
-              withBorder
-              bg="gray.2"
-              style={{ zIndex: 10 }}
-            >
-              <Group justify="space-between" align="center">
-                <Box w={36} />
-                <Stack gap={4} align="center">
-                  <Title order={3} c="navy.7" style={{ margin: 0 }}>
-                    {chatTitle || `Chat #${chat_id}`}
-                  </Title>
-                  <Group align="center" style={{ gap: 6 }}>
-                    <Indicator
-                      color={isConnected ? "green" : "yellow"}
-                      size={8}
-                      processing
-                    />
-                    <Text size="xs" c="dimmed">
-                      {isConnected ? "Live" : "Connecting..."}
-                    </Text>
-                  </Group>
-                </Stack>
-                <ActionIcon
-                  variant="subtle"
-                  color="navy.7"
-                  radius="xl"
-                  size="xl"
-                  onClick={() => setInfoModalOpen(true)}
-                >
-                  <IconInfoCircle size="1.6rem" />
-                </ActionIcon>
+      <Stack h="100%" gap={0} bg="gray.1">
+        {/* HEADER */}
+        <Paper
+          p="md"
+          shadow="sm"
+          radius="lg"
+          withBorder
+          bg="gray.2"
+          style={{ zIndex: 10 }}
+        >
+          <Group justify="space-between" align="center">
+            <Box w={36} />
+            <Stack gap={4} align="center">
+              <Title order={3} c="navy.7" style={{ margin: 0 }}>
+                {chatTitle || `Chat #${chat_id}`}
+              </Title>
+              <Group align="center" style={{ gap: 6 }}>
+                <Indicator
+                  color={isConnected ? "green" : "yellow"}
+                  size={8}
+                  processing
+                />
+                <Text size="xs" c="dimmed">
+                  {isConnected ? "Live" : "Connecting..."}
+                </Text>
               </Group>
-            </Paper>
-
-            {/* INFO MODAL */}
-            <Modal
-              opened={infoModalOpen}
-              onClose={() => setInfoModalOpen(false)}
-              title={
-                <Title order={4} c="navy.7">
-                  {chatTitle || `Chat #${chat_id}`}
-                </Title>
-              }
-              centered
+            </Stack>
+            <ActionIcon
+              variant="subtle"
+              color="navy.7"
+              radius="xl"
+              size="xl"
+              onClick={() => setInfoModalOpen(true)}
             >
-              <Stack gap="md">
-                {messages.length > 0 && (
-                  <Text size="sm" c="navy.7">
-                    <Text span fw={600}>
-                      Conversation started:{" "}
-                    </Text>
-                    {new Date(messages[0].created_at).toLocaleDateString(
-                      undefined,
-                      { year: "numeric", month: "long", day: "numeric" },
-                    )}
-                  </Text>
+              <IconInfoCircle size="1.6rem" />
+            </ActionIcon>
+          </Group>
+        </Paper>
+
+        {/* INFO MODAL */}
+        <Modal
+          opened={infoModalOpen}
+          onClose={() => setInfoModalOpen(false)}
+          title={
+            <Title order={4} c="navy.7">
+              {chatTitle || `Chat #${chat_id}`}
+            </Title>
+          }
+          centered
+        >
+          <Stack gap="md">
+            {messages.length > 0 && (
+              <Text size="sm" c="navy.7">
+                <Text span fw={600}>
+                  Conversation started:{" "}
+                </Text>
+                {new Date(messages[0].created_at).toLocaleDateString(
+                  undefined,
+                  { year: "numeric", month: "long", day: "numeric" },
                 )}
+              </Text>
+            )}
 
-                <Box>
-                  <Text size="sm" fw={600} c="navy.7" mb={6}>
-                    Members
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    Placeholder
-                  </Text>
-                </Box>
+            <Box>
+              <Text size="sm" fw={600} c="navy.7" mb={6}>
+                Members
+              </Text>
+              <Text size="sm" c="dimmed">
+                Placeholder
+              </Text>
+            </Box>
 
-                {/* Update Chat Name */}
-                <Box>
-                  <Text size="sm" fw={600} c="navy.7" mb={6}>
-                    Update Chat Name
-                  </Text>
-                  <Group gap="xs">
-                    <TextInput
-                      placeholder="Enter a new name..."
-                      value={chatName}
-                      onChange={(e) => setChatName(e.target.value)}
-                      radius="xl"
-                      size="sm"
-                      style={{ flex: 1 }}
-                    />
-                    <Button
-                      color="navy.7"
-                      variant="filled"
-                      radius="xl"
-                      size="sm"
-                      disabled={!chatName.trim()}
-                      loading={updateConversationNameMutation.isPending}
-                      onClick={() =>
-                        updateConversationNameMutation.mutate(
-                          { id: parseInt(chat_id), newName: chatName.trim() },
-                          {
-                            onSuccess: () => {
-                              setChatTitle(chatName.trim());
-                              setChatName("");
-                            },
-                          },
-                        )
-                      }
-                    >
-                      Save
-                    </Button>
-                  </Group>
-                </Box>
-
-                <Button
-                  fullWidth
-                  color="red"
-                  variant="light"
+            {/* Update Chat Name */}
+            <Box>
+              <Text size="sm" fw={600} c="navy.7" mb={6}>
+                Update Chat Name
+              </Text>
+              <Group gap="xs">
+                <TextInput
+                  placeholder="Enter a new name..."
+                  value={chatName}
+                  onChange={(e) => setChatName(e.target.value)}
                   radius="xl"
-                  loading={leaveConversationMutation.isPending}
+                  size="sm"
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  color="navy.7"
+                  variant="filled"
+                  radius="xl"
+                  size="sm"
+                  disabled={!chatName.trim()}
+                  loading={updateConversationNameMutation.isPending}
                   onClick={() =>
-                    leaveConversationMutation.mutate(parseInt(chat_id), {
-                      onSuccess: () => {
-                        setInfoModalOpen(false);
-                        router.push("/chat");
+                    updateConversationNameMutation.mutate(
+                      { id: parseInt(chat_id), newName: chatName.trim() },
+                      {
+                        onSuccess: () => {
+                          setChatTitle(chatName.trim());
+                          setChatName("");
+                        },
                       },
-                    })
+                    )
                   }
                 >
-                  Leave Chat
+                  Save
                 </Button>
-              </Stack>
-            </Modal>
-
-            {/* MESSAGES */}
-            <ScrollArea flex={1} p="md" viewportRef={viewport}>
-              <Stack gap="md">
-                {/* PAGINATION BUTTON */}
-                {hasMore && messages.length > 0 && (
-                  <Center mb="sm">
-                    <Button
-                      variant="subtle"
-                      size="xs"
-                      loading={isLoadingMore}
-                      onClick={loadMore}
-                    >
-                      Load older messages
-                    </Button>
-                  </Center>
-                )}
-
-                {messages.length === 0 && (
-                  <Center h={200}>
-                    <Text c="dimmed" size="sm">
-                      No messages yet. Say hello!
-                    </Text>
-                  </Center>
-                )}
-
-                {messages.map((msg) => {
-                  const isMe = msg.sender_id === userId;
-                  return (
-                    <MessageBubble
-                      key={msg.id}
-                      msg={msg}
-                      isMe={isMe}
-                    />
-                  );
-                })}
-              </Stack>
-            </ScrollArea>
-
-            {/* INPUT */}
-            <Paper p="md" withBorder radius="md" bg="gray.2">
-              <Group align="flex-end">
-                <TextInput
-                  placeholder="Type a message..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  style={{ flex: 1 }}
-                  radius="md"
-                  size="md"
-                  disabled={!isConnected}
-                />
-                <ActionIcon
-                  size="lg"
-                  variant="filled"
-                  color="navy.7"
-                  radius="xl"
-                  onClick={handleSend}
-                  disabled={!inputText.trim() || !isConnected}
-                >
-                  <IconSend size="1.1rem" />
-                </ActionIcon>
               </Group>
-            </Paper>
+            </Box>
+
+            <Button
+              fullWidth
+              color="red"
+              variant="light"
+              radius="xl"
+              loading={leaveConversationMutation.isPending}
+              onClick={() =>
+                leaveConversationMutation.mutate(parseInt(chat_id), {
+                  onSuccess: () => {
+                    setInfoModalOpen(false);
+                    router.push("/chat");
+                  },
+                })
+              }
+            >
+              Leave Chat
+            </Button>
           </Stack>
+        </Modal>
+
+        {/* MESSAGES */}
+        <ScrollArea flex={1} p="md" viewportRef={viewport}>
+          <Stack gap="md">
+            {/* PAGINATION BUTTON */}
+            {hasMore && messages.length > 0 && (
+              <Center mb="sm">
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  loading={isLoadingMore}
+                  onClick={loadMore}
+                >
+                  Load older messages
+                </Button>
+              </Center>
+            )}
+
+            {messages.length === 0 && (
+              <Center h={200}>
+                <Text c="dimmed" size="sm">
+                  No messages yet. Say hello!
+                </Text>
+              </Center>
+            )}
+
+            {messages.map((msg) => {
+              const isMe = msg.sender_id === userId;
+              const isSending = optimisticIds.has(msg.id);
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  isMe={isMe}
+                  isSending={isSending}
+                />
+              );
+            })}
+          </Stack>
+        </ScrollArea>
+
+        {/* INPUT */}
+        <Paper p="md" withBorder radius="md" bg="gray.2">
+          <Group align="flex-end">
+            <TextInput
+              placeholder="Type a message..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{ flex: 1 }}
+              radius="md"
+              size="md"
+              disabled={!isConnected}
+            />
+            <ActionIcon
+              size="lg"
+              variant="filled"
+              color="navy.7"
+              radius="xl"
+              onClick={handleSend}
+              disabled={!inputText.trim() || !isConnected}
+            >
+              <IconSend size="1.1rem" />
+            </ActionIcon>
+          </Group>
+        </Paper>
+      </Stack>
     </Container>
   );
 }
