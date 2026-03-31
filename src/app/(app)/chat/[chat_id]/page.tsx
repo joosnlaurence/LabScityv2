@@ -23,6 +23,7 @@ import { useParams, useRouter } from "next/navigation";
 import { memo, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
 import {
+  useGetConversationParticipants,
   useGetOldMessages,
   useLeaveConversation,
   useUpdateConversationName,
@@ -125,6 +126,7 @@ export default function ChatPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [membersExpanded, setMembersExpanded] = useState(false);
 
   const [chatName, setChatName] = useState("");
 
@@ -156,6 +158,10 @@ export default function ChatPage() {
   }, [chat_id, supabase]);
 
   const { data: messagesResult } = useGetOldMessages(
+    chat_id ? parseInt(chat_id) : 0,
+  );
+
+  const { data: participantsData } = useGetConversationParticipants(
     chat_id ? parseInt(chat_id) : 0,
   );
 
@@ -256,14 +262,20 @@ export default function ChatPage() {
   useEffect(() => {
     if (!viewport.current) return;
 
-    if (
-      scrollReason.current === "init" ||
-      scrollReason.current === "new_message"
-    ) {
+    if (scrollReason.current === "init") {
       viewport.current.scrollTo({
         top: viewport.current.scrollHeight,
-        behavior: "smooth",
+        behavior: "instant",
       });
+    } else if (scrollReason.current === "new_message") {
+      const { scrollTop, scrollHeight, clientHeight } = viewport.current;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      if (distanceFromBottom < 100) {
+        viewport.current.scrollTo({
+          top: scrollHeight,
+          behavior: "instant",
+        });
+      }
     }
   }, [messages]);
 
@@ -425,9 +437,36 @@ export default function ChatPage() {
             <Text size="sm" fw={600} c="navy.7" mb={6}>
               Members
             </Text>
-            <Text size="sm" c="dimmed">
-              Placeholder
-            </Text>
+            {participantsData?.success && participantsData.data ? (
+              <>
+                <Stack gap={4}>
+                  {participantsData.data
+                    .slice(0, membersExpanded ? undefined : 3)
+                    .map((participant) => (
+                      <Text key={participant.user_id} size="sm" c="dimmed">
+                        {participant.first_name} {participant.last_name} -{" "}
+                        {participant.email}
+                      </Text>
+                    ))}
+                </Stack>
+                {participantsData.data.length > 3 && (
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setMembersExpanded(!membersExpanded)}
+                    mt={4}
+                  >
+                    {membersExpanded
+                      ? "Show less"
+                      : `Show ${participantsData.data.length - 3} more`}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Unable to load members
+              </Text>
+            )}
           </Box>
 
           <Box>
@@ -490,11 +529,10 @@ export default function ChatPage() {
       {/* MESSAGES */}
       <ScrollArea
         flex={1}
-        p={isMobile ? "sm" : "md"}
         viewportRef={viewport}
         style={{ overflowX: "hidden" }}
       >
-        <Stack gap="md">
+        <Stack gap="md" p={isMobile ? "sm" : "md"}>
           {hasMore && messages.length > 0 && (
             <Center mb="sm">
               <Button

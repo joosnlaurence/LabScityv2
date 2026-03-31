@@ -396,3 +396,50 @@ export async function markConversationAsRead(
 
   return { success: true, data: null };
 }
+
+/**
+ * Retrieves all participants of a conversation with their user details.
+ *
+ * @param conversation_id - The ID of the conversation
+ * @returns Promise resolving to DataResponse containing an array of participant user details
+ */
+export async function getConversationParticipants(
+  conversation_id: number,
+): Promise<
+  DataResponse<
+    {
+      user_id: string;
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+    }[]
+  >
+> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("conversation_participants")
+    .select(`
+      user_id,
+      user:users (
+        email,
+        first_name,
+        last_name
+      )
+    `)
+    .eq("conversation_id", conversation_id);
+
+  if (error) {
+    console.error("Error fetching conversation participants:", error);
+    return { success: false, error: error.message };
+  }
+
+  const participants = (data ?? []).map((p: any) => ({
+    user_id: p.user_id,
+    email: p.user?.email ?? "",
+    first_name: p.user?.first_name ?? null,
+    last_name: p.user?.last_name ?? null,
+  }));
+
+  return { success: true, data: participants };
+}

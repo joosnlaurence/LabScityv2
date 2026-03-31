@@ -79,9 +79,13 @@ export default function ChatLayout({
 
   useEffect(() => {
     if (isMobile) {
-      setDrawerOpened(true);
+      if (!activeChatId) {
+        setDrawerOpened(true);
+      } else {
+        setDrawerOpened(false);
+      }
     }
-  }, [isMobile]);
+  }, [isMobile, activeChatId]);
 
   const sidebarContent = (
     <Stack gap={0} h="100dvh">
@@ -217,7 +221,7 @@ export default function ChatLayout({
           </Flex>
         </>
       ) : (
-        <Flex h="calc(100vh - 60px)" bg="gray.0">
+        <Flex h="calc(100vh - 60px)" bg="gray.0" style={{ overflow: "hidden" }}>
           <Paper
             w={320}
             miw={320}

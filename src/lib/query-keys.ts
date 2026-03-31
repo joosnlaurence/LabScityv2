@@ -29,6 +29,8 @@ export const chatKeys = {
   oldMessages: (conversation_id: number, cursor?: string) =>
     [...chatKeys.all, "oldMessages", conversation_id, cursor] as const,
   chatsWithPreview: () => [...chatKeys.all, "chatsWithPreview"] as const,
+  conversationParticipants: (conversation_id: number) =>
+    [...chatKeys.all, "conversationParticipants", conversation_id] as const,
 };
 
 export const notificationKeys = {
