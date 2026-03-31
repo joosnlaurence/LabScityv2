@@ -6,21 +6,25 @@ import {
   Box,
   Button,
   Center,
+  Drawer,
+  Flex,
   Group,
   Loader,
   Modal,
   NavLink,
   Paper,
+  ScrollArea,
   Stack,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { IconMenu2, IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useIsMobile } from "@/app/use-is-mobile";
 import {
   useCreateChat,
   useGetChatsWithPreview,
@@ -35,11 +39,13 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const activeChatId = useMemo(() => {
     const match = pathname.match(/^\/chat\/(\d+)/);
     return match?.[1] ?? null;
   }, [pathname]);
 
+  const [drawerOpened, setDrawerOpened] = useState(false);
   const [newChatModalOpen, setNewChatModalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debounced] = useDebouncedValue(query, 300);
@@ -71,105 +77,266 @@ export default function ChatLayout({
     };
   }, [debounced]);
 
-  return (
-    <Group
-      align="stretch"
-      gap={0}
-      h="calc(100vh - 60px)"
-      bg="gray.3"
-      style={{ overflow: "hidden" }}
-    >
-      <Box w={320} p="md" bg="gray.3" style={{ flexShrink: 0, height: "100%" }}>
-        <Paper
-          radius="lg"
-          shadow="sm"
-          h="100%"
-          withBorder
-          bg="gray.2"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            p="md"
-            pb="sm"
-            style={{ display: "flex", justifyContent: "center" }}
-          >
-            <Title order={3} c="navy.7" ta="center">
-              My Conversations
+  const sidebarContent = (
+    <Stack gap={0} h="100%">
+      <Box
+        p="md"
+        style={{ borderBottom: "1px solid var(--mantine-color-navy-1)" }}
+      >
+        <Group justify="space-between" align="flex-start">
+          <Box>
+            <Title order={4} c="navy.7">
+              Chats
             </Title>
+            <Text size="sm" c="dimmed">
+              Your conversations
+            </Text>
+          </Box>
+          <Button
+            variant="light"
+            size="compact-sm"
+            leftSection={<IconPlus size={14} />}
+            onClick={() => {
+              setNewChatModalOpen(true);
+              setDrawerOpened(false);
+            }}
+          >
+            New
+          </Button>
+        </Group>
+      </Box>
+
+      <ScrollArea h={{ base: 240, md: "calc(100vh - 60px - 89px)" }}>
+        <Stack gap={0}>
+          {isLoading ? (
+            <Center h={100}>
+              <Loader size="sm" />
+            </Center>
+          ) : chats.length === 0 ? (
+            <Text size="sm" c="dimmed" p="md">
+              No chats yet. Start a conversation!
+            </Text>
+          ) : (
+            chats.map((chat) => (
+              <NavLink
+                key={chat.conversation_id}
+                component={Link}
+                href={`/chat/${chat.conversation_id}`}
+                active={chat.conversation_id + "" === activeChatId}
+                styles={{
+                  root: {
+                    "--nav-active-bg": "var(--mantine-color-navy-3)",
+                  },
+                }}
+                c="navy.7"
+                p="md"
+                style={{
+                  borderBottom: "1px solid var(--mantine-color-navy-1)",
+                }}
+                label={
+                  <Text fw={600} truncate>
+                    {chat.name || `Chat #${chat.conversation_id}`}
+                  </Text>
+                }
+                description={
+                  <Text size="xs" c="dimmed" lineClamp={1}>
+                    {(chat.message?.content as string) || "No messages yet"}
+                  </Text>
+                }
+                leftSection={
+                  <Avatar
+                    radius="xl"
+                    size="md"
+                    color="navy.7"
+                    bg="navy.7"
+                    src={chat.profile_pic_url}
+                  />
+                }
+                rightSection={
+                  (chat.unread_count ?? 0) > 0 &&
+                  chat.conversation_id + "" !== activeChatId ? (
+                    <Badge size="sm" color="blue" variant="filled">
+                      {(chat.unread_count ?? 0) > 99
+                        ? "99+"
+                        : chat.unread_count}
+                    </Badge>
+                  ) : null
+                }
+                onClick={() => setDrawerOpened(false)}
+              />
+            ))
+          )}
+        </Stack>
+      </ScrollArea>
+    </Stack>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Drawer
+          opened={drawerOpened}
+          onClose={() => setDrawerOpened(false)}
+          padding={0}
+          size="xs"
+          title=""
+          withCloseButton
+        >
+          {sidebarContent}
+        </Drawer>
+
+        <Stack gap={0} h="calc(100vh - 60px)" bg="gray.0">
+          <Box p="xs">
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              leftSection={<IconMenu2 size={18} />}
+              onClick={() => setDrawerOpened(true)}
+              c="navy.7"
+            >
+              Chats
+            </Button>
           </Box>
 
-          <Box px="md" pb="md">
-            <TextInput placeholder="Search" radius="xl" size="md" />
+          <Box flex={1} py="md" px="md" style={{ overflow: "auto" }}>
+            {children}
           </Box>
+        </Stack>
 
-          <Box style={{ flex: 1, overflowY: "auto" }}>
-            {isLoading ? (
-              <Center p="xl">
+        <Modal
+          opened={newChatModalOpen}
+          onClose={() => {
+            setNewChatModalOpen(false);
+            setQuery("");
+            setSelectedUsers([]);
+          }}
+          title={
+            <Title order={4} c="navy.7">
+              New Conversation
+            </Title>
+          }
+          centered
+        >
+          <Stack gap="md">
+            <TextInput
+              placeholder="Search by name"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              radius="xl"
+              size="md"
+            />
+
+            {searching && (
+              <Center>
                 <Loader size="sm" />
               </Center>
-            ) : chats.length === 0 ? (
-              <Center p="xl">
-                <Text c="dimmed">No chats found.</Text>
-              </Center>
-            ) : (
-              chats.map((chat) => (
-                <NavLink
-                  key={chat.conversation_id}
-                  component={Link}
-                  href={`/chat/${chat.conversation_id}`}
-                  active={chat.conversation_id + "" === activeChatId}
-                  styles={{
-                    root: { "--nav-active-bg": "var(--mantine-color-navy-3)" },
-                  }}
-                  c="navy.7"
-                  px="md"
-                  py="sm"
-                  label={
-                    <Text fw={600}>
-                      {chat.name || `Chat #${chat.conversation_id}`}
-                    </Text>
-                  }
-                  description={
-                    <Text size="xs" c="dimmed">
-                      {(chat.message?.content as string) || "No messages yet"}
-                    </Text>
-                  }
-                  leftSection={
-                    <Avatar radius="xl" size="md" color="navy.7" bg="navy.7" />
-                  }
-                  rightSection={
-                    (chat.unread_count ?? 0) > 0 &&
-                    chat.conversation_id + "" !== activeChatId ? (
-                      <Badge size="sm" color="blue" variant="filled">
-                        {(chat.unread_count ?? 0) > 99
-                          ? "99+"
-                          : chat.unread_count}
-                      </Badge>
-                    ) : null
-                  }
-                />
-              ))
             )}
-          </Box>
 
-          <Box p="md">
+            {results.length > 0 && (
+              <Stack gap={0}>
+                {results.map((user) => {
+                  const isSelected = selectedUsers.some(
+                    (u) => u.user_id === user.user_id,
+                  );
+
+                  return (
+                    <NavLink
+                      key={user.user_id}
+                      label={
+                        <Text fw={600} c="navy.7">
+                          {user.first_name} {user.last_name}
+                        </Text>
+                      }
+                      leftSection={
+                        <Avatar
+                          radius="xl"
+                          size="md"
+                          color="navy.7"
+                          bg="navy.7"
+                          src={user.avatar_url}
+                        />
+                      }
+                      active={isSelected}
+                      styles={{
+                        root: {
+                          "--nav-active-bg": "var(--mantine-color-navy-3)",
+                        },
+                      }}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedUsers((current) =>
+                            current.filter((u) => u.user_id !== user.user_id),
+                          );
+                        } else {
+                          setSelectedUsers((current) => [...current, user]);
+                        }
+                      }}
+                      style={{ borderRadius: 8 }}
+                    />
+                  );
+                })}
+              </Stack>
+            )}
+
+            {query.trim() && !searching && results.length === 0 && (
+              <Text size="sm" c="dimmed" ta="center">
+                No users found
+              </Text>
+            )}
+
             <Button
               fullWidth
               color="navy.7"
               variant="filled"
               radius="xl"
-              leftSection={<IconPlus size="1rem" />}
-              onClick={() => setNewChatModalOpen(true)}
+              loading={createChatMutation.isPending}
+              disabled={selectedUsers.length === 0}
+              onClick={() =>
+                createChatMutation.mutate(
+                  selectedUsers.map((u) => u.user_id),
+                  {
+                    onSuccess: () => {
+                      setNewChatModalOpen(false);
+                      setQuery("");
+                      setSelectedUsers([]);
+                    },
+                  },
+                )
+              }
             >
-              New Chat
+              Start Chat
             </Button>
-          </Box>
+          </Stack>
+        </Modal>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Flex h="calc(100vh - 60px)" bg="gray.0">
+        <Paper
+          w={320}
+          miw={320}
+          radius={0}
+          h="100%"
+          bg="gray.1"
+          style={{
+            borderRight: "1px solid var(--mantine-color-gray-3)",
+          }}
+        >
+          {sidebarContent}
         </Paper>
-      </Box>
+
+        <Box
+          flex={1}
+          py={24}
+          px={{ base: "md", md: "xl", lg: 80 }}
+          style={{ overflow: "auto" }}
+        >
+          {children}
+        </Box>
+      </Flex>
 
       <Modal
         opened={newChatModalOpen}
@@ -276,8 +443,6 @@ export default function ChatLayout({
           </Button>
         </Stack>
       </Modal>
-
-      <Box style={{ flex: 1, overflow: "hidden" }}>{children}</Box>
-    </Group>
+    </>
   );
 }

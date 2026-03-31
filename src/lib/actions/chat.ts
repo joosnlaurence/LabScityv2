@@ -136,7 +136,16 @@ export async function getChatsWithPreview(): Promise<
 
   if (error) return { success: false, error: error.message };
 
-  return { success: true, data: data as ChatPreview[] };
+  const chatsWithUrls = (data as ChatPreview[]).map((chat) => ({
+    ...chat,
+    profile_pic_url: chat.profile_pic_url
+      ? supabase.storage
+          .from("profile_pictures")
+          .getPublicUrl(chat.profile_pic_url).data.publicUrl
+      : undefined,
+  }));
+
+  return { success: true, data: chatsWithUrls };
 }
 
 /**
