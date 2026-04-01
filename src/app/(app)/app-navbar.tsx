@@ -12,27 +12,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "@/app/use-is-mobile";
 
-const navigation = [
+const baseNavigation = [
   { href: "/home", icon: IconFlaskFilled, label: "Home" },
   { href: "/profile", icon: IconUser, label: "Profile" },
   { href: "/chat", icon: IconMessageFilled, label: "Chat" },
   { href: "/groups", icon: IconUsers, label: "Groups" },
-  { href: "/moderation", icon: IconGavel, label: "Moderation" },
 ];
+
+const moderatorNavItem = { href: "/moderation", icon: IconGavel, label: "Moderation" };
 
 interface LSAppNavbarProps {
   mobileHeight: number;
   desktopWidth: number;
   userId: string;
+  isModerator: boolean;
 }
 
 export default function LSAppNavbar({
   mobileHeight,
   desktopWidth,
   userId,
+  isModerator,
 }: LSAppNavbarProps) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
+  const navigation = isModerator ? [...baseNavigation, moderatorNavItem] : baseNavigation;
 
   function getHref(item: (typeof navigation)[number]): string {
     if (item.href === "/profile") {

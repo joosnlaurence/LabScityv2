@@ -8,7 +8,7 @@ import { useIsMobile } from "../use-is-mobile"
 const mobileNavbarHeight = 60
 const desktopNavbarWidth = 164
 
-const LSAppLayout = ({ userId, children }: { userId: string, children: React.ReactNode }) => {
+const LSAppLayout = ({ userId, isModerator, children }: { userId: string, isModerator: boolean, children: React.ReactNode }) => {
   const isMobile = useIsMobile()
 
   return (
@@ -16,6 +16,7 @@ const LSAppLayout = ({ userId, children }: { userId: string, children: React.Rea
 
       <LSAppNavbar
         userId={userId}
+        isModerator={isModerator}
         desktopWidth={desktopNavbarWidth}
         mobileHeight={mobileNavbarHeight}
       />

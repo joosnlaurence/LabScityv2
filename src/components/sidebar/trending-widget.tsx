@@ -40,7 +40,8 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
 
   return (
     <Card bg="gray.0" p="md" w="100%" radius="md" shadow="sm">
-      <Stack gap="md">
+      <Stack>
+
         <Text
           c="gray.7"
           fw="bold"
@@ -48,13 +49,14 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
         >
           Trending
         </Text>
+
         {/* the hashtags */}
         {isLoading ? (
           <Flex justify="center" py="sm">
             <LSSpinner />
           </Flex>
         ) : (
-          <Flex wrap="wrap" gap={6} justify="flex-start">
+          <Flex wrap="wrap" gap={6} mb="lg" justify="flex-start">
             {
               hashtags.map((hashtag, index) => (
                 <Badge
