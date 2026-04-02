@@ -1,0 +1,7 @@
+.collabHeader:hover {
+    background-color: var(--mantine-color-gray-2);
+}
+
+.headerName:hover {
+    text-decoration: underline;
+}

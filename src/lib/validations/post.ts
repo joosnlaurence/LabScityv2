@@ -13,8 +13,8 @@ export const createPostSchema = z.object({
 		message: "Category is required",
 	}),
 	mediaPath: z.string().min(1).optional(),
-  mediaWidth: z.number().optional(),
-  mediaHeight: z.number().optional(),
+  mediaWidth: z.number().nullable().optional(),
+  mediaHeight: z.number().nullable().optional(),
 	groupId: z.number().int().positive().optional(),
 });
 

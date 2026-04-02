@@ -37,8 +37,8 @@ export interface Post {
   user_id: string;
   content: string;
   media_url: string | null;
-  mediaWidth?: number;
-  mediaHeight?: number;
+  mediaWidth?: number | null;
+  mediaHeight?: number | null;
   category: PostCategory;
   link: string | null;
   created_at: string;

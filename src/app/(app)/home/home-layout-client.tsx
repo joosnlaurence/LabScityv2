@@ -11,6 +11,7 @@ import type {
 import { Suspense } from "react";
 import { TrendingWidget } from "@/components/sidebar/trending-widget";
 import { TrendingWidgetSkeleton } from "@/components/sidebar/trending-widget-skeleton";
+import CollabRecommendations from "@/components/collaborators/collab-recommendations";
 
 export type HomePopularGroupsActions = {
   searchPublicGroupsAction: typeof searchPublicGroups;
@@ -81,6 +82,7 @@ export function HomeLayoutClient({
                   getGroupsAction={popularGroupsActions.getGroupsAction}
                 />
               ) : null}
+              <CollabRecommendations />
             </Stack>
           </Flex>
         </Flex>

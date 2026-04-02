@@ -61,8 +61,8 @@ interface LSPostCardProps {
   content: string;
   mediaLabel?: string | null;
   mediaUrl?: string | null;
-  mediaWidth?: number | undefined;
-  mediaHeight?: number | undefined;
+  mediaWidth?: number | null;
+  mediaHeight?: number | null;
   avatarUrl?: string | null;
   onCommentClick?: () => void;
   onLikeClick?: () => void;
@@ -304,9 +304,9 @@ export function LSPostCard({
             <SimpleGrid cols={3}>
 
               {/* like button */}
+              <Flex justify="center">
               <Button
                 size="compact-md"
-                mr={3} // HACK: small margin here to make things look a bit nicer
                 variant="transparent"
                 color="navy.6"
                 // like icon
@@ -323,8 +323,10 @@ export function LSPostCard({
                   {typeof likeCount === "number" ? likeCount : ""}
                 </Text>
               </Button>
+              </Flex>
 
               {/* comment button */}
+              <Flex justify="center">
               <Button
                 size="compact-md"
                 variant="transparent"
@@ -336,8 +338,10 @@ export function LSPostCard({
                   {typeof commentCount === "number" ? commentCount : ""}
                 </Text>
               </Button>
+              </Flex>
 
               {/* share button */}
+              <Flex justify="center">
               <Menu
                 withinPortal
                 position="top"
@@ -369,6 +373,7 @@ export function LSPostCard({
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
+              </Flex>
             </SimpleGrid>
           ) : null }
         </Stack>

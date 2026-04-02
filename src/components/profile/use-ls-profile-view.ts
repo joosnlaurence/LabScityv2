@@ -226,11 +226,11 @@ function useProfilePostActions(
             posts: page.posts.map((p: any) =>
               String(p.post_id) === postId
                 ? { ...p, 
-                  comments: p.comments.map((c: any) => {
+                  comments: p.comments.map((c: any) => 
                     String(c.id) === commentId
                     ? { ...c, isLiked: !c.isLiked }
                     : c
-                  })
+                  )
                 }
                 : p
             ),

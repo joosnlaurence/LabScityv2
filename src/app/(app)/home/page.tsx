@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { HomeFeed } from "@/components/feed/home-feed";
-import {
-  createComment,
-  createPost,
-  createPostImageUploadUrl,
-  createReport,
-  likeComment,
-  likePost,
-  deletePost,
-} from "@/lib/actions/feed";
-import { Flex } from "@mantine/core";
 import { Suspense } from "react";
-import { TrendingWidget } from "@/components/sidebar/trending-widget";
-import { TrendingWidgetSkeleton } from "@/components/sidebar/trending-widget-skeleton";
 import { createClient } from "@/supabase/server";
+import HomeFeedSkeleton from "@/components/feed/home-feed-skeleton";
+import HomeFeedServer from "@/components/feed/home-feed-server";
 
 export const metadata: Metadata = {
   title: "Home | LabScity",
@@ -27,15 +16,8 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   
   return (
-    <HomeFeed
-      createPostAction={createPost}
-      createPostImageUploadUrlAction={createPostImageUploadUrl}
-      createCommentAction={createComment}
-      createReportAction={createReport}
-      likePostAction={likePost}
-      likeCommentAction={likeComment}
-      currentUserId={user?.id ?? null}
-      deletePostAction={deletePost}
-    />
+    <Suspense fallback={<HomeFeedSkeleton />}>
+      <HomeFeedServer />
+    </Suspense>
   );
 }
