@@ -117,6 +117,11 @@ export interface GetFeedResult {
   nextCursor: string | null;
 }
 
+export interface GetFeedPaginatedResult {
+  pages: GetFeedResult[];
+  pageParams: (string | undefined)[];
+}
+
 export interface GetPostDetailResult {
   success: boolean;
   data: FeedPostItem;

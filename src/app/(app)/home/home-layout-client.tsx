@@ -3,12 +3,14 @@
 import { Box, Flex, Stack } from "@mantine/core";
 import { useIsMobile } from "@/app/use-is-mobile";
 import { LSPopularGroupsHomeStrip } from "@/components/groups/ls-popular-groups-home-strip";
-import { TrendingWidget } from "@/components/sidebar/trending-widget";
 import type {
   getGroups,
   joinGroup,
   searchPublicGroups,
 } from "@/lib/actions/groups";
+import { Suspense } from "react";
+import { TrendingWidget } from "@/components/sidebar/trending-widget";
+import { TrendingWidgetSkeleton } from "@/components/sidebar/trending-widget-skeleton";
 
 export type HomePopularGroupsActions = {
   searchPublicGroupsAction: typeof searchPublicGroups;
@@ -63,8 +65,14 @@ export function HomeLayoutClient({
             }}
           >
             <Stack gap="lg" w="100%" maw="100%" style={{ minWidth: 0 }}>
-              <TrendingWidget />
+              {/* trending + sidecards */}
+              <Flex flex={4} miw={{ base: "100%", sm: 'auto'}}>
+                <Suspense fallback={<TrendingWidgetSkeleton />}>
+                  <TrendingWidget />
+                </Suspense>
+              </Flex>
               {popularGroupsActions ? (
+                
                 <LSPopularGroupsHomeStrip
                   searchPublicGroupsAction={
                     popularGroupsActions.searchPublicGroupsAction

@@ -214,7 +214,7 @@ export default function PostDetailPage() {
       </Flex>
     );
   }
-
+  
   return (
     <Stack p="md" maw={700} mx="auto">
       <ActionIcon variant="subtle" color="navy.7" size="xl" onClick={() => router.back()} aria-label="Go back">
@@ -281,6 +281,7 @@ export default function PostDetailPage() {
             isSubmitting={createCommentMutation.isPending}
           />
 
+          
           {post.comments.length > 0 ? (
             <>
               <Divider />

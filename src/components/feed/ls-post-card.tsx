@@ -130,7 +130,7 @@ export function LSPostCard({
     .slice(0, 2)
     .join("");
 
-  const userContent = (
+  const postHeader = (
     <Group gap="sm" align="center">
 
       <Avatar
@@ -210,10 +210,10 @@ export function LSPostCard({
           overflow: "hidden", 
         }}
       >
-        <Stack gap={16}>
+        <Stack gap="lg">
           <Box>
             <Group align="flex-start" justify="space-between">
-              {userContent}
+              {postHeader}
               <Group gap="xs" align="center">
                 <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{timeAgo}</Text>
                 {showMenu ? (
@@ -227,7 +227,7 @@ export function LSPostCard({
                     id={menuId}
                   >
                     <Menu.Target>
-                      <ActionIcon variant="subtle" color="navy.6" aria-label="Post options">
+                      <ActionIcon onClick={noPropagate()} variant="subtle" color="navy.6" aria-label="Post options">
                         <IconDots size={18} />
                       </ActionIcon>
                     </Menu.Target>
@@ -251,123 +251,127 @@ export function LSPostCard({
               </Group>
             </Group>
           </Box>
-        </Stack>
-        <Text
-          fz="sm"
-          c="navy.7"
-          style={{ wordBreak: "break-word" }}
-        >
-          {content}
-        </Text>
-
-        {mediaUrl ? (
-          <Box
-            pos="relative"
-            mah={600}
-            fw={600}
-            style={{
-              aspectRatio: `${mediaWidth! / mediaHeight!}`,
-              overflow: "hidden",
-              letterSpacing: "0.3px",
-            }}
+        
+          <Text
+            fz="sm"
+            c="navy.7"
+            style={{ wordBreak: "break-word" }}
           >
-            <Image
-              component={NextImage}
-              src={mediaUrl}
-              alt="Post attachment"
-              bdrs="lg"
-              bg='navy.0'
-              fill
+            {content}
+          </Text>
+
+          {mediaUrl ? (
+            <Box
+              pos="relative"
               mah={600}
-              style={{ objectFit: "contain" }}
-            />
-          </Box>
-
-        ) : mediaLabel ? (
-          <Flex
-            bg="navy.7"
-            c="navy.0"
-            mih={180}
-            justify="center"
-            align="center"
-            ta="center"
-            fw={600}
-            style={{ letterSpacing: "0.3px", overflow: "hidden" }}
-          >
-            <Text component="span" style={{ whiteSpace: "pre-line" }}>
-              {mediaLabel}
-            </Text>
-          </Flex>
-        ) : null}
-
-        {showActions ? (
-          <SimpleGrid cols={3}>
-
-            {/* like button */}
-            <Button
-              size="compact-md"
-              mr={3} // HACK: small margin here to make things look a bit nicer
-              variant="transparent"
-              color="navy.6"
-              // like icon
-              leftSection={
-                isLiked ? (
-                  <IconHeartFilled size={18} style={{ color: "#e03131" }} />
-                ) : (
-                  <IconHeart size={18} />
-                )
-              }
-              onClick={noPropagate(onLikeClick)}
-            >
-              <Image src={mediaUrl} alt="Post attachment" radius="md" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            </Button>
-
-            {/* comment button */}
-            <Button
-              size="compact-md"
-              variant="transparent"
-              color="navy.6"
-              leftSection={<IconMessageCircle size={18} />}
-              onClick={noPropagate(onCommentClick)}
-            >
-              <Text span fz="sm" c="navy.6">
-                {typeof commentCount === "number" ? commentCount : ""}
-              </Text>
-            </Button>
-
-            {/* share button */}
-            <Menu
-              withinPortal
-              position="top"
-              styles={{
-                dropdown: { padding: "6px" },
-                item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+              fw={600}
+              style={{
+                aspectRatio: `${mediaWidth! / mediaHeight!}`,
+                overflow: "hidden",
+                letterSpacing: "0.3px",
               }}
             >
-              <Menu.Target>
-                <Button
-                  size="compact-xs"
-                  variant="transparent"
-                  color="navy.6"
-                  leftSection={<IconShare3 size={18} />}
-                />
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconLink size={14} />}
-                  onClick={() => {
-                    const url = shareUrl
-                      ? window.location.origin + shareUrl
-                      : window.location.href;
-                    navigator.clipboard.writeText(url);
-                  }}
-                >
-                  Copy link
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </SimpleGrid>
-        ) : null }
+              <Image
+                component={NextImage}
+                src={mediaUrl}
+                alt="Post attachment"
+                bdrs="lg"
+                bg='navy.0'
+                fill
+                mah={600}
+                style={{ objectFit: "contain" }}
+              />
+            </Box>
+
+          ) : mediaLabel ? (
+            <Flex
+              bg="navy.7"
+              c="navy.0"
+              mih={180}
+              justify="center"
+              align="center"
+              ta="center"
+              fw={600}
+              style={{ letterSpacing: "0.3px", overflow: "hidden" }}
+            >
+              <Text component="span" style={{ whiteSpace: "pre-line" }}>
+                {mediaLabel}
+              </Text>
+            </Flex>
+          ) : null}
+
+          {showActions ? (
+            <SimpleGrid cols={3}>
+
+              {/* like button */}
+              <Button
+                size="compact-md"
+                mr={3} // HACK: small margin here to make things look a bit nicer
+                variant="transparent"
+                color="navy.6"
+                // like icon
+                leftSection={
+                  isLiked ? (
+                    <IconHeartFilled size={18} style={{ color: "#e03131" }} />
+                  ) : (
+                    <IconHeart size={18} />
+                  )
+                }
+                onClick={noPropagate(onLikeClick)}
+              >
+                <Text span fz="sm" c={isLiked ? "#e03131" : "navy.6"}>
+                  {typeof likeCount === "number" ? likeCount : ""}
+                </Text>
+              </Button>
+
+              {/* comment button */}
+              <Button
+                size="compact-md"
+                variant="transparent"
+                color="navy.6"
+                leftSection={<IconMessageCircle size={18} />}
+                onClick={noPropagate(onCommentClick)}
+              >
+                <Text span fz="sm" c="navy.6">
+                  {typeof commentCount === "number" ? commentCount : ""}
+                </Text>
+              </Button>
+
+              {/* share button */}
+              <Menu
+                withinPortal
+                position="top"
+                styles={{
+                  dropdown: { padding: "6px" },
+                  item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+                }}
+              >
+                <Menu.Target>
+                  <Button
+                    size="compact-xs"
+                    variant="transparent"
+                    color="navy.6"
+                    leftSection={<IconShare3 size={18} />}
+                    onClick={noPropagate()}
+                  />
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconLink size={14} />}
+                    onClick={noPropagate(() => {
+                      const url = shareUrl
+                        ? window.location.origin + shareUrl
+                        : window.location.href;
+                      navigator.clipboard.writeText(url);
+                    })}
+                  >
+                    Copy link
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </SimpleGrid>
+          ) : null }
+        </Stack>
           {children}
       </Card>
     </>

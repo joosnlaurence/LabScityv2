@@ -1,9 +1,9 @@
+'use client';
+
 import { Card, Text, Stack, Flex, Badge } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getTrendingScientificFields } from "@/lib/actions/feed";
-import Hashtag from "./hashtag";
-
 interface TrendingWidgetProps {
   hashtags?: string[];
 }

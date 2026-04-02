@@ -27,28 +27,15 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   
   return (
-    <>
-        
-        <Flex flex={6}>
-          <HomeFeed
-            createPostAction={createPost}
-            createPostImageUploadUrlAction={createPostImageUploadUrl}
-            createCommentAction={createComment}
-            createReportAction={createReport}
-            likePostAction={likePost}
-            likeCommentAction={likeComment}
-            currentUserId={user?.id ?? null}
-            deletePostAction={deletePost}
-          />
-        </Flex>
-        
-        {/* trending + sidecards */}
-        <Flex flex={4} miw={{ base: "100%", sm: 'auto'}}>
-          <Suspense fallback={<TrendingWidgetSkeleton />}>
-            <TrendingWidget />
-          </Suspense>
-        </Flex>
-
-    </>
+    <HomeFeed
+      createPostAction={createPost}
+      createPostImageUploadUrlAction={createPostImageUploadUrl}
+      createCommentAction={createComment}
+      createReportAction={createReport}
+      likePostAction={likePost}
+      likeCommentAction={likeComment}
+      currentUserId={user?.id ?? null}
+      deletePostAction={deletePost}
+    />
   );
 }

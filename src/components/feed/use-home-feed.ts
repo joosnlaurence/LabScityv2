@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import { getFeed } from "@/lib/actions/feed";
 import { feedKeys } from "@/lib/query-keys";
-import type { FeedPostItem, GetFeedResult } from "@/lib/types/feed";
+import type { FeedPostItem, GetFeedPaginatedResult, GetFeedResult } from "@/lib/types/feed";
 import {
   type CreateCommentValues,
   type CreatePostValues,
@@ -323,23 +323,26 @@ export function useHomeFeed({
     onMutate: async ({ postId, commentId }, context) => {
       await context.client.cancelQueries({ queryKey: feedKeys.list(defaultFeedFilter) });
       const snapshot = context.client.getQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter));
-      context.client.setQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter), (old) => {
+      context.client.setQueryData<GetFeedPaginatedResult>(feedKeys.list(defaultFeedFilter), (old) => {
         if (!old) return old;
         return {
           ...old,
-          posts: old.posts.map((p) =>
-            p.id === postId
-              ? 
-              {
-                ...p,
-                comments: p.comments.map((c) => 
-                  c.id === commentId
-                    ? {...c, isLiked: !c.isLiked}
-                    : c
-                ) 
-              }
-              : p
-          ),
+          pages: old.pages.map((page) => ({ 
+            ...page,
+            posts: page.posts.map((p) =>
+              p.id === postId
+                ? 
+                {
+                  ...p,
+                  comments: p.comments.map((c) => 
+                    c.id === commentId
+                      ? {...c, isLiked: !c.isLiked}
+                      : c
+                  ) 
+                }
+                : p
+              ),
+          }))
         };
       });
       return { snapshot };
@@ -395,7 +398,7 @@ export function useHomeFeed({
   };
 
   const handleToggleCommentLike = (postId: string, commentId: string) => {
-    void postId;
+    console.log(postId);
     likeCommentMutation.mutate({ postId, commentId });
   };
 
