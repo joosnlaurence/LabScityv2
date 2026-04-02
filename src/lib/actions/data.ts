@@ -557,7 +557,7 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
     const user = data[0];
     const { data: profileData, error: profileError } = await supabase
       .from("profile")
-      .select("header_pic_path, about, workplace, profession, skill, articles")
+      .select("header_pic_path, about, workplace, profession, occupation, skill, articles")
       .eq("user_id", user_id)
       .maybeSingle();
 

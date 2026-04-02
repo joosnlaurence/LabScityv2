@@ -89,8 +89,8 @@ export interface FeedPostItem {
   content: string;
   timeAgo: string;
   mediaUrl?: string | null;
-  mediaHeight?: number | undefined;
-  mediaWidth: number | undefined;
+  mediaHeight?: number;
+  mediaWidth?: number;
   mediaLabel?: string | null;
   comments: FeedCommentItem[];
   isLiked?: boolean;
