@@ -1,14 +1,34 @@
 "use client";
 
-import { ActionIcon, Anchor, Avatar, Box, Button, Card, Flex, Group, SimpleGrid, Image, Menu, Stack, Text, UnstyledButton, AspectRatio } from "@mantine/core";
+import { 
+  ActionIcon, 
+  Anchor, 
+  Avatar, 
+  Box, 
+  Button, 
+  Card, 
+  Flex, 
+  Group, 
+  SimpleGrid, 
+  Image, 
+  Menu, 
+  Stack, 
+  Text, 
+  UnstyledButton, 
+  AspectRatio,
+  Modal
+ } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import NextImage from 'next/image';
 import {
   IconDots,
   IconHeart,
   IconHeartFilled,
+  IconLink,
   IconMessageCircle,
   IconShare3,
+  IconTrash,
 } from "@tabler/icons-react";
 
 /**
@@ -50,11 +70,13 @@ interface LSPostCardProps {
   likeCount?: number;
   commentCount?: number;
   onReportClick?: () => void;
+  onDeleteClick?: () => void;
   showMenu?: boolean;
   showActions?: boolean;
   audienceLabel?: string | null;
   menuId?: string;
   onPostClick?: () => void;
+  shareUrl?: string;
   children?: React.ReactNode;
 }
 
@@ -90,13 +112,17 @@ export function LSPostCard({
   likeCount,
   commentCount,
   onReportClick,
+  onDeleteClick,
   showMenu = true,
   showActions = true,
   audienceLabel = null,
   menuId,
   onPostClick,
+  shareUrl,
   children,
 }: LSPostCardProps) {
+  const [confirmDeleteOpen, { open: openConfirmDelete, close: closeConfirmDelete }] = useDisclosure(false);
+
   const initials = userName
     .split(" ")
     .filter(Boolean)
@@ -107,7 +133,13 @@ export function LSPostCard({
   const userContent = (
     <Group gap="sm" align="center">
 
-      <Avatar size="md" radius="xl" color="navy.7" src={avatarUrl || undefined}>
+      <Avatar
+        size="md"
+        radius="xl"
+        color="navy.7"
+        bg="navy.7"
+        src={avatarUrl || undefined}
+      >
         {initials}
       </Avatar>
 
@@ -144,47 +176,82 @@ export function LSPostCard({
   );
 
   return (
-    <Card
-      bg="gray.0"
-      padding="md"
-      radius="md"
-      shadow="sm"
-      onClick={onPostClick}
-      style={{ 
-        cursor: onPostClick ? 'pointer' : undefined, 
-        overflow: "hidden", 
-      }}
-    >
-      <Stack gap={16}>
-        <Box>
-          <Group align="flex-start" justify="space-between">
-            {userContent}
-            <Group gap="xs" align="center">
-              <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{timeAgo}</Text>
-              {showMenu ? (
-                <Menu
-                  withinPortal
-                  position="bottom-end"
-                  styles={{
-                    dropdown: { padding: "6px" },
-                    item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
-                  }}
-                  id={menuId}
-                >
-                  <Menu.Target>
-                    <ActionIcon variant="subtle" color="navy.6" aria-label="Post options">
-                      <IconDots size={18} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item onClick={noPropagate(onReportClick)}>Report</Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              ) : null}
-            </Group>
+    <>
+      <Modal
+        opened={confirmDeleteOpen}
+        onClose={closeConfirmDelete}
+        title="Delete post"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">Are you sure you want to delete this post? This action cannot be undone.</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closeConfirmDelete}>Cancel</Button>
+            <Button
+              color="red"
+              onClick={() => {
+                closeConfirmDelete();
+                onDeleteClick?.();
+              }}
+            >
+              Delete
+            </Button>
           </Group>
-        </Box>
-
+        </Stack>
+      </Modal>
+      <Card
+        bg="gray.0"
+        padding="md"
+        radius="md"
+        shadow="sm"
+        onClick={onPostClick}
+        style={{ 
+          cursor: onPostClick ? 'pointer' : undefined, 
+          overflow: "hidden", 
+        }}
+      >
+        <Stack gap={16}>
+          <Box>
+            <Group align="flex-start" justify="space-between">
+              {userContent}
+              <Group gap="xs" align="center">
+                <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{timeAgo}</Text>
+                {showMenu ? (
+                  <Menu
+                    withinPortal
+                    position="bottom-end"
+                    styles={{
+                      dropdown: { padding: "6px" },
+                      item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+                    }}
+                    id={menuId}
+                  >
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="navy.6" aria-label="Post options">
+                        <IconDots size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                        {onDeleteClick ? (
+                          <>
+                            <Menu.Item
+                              color="red"
+                              leftSection={<IconTrash size={14} />}
+                              onClick={openConfirmDelete}
+                            >
+                              Delete post
+                            </Menu.Item>
+                            {onReportClick ? <Menu.Divider /> : null}
+                          </>
+                        ) : null}
+                        {onReportClick ? <Menu.Item onClick={onReportClick}>Report</Menu.Item> : null}
+                      </Menu.Dropdown>
+                  </Menu>
+                ) : null}
+              </Group>
+            </Group>
+          </Box>
+        </Stack>
         <Text
           fz="sm"
           c="navy.7"
@@ -252,12 +319,7 @@ export function LSPostCard({
               }
               onClick={noPropagate(onLikeClick)}
             >
-              {/* like label */}
-              <Text span fz="sm" c={isLiked ? "#e03131" : "navy.6"}>
-                {
-                  typeof likeCount == "number" ? likeCount : ""
-                }
-              </Text>
+              <Image src={mediaUrl} alt="Post attachment" radius="md" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             </Button>
 
             {/* comment button */}
@@ -274,20 +336,40 @@ export function LSPostCard({
             </Button>
 
             {/* share button */}
-            <Button
-              size="compact-md"
-              variant="transparent"
-              color="navy.6"
-              leftSection={<IconShare3 size={18} />}
-              onClick={noPropagate()}
-            />
-
+            <Menu
+              withinPortal
+              position="top"
+              styles={{
+                dropdown: { padding: "6px" },
+                item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+              }}
+            >
+              <Menu.Target>
+                <Button
+                  size="compact-xs"
+                  variant="transparent"
+                  color="navy.6"
+                  leftSection={<IconShare3 size={18} />}
+                />
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconLink size={14} />}
+                  onClick={() => {
+                    const url = shareUrl
+                      ? window.location.origin + shareUrl
+                      : window.location.href;
+                    navigator.clipboard.writeText(url);
+                  }}
+                >
+                  Copy link
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </SimpleGrid>
-        ) : null}
-
-        {children}
-
-      </Stack>
-    </Card >
+        ) : null }
+          {children}
+      </Card>
+    </>
   );
 }

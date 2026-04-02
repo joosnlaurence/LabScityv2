@@ -3,70 +3,85 @@
 import { z } from "zod";
 import type { FeedPostItem, GetFeedResult } from "@/lib/types/feed";
 import {
-	createCommentSchema,
-	createPostSchema,
-	createReportSchema,
-	feedFilterSchema,
-	type CreateCommentValues,
-	type CreatePostValues,
-	type CreateReportValues,
-	type FeedFilterValues,
+  type CreateCommentValues,
+  type CreatePostValues,
+  type CreateReportValues,
+  createCommentSchema,
+  createPostSchema,
+  createReportSchema,
+  type FeedFilterValues,
+  feedFilterSchema,
 } from "@/lib/validations/post";
 import { createClient } from "@/supabase/server";
 
 const idSchema = z.string().min(1, "ID is required");
 const postMediaBucket = "post_images";
-const allowedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+const allowedImageTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
 
 function extensionFromMime(mimeType: string) {
-	switch (mimeType) {
-		case "image/jpeg":
-			return "jpg";
-		case "image/png":
-			return "png";
-		case "image/webp":
-			return "webp";
-		case "image/gif":
-			return "gif";
-		default:
-			return "bin";
-	}
+  switch (mimeType) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    default:
+      return "bin";
+  }
 }
 
-export async function createPostImageUploadUrl(contentType: string, supabaseClient?: any) {
-	try {
-		if (!allowedImageTypes.includes(contentType as (typeof allowedImageTypes)[number])) {
-			return { success: false, error: "Only image uploads are supported" };
-		}
+export async function createPostImageUploadUrl(
+  contentType: string,
+  supabaseClient?: any,
+) {
+  try {
+    if (
+      !allowedImageTypes.includes(
+        contentType as (typeof allowedImageTypes)[number],
+      )
+    ) {
+      return { success: false, error: "Only image uploads are supported" };
+    }
 
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		const extension = extensionFromMime(contentType);
-		const path = `${authData.user.id}/${crypto.randomUUID()}.${extension}`;
+    const extension = extensionFromMime(contentType);
+    const path = `${authData.user.id}/${crypto.randomUUID()}.${extension}`;
 
-		const { data, error } = await supabase.storage
-			.from(postMediaBucket)
-			.createSignedUploadUrl(path);
+    const { data, error } = await supabase.storage
+      .from(postMediaBucket)
+      .createSignedUploadUrl(path);
 
-		if (error || !data) {
-			return { success: false, error: error?.message ?? "Failed to prepare upload" };
-		}
+    if (error || !data) {
+      return {
+        success: false,
+        error: error?.message ?? "Failed to prepare upload",
+      };
+    }
 
-		return {
-			success: true,
-			data: {
-				path,
-				token: data.token,
-			},
-		};
-	} catch {
-		return { success: false, error: "Failed to prepare upload" };
-	}
+    return {
+      success: true,
+      data: {
+        path,
+        token: data.token,
+      },
+    };
+  } catch {
+    return { success: false, error: "Failed to prepare upload" };
+  }
 }
 
 /**
@@ -84,51 +99,55 @@ export async function createPostImageUploadUrl(contentType: string, supabaseClie
  * }
  * */
 
-export async function createPost(input: CreatePostValues, supabaseClient?: any) {
-	try {
-		// Re-validate on server
-		const parsed = createPostSchema.parse(input);
+export async function createPost(
+  input: CreatePostValues,
+  supabaseClient?: any,
+) {
+  try {
+    // Re-validate on server
+    const parsed = createPostSchema.parse(input);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		// Insert post into database
-		const { data, error } = await supabase
-			.from("posts")
-			.insert({
-				user_id: authData.user.id,
-				scientific_field: parsed.scientificField,
-				category: parsed.category,
-				text: parsed.content,
-				media_path: parsed.mediaPath ?? null,
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    // Insert post into database
+    const { data, error } = await supabase
+      .from("posts")
+      .insert({
+        user_id: authData.user.id,
+        scientific_field: parsed.scientificField,
+        category: parsed.category,
+        text: parsed.content,
+        media_path: parsed.mediaPath ?? null,
         media_width: parsed.mediaWidth ?? null,
-        media_height: parsed.mediaHeight ?? null
-			})
-			.select()
-			.single();
+        media_height: parsed.mediaHeight ?? null,
+        group_id: parsed.groupId ?? null,
+      })
+      .select()
+      .single();
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
-		return {
-			success: true,
-			data: { id: data.post_id, ...parsed },
-		};
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to create post" };
-	}
+    return {
+      success: true,
+      data: { id: data.post_id, ...parsed },
+    };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to create post" };
+  }
 }
 
 /**
@@ -147,61 +166,40 @@ export async function createPost(input: CreatePostValues, supabaseClient?: any) 
  * ```
  */
 export async function deletePost(postId: string, supabaseClient?: any) {
-	try {
-		const postIdStr = String(postId);
-		// Validate post ID
-		idSchema.parse(postIdStr);
+  try {
+    const postIdStr = String(postId);
+    // Validate post ID
+    idSchema.parse(postIdStr);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		const { data: postData, error: postDataError } = await supabase
-			.from("posts")
-			.select("media_path")
-			.eq("post_id", postIdStr)
-			.eq("user_id", authData.user.id)
-			.maybeSingle();
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		if (postDataError) {
-			return { success: false, error: postDataError.message };
-		}
+    // Soft-take down post from database (only if user owns it)
+    const { error } = await supabase
+      .from("posts")
+      .update({ taken_down: true })
+      .eq("post_id", postIdStr)
+      .eq("user_id", authData.user.id);
 
-		if (postData?.media_path) {
-			const { error: removeMediaError } = await supabase.storage
-				.from(postMediaBucket)
-				.remove([postData.media_path]);
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
-			if (removeMediaError) {
-				return { success: false, error: removeMediaError.message };
-			}
-		}
-
-		// Delete post from database (only if user owns it)
-		const { error } = await supabase
-			.from("posts")
-			.delete()
-			.eq("post_id", postIdStr)
-			.eq("user_id", authData.user.id);
-
-		if (error) {
-			return { success: false, error: error.message };
-		}
-
-			return { success: true, data: { id: postIdStr } };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to delete post" };
-	}
+    return { success: true, data: { id: postIdStr } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to delete post" };
+  }
 }
 
 // NOTE: Do last as will call other funcs
@@ -224,19 +222,19 @@ export async function deletePost(postId: string, supabaseClient?: any) {
  * ```
  */
 export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
-	try {
-		// Re-validate on server
-		const parsed = feedFilterSchema.parse(input);
+  try {
+    // Re-validate on server
+    const parsed = feedFilterSchema.parse(input);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		// Build the query
-		let query = supabase
-			.from("posts")
-			.select(
-				`
+    // Build the query
+    let query = supabase
+      .from("posts")
+      .select(
+        `
 				post_id,
 				created_at,
 				category,
@@ -249,73 +247,88 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
         media_height,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				likes(user_id)
-			`
-			)
-			.order("created_at", { ascending: false });
+			`,
+      )
+      .eq("taken_down", false)
+      .order("created_at", { ascending: false });
 
-		// Apply category filter if provided
-		if (parsed.category) {
-			query = query.eq("category", parsed.category);
-		}
+    // Apply category filter if provided
+    if (parsed.category) {
+      query = query.eq("category", parsed.category);
+    }
 
-		// Apply cursor pagination (fetch limit + 1 to detect if more posts exist)
-		const pageSize = parsed.limit;
-		if (parsed.cursor) {
-			query = query.lt("post_id", parsed.cursor);
-		}
-		query = query.limit(pageSize + 1);
+    // Scope to a specific group, or exclude group posts from the home feed
+    if (parsed.groupId) {
+      query = query.eq("group_id", parsed.groupId);
+    } else {
+      query = query.is("group_id", null);
+    }
 
-		const { data: posts, error } = await query;
+    // Apply cursor pagination (fetch limit + 1 to detect if more posts exist)
+    const pageSize = parsed.limit;
+    if (parsed.cursor) {
+      query = query.lt("post_id", parsed.cursor);
+    }
+    query = query.limit(pageSize + 1);
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    const { data: posts, error } = await query;
 
-		if (!posts) {
-			return { success: true, data: { posts: [], nextCursor: null } };
-		}
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
-		// Check if there are more posts beyond the page size
-		const hasMore = posts.length > pageSize;
-		const postsToReturn = hasMore ? posts.slice(0, pageSize) : posts;
+    if (!posts) {
+      return { success: true, data: { posts: [], nextCursor: null } };
+    }
 
-		// Determine next cursor
-		const nextCursor = hasMore ? postsToReturn[postsToReturn.length - 1]?.post_id : null;
+    // Check if there are more posts beyond the page size
+    const hasMore = posts.length > pageSize;
+    const postsToReturn = hasMore ? posts.slice(0, pageSize) : posts;
 
-		// Helper function to calculate time ago
-		const getTimeAgo = (date: string): string => {
-			const now = new Date();
-			const postDate = new Date(date);
-			const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+    // Determine next cursor
+    const nextCursor = hasMore
+      ? String(postsToReturn[postsToReturn.length - 1]?.post_id)
+      : null;
 
-			if (diffInSeconds < 60) return "just now";
-			if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-			if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-			if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-			return postDate.toLocaleDateString();
-		};
+    // Helper function to calculate time ago
+    const getTimeAgo = (date: string): string => {
+      const now = new Date();
+      const postDate = new Date(date);
+      const diffInSeconds = Math.floor(
+        (now.getTime() - postDate.getTime()) / 1000,
+      );
 
-		// Fetch comments for each post
-		const postsWithComments = await Promise.all(
-			postsToReturn.map(async (post: any) => {
-				const { data: comments } = await supabase
-					.from("comment")
-					.select(
-						`
+      if (diffInSeconds < 60) return "just now";
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+      if (diffInSeconds < 86400)
+        return `${Math.floor(diffInSeconds / 3600)}h ago`;
+      if (diffInSeconds < 604800)
+        return `${Math.floor(diffInSeconds / 86400)}d ago`;
+      return postDate.toLocaleDateString();
+    };
+
+    // Fetch comments for each post
+    const postsWithComments = await Promise.all(
+      postsToReturn.map(async (post: any) => {
+        const { data: comments } = await supabase
+          .from("comment")
+          .select(
+            `
 						comment_id,
 						text,
 						created_at,
 						user_id,
 						users:user_id(user_id, first_name, last_name, profile_pic_path),
 						comment_likes(user_id)
-					`
-					)
-					.eq("post_id", post.post_id)
-					.order("created_at", { ascending: false });
+					`,
+          )
+          .eq("post_id", post.post_id)
+          .eq("taken_down", false)
+          .order("created_at", { ascending: false });
 
-				return { post, comments: comments || [] };
-			})
-		);
+        return { post, comments: comments || [] };
+      }),
+    );
 
 		// Format the response
 		const formattedPosts = postsWithComments.map(({ post, comments }: any) => {
@@ -359,20 +372,20 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 			};
 		});
 
-		const data: GetFeedResult = {
-			posts: formattedPosts,
-			nextCursor,
-		};
-		return { success: true, data };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to fetch feed" };
-	}
+    const data: GetFeedResult = {
+      posts: formattedPosts,
+      nextCursor,
+    };
+    return { success: true, data };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to fetch feed" };
+  }
 }
 
 /**
@@ -391,45 +404,49 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
  * }
  * ```
  */
-export async function createComment(postId: string, values: CreateCommentValues, supabaseClient?: any) {
-	try {
-		const postIdStr = String(postId);
-		idSchema.parse(postIdStr);
-		const parsed = createCommentSchema.parse(values);
+export async function createComment(
+  postId: string,
+  values: CreateCommentValues,
+  supabaseClient?: any,
+) {
+  try {
+    const postIdStr = String(postId);
+    idSchema.parse(postIdStr);
+    const parsed = createCommentSchema.parse(values);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		// Insert comment into database
-		const { data, error } = await supabase
-			.from("comment")
-			.insert({
-				post_id: postIdStr,
-				user_id: authData.user.id,
-				text: parsed.content,
-			})
-			.select()
-			.single();
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    // Insert comment into database
+    const { data, error } = await supabase
+      .from("comment")
+      .insert({
+        post_id: postIdStr,
+        user_id: authData.user.id,
+        text: parsed.content,
+      })
+      .select()
+      .single();
 
-		return { success: true, data: { id: data.comment_id, ...parsed } };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to create comment" };
-	}
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: { id: data.comment_id, ...parsed } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to create comment" };
+  }
 }
 
 /**
@@ -448,40 +465,40 @@ export async function createComment(postId: string, values: CreateCommentValues,
  * ```
  */
 export async function deleteComment(commentId: string, supabaseClient?: any) {
-	try {
-		const commentIdStr = String(commentId);
-		// Validate comment ID
-		idSchema.parse(commentIdStr);
+  try {
+    const commentIdStr = String(commentId);
+    // Validate comment ID
+    idSchema.parse(commentIdStr);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		// Delete comment from database (only if user owns it)
-		const { error } = await supabase
-			.from("comment")
-			.delete()
-			.eq("comment_id", commentIdStr)
-			.eq("user_id", authData.user.id);
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    // Soft-take down comment from database (only if user owns it)
+    const { error } = await supabase
+      .from("comment")
+      .update({ taken_down: true })
+      .eq("comment_id", commentIdStr)
+      .eq("user_id", authData.user.id);
 
-			return { success: true, data: { id: commentIdStr } };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to delete comment" };
-	}
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: { id: commentIdStr } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to delete comment" };
+  }
 }
 
 /**
@@ -503,82 +520,80 @@ export async function deleteComment(commentId: string, supabaseClient?: any) {
  * ```
  */
 export async function createReport(
-	postId: string,
-	commentId: string | null,
-	values: CreateReportValues,
-	supabaseClient?: any,
+  postId: string,
+  commentId: string | null,
+  values: CreateReportValues,
+  supabaseClient?: any,
 ) {
-	try {
-		const postIdStr = String(postId);
-		const commentIdStr = commentId ? String(commentId) : null;
-		idSchema.parse(postIdStr);
-		if (commentIdStr != null) idSchema.parse(commentIdStr);
-		const parsed = createReportSchema.parse(values);
+  try {
+    const postIdStr = String(postId);
+    const commentIdStr = commentId ? String(commentId) : null;
+    idSchema.parse(postIdStr);
+    if (commentIdStr != null) idSchema.parse(commentIdStr);
+    const parsed = createReportSchema.parse(values);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		let reportedUserId: string;
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		if (commentIdStr != null) {
-			// Report is for a comment - get the comment creator's user_id
-			const { data: commentData, error: commentError } = await supabase
-				.from("comment")
-				.select("user_id")
-				.eq("comment_id", commentIdStr)
-				.single();
+    let reportedUserId: string;
 
-			if (commentError || !commentData) {
-				return { success: false, error: "Comment not found" };
-			}
+    if (commentIdStr != null) {
+      // Report is for a comment - get the comment creator's user_id
+      const { data: commentData, error: commentError } = await supabase
+        .from("comment")
+        .select("user_id")
+        .eq("comment_id", commentIdStr)
+        .single();
 
-			reportedUserId = commentData.user_id;
-		} else {
-			// Report is for a post - get the post creator's user_id
-			const { data: postData, error: postError } = await supabase
-				.from("posts")
-				.select("user_id")
-				.eq("post_id", postIdStr)
-				.single();
+      if (commentError || !commentData) {
+        return { success: false, error: "Comment not found" };
+      }
 
-			if (postError || !postData) {
-				return { success: false, error: "Post not found" };
-			}
+      reportedUserId = commentData.user_id;
+    } else {
+      // Report is for a post - get the post creator's user_id
+      const { data: postData, error: postError } = await supabase
+        .from("posts")
+        .select("user_id")
+        .eq("post_id", postIdStr)
+        .single();
 
-			reportedUserId = postData.user_id;
-		}
+      if (postError || !postData) {
+        return { success: false, error: "Post not found" };
+      }
 
-		// Insert report into database
-		const { error } = await supabase
-			.from("feed_report")
-			.insert({
-				reporter_id: authData.user.id,
-				reported_id: reportedUserId,
-				post_id: postIdStr,
-				comment_id: commentIdStr,
-				type: parsed.type,
-				additional_context: parsed.reason,
-			});
+      reportedUserId = postData.user_id;
+    }
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    // Insert report into database
+    const { error } = await supabase.from("feed_report").insert({
+      reporter_id: authData.user.id,
+      reported_id: reportedUserId,
+      post_id: postIdStr,
+      comment_id: commentIdStr,
+      type: parsed.type,
+      additional_context: parsed.reason,
+    });
 
-		return { success: true };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to submit report" };
-	}
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to submit report" };
+  }
 }
 
 /**
@@ -598,83 +613,86 @@ export async function createReport(
  * ```
  */
 export async function likePost(postId: string, supabaseClient?: any) {
-	try {
-		const postIdStr = String(postId);
-		idSchema.parse(postIdStr);
+  try {
+    const postIdStr = String(postId);
+    idSchema.parse(postIdStr);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		// Check if like already exists
-		const { data: existingLike } = await supabase
-			.from("likes")
-			.select()
-			.eq("post_id", postIdStr)
-			.eq("user_id", authData.user.id)
-			.maybeSingle();
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		if (existingLike) {
-			// Unlike: Remove like and decrement like_amount
-			const { error: deleteError } = await supabase
-				.from("likes")
-				.delete()
-				.eq("post_id", postIdStr)
-				.eq("user_id", authData.user.id);
+    // Check if like already exists
+    const { data: existingLike } = await supabase
+      .from("likes")
+      .select()
+      .eq("post_id", postIdStr)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
 
-			if (deleteError) {
-				return { success: false, error: deleteError.message };
-			}
+    if (existingLike) {
+      // Unlike: Remove like and decrement like_amount
+      const { error: deleteError } = await supabase
+        .from("likes")
+        .delete()
+        .eq("post_id", postIdStr)
+        .eq("user_id", authData.user.id);
 
-			// Decrement like_amount on the post
-			const { error: updateError } = await supabase.rpc("decrement_like_amount", {
-				post_id_param: postIdStr,
-			});
+      if (deleteError) {
+        return { success: false, error: deleteError.message };
+      }
 
-			if (updateError) {
-				return { success: false, error: updateError.message };
-			}
+      // Decrement like_amount on the post
+      const { error: updateError } = await supabase.rpc(
+        "decrement_like_amount",
+        {
+          post_id_param: postIdStr,
+        },
+      );
 
-			return { success: true, data: { isLiked: false } };
-		} else {
-			// Like: Insert like and increment like_amount
-			const { error: insertError } = await supabase
-				.from("likes")
-				.insert({
-					post_id: postIdStr,
-					user_id: authData.user.id,
-				});
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
 
-			if (insertError) {
-				return { success: false, error: insertError.message };
-			}
+      return { success: true, data: { isLiked: false } };
+    } else {
+      // Like: Insert like and increment like_amount
+      const { error: insertError } = await supabase.from("likes").insert({
+        post_id: postIdStr,
+        user_id: authData.user.id,
+      });
 
-			// Increment like_amount on the post
-			const { error: updateError } = await supabase.rpc("increment_like_amount", {
-				post_id_param: postIdStr,
-			});
+      if (insertError) {
+        return { success: false, error: insertError.message };
+      }
 
-			if (updateError) {
-				return { success: false, error: updateError.message };
-			}
+      // Increment like_amount on the post
+      const { error: updateError } = await supabase.rpc(
+        "increment_like_amount",
+        {
+          post_id_param: postIdStr,
+        },
+      );
 
-			return { success: true, data: { isLiked: true } };
-		}
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to update like" };
-	}
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+
+      return { success: true, data: { isLiked: true } };
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to update like" };
+  }
 }
-
 
 /**
  * Get the top 5 trending scientific fields for the current month based on post count.
@@ -692,22 +710,23 @@ export async function likePost(postId: string, supabaseClient?: any) {
  * ```
  */
 export async function getTrendingScientificFields(supabaseClient?: any) {
-	try {
-		const supabase = supabaseClient ?? (await createClient());
+  try {
+    const supabase = supabaseClient ?? (await createClient());
 
-		// Get the date from 30 days ago
-		const now = new Date();
-		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // Get the date from 30 days ago
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-		// Query posts from the last 30 days with their like amounts
-		const { data: posts, error } = await supabase
-			.from("posts")
-			.select("scientific_field, like_amount")
-			.gte("created_at", thirtyDaysAgo.toISOString());
+    // Query posts from the last 30 days with their like amounts
+    const { data: posts, error } = await supabase
+      .from("posts")
+      .select("scientific_field, like_amount")
+      .eq("taken_down", false)
+      .gte("created_at", thirtyDaysAgo.toISOString());
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
 		if (!posts || posts.length === 0) {
 			// No posts this month, return array filled with #FeedMeMorePosts
@@ -715,51 +734,72 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 			return { success: true, data: { hashtags } };
 		}
 
-		// Aggregate posts and likes by scientific field
-		const fieldScores = posts.reduce(
-			(acc: Record<string, { postCount: number; totalLikes: number }>, post: any) => {
-				const field = post.scientific_field;
-				if (!acc[field]) {
-					acc[field] = { postCount: 0, totalLikes: 0 };
-				}
-				acc[field].postCount += 1;
-				acc[field].totalLikes += post.like_amount || 0;
-				return acc;
-			},
-			{} as Record<string, { postCount: number; totalLikes: number }>
-		);
+    const isTrendingFieldExcluded = (field: unknown) => {
+      if (typeof field !== "string") {
+        return true;
+      }
 
-		// Calculate weighted score: (postCount * 1) + (totalLikes * 0.5)
-		// This means 2 likes = 1 post in terms of scoring
-		const fieldRankings = Object.entries(fieldScores).map(([field, scores]: any) => ({
-			field,
-			score: scores.postCount + scores.totalLikes * 0.5,
-			postCount: scores.postCount,
-			totalLikes: scores.totalLikes,
-		}));
+      const normalizedField = field.trim().replace(/^#+/, "").toLowerCase();
+      return (
+        !normalizedField ||
+        normalizedField === "other" ||
+        normalizedField === "null"
+      );
+    };
 
-		// Sort by score (descending) and get top 5
-		const topFields = fieldRankings
-			.sort((a, b) => b.score - a.score)
-			.slice(0, 5)
-			.map(({ field }) => `${field}`);
+    // Aggregate posts and likes by scientific field, excluding placeholder values
+    const fieldScores = posts.reduce(
+      (
+        acc: Record<string, { postCount: number; totalLikes: number }>,
+        post: any,
+      ) => {
+        const field = post.scientific_field;
+        if (isTrendingFieldExcluded(field)) {
+          return acc;
+        }
+        if (!acc[field]) {
+          acc[field] = { postCount: 0, totalLikes: 0 };
+        }
+        acc[field].postCount += 1;
+        acc[field].totalLikes += post.like_amount || 0;
+        return acc;
+      },
+      {} as Record<string, { postCount: number; totalLikes: number }>,
+    );
 
-		// Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
-		const hashtags = [
-			...topFields,
-			...Array(Math.max(0, 5 - topFields.length)).fill("FeedMeMorePosts"),
-		];
+    // Calculate weighted score: (postCount * 1) + (totalLikes * 0.5)
+    // This means 2 likes = 1 post in terms of scoring
+    const fieldRankings = Object.entries(fieldScores).map(
+      ([field, scores]: any) => ({
+        field,
+        score: scores.postCount + scores.totalLikes * 0.5,
+        postCount: scores.postCount,
+        totalLikes: scores.totalLikes,
+      }),
+    );
 
-		return { success: true, data: { hashtags } };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to fetch trending fields" };
-	}
+    // Sort by score (descending) and get top 5
+    const topFields = fieldRankings
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map(({ field }) => `#${field}`);
+
+    // Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
+    const hashtags = [
+      ...topFields,
+      ...Array(Math.max(0, 5 - topFields.length)).fill("#FeedMeMorePosts"),
+    ];
+
+    return { success: true, data: { hashtags } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to fetch trending fields" };
+  }
 }
 
 /**
@@ -779,81 +819,87 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
  * ```
  */
 export async function likeComment(commentId: string, supabaseClient?: any) {
-	try {
-		const commentIdStr = String(commentId);
-		idSchema.parse(commentIdStr);
+  try {
+    const commentIdStr = String(commentId);
+    idSchema.parse(commentIdStr);
 
-		// Get authenticated user
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
-		
-		if (!authData.user) {
-			return { success: false, error: "Authentication required" };
-		}
+    // Get authenticated user
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		// Check if like already exists
-		const { data: existingLike } = await supabase
-			.from("comment_likes")
-			.select()
-			.eq("comment_id", commentIdStr)
-			.eq("user_id", authData.user.id)
-			.maybeSingle();
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
 
-		if (existingLike) {
-			// Unlike: Remove like and decrement like_count
-			const { error: deleteError } = await supabase
-				.from("comment_likes")
-				.delete()
-				.eq("comment_id", commentIdStr)
-				.eq("user_id", authData.user.id);
+    // Check if like already exists
+    const { data: existingLike } = await supabase
+      .from("comment_likes")
+      .select()
+      .eq("comment_id", commentIdStr)
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
 
-			if (deleteError) {
-				return { success: false, error: deleteError.message };
-			}
+    if (existingLike) {
+      // Unlike: Remove like and decrement like_count
+      const { error: deleteError } = await supabase
+        .from("comment_likes")
+        .delete()
+        .eq("comment_id", commentIdStr)
+        .eq("user_id", authData.user.id);
 
-			// Decrement like_count on the comment
-			const { error: updateError } = await supabase.rpc("decrement_comment_like_count", {
-				comment_id_param: commentIdStr,
-			});
+      if (deleteError) {
+        return { success: false, error: deleteError.message };
+      }
 
-			if (updateError) {
-				return { success: false, error: updateError.message };
-			}
+      // Decrement like_count on the comment
+      const { error: updateError } = await supabase.rpc(
+        "decrement_comment_like_count",
+        {
+          comment_id_param: commentIdStr,
+        },
+      );
 
-			return { success: true, data: { isLiked: false } };
-		} else {
-			// Like: Insert like and increment like_count
-			const { error: insertError } = await supabase
-				.from("comment_likes")
-				.insert({
-					comment_id: commentIdStr,
-					user_id: authData.user.id,
-				});
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
 
-			if (insertError) {
-				return { success: false, error: insertError.message };
-			}
+      return { success: true, data: { isLiked: false } };
+    } else {
+      // Like: Insert like and increment like_count
+      const { error: insertError } = await supabase
+        .from("comment_likes")
+        .insert({
+          comment_id: commentIdStr,
+          user_id: authData.user.id,
+        });
 
-			// Increment like_count on the comment
-			const { error: updateError } = await supabase.rpc("increment_comment_like_count", {
-				comment_id_param: commentIdStr,
-			});
+      if (insertError) {
+        return { success: false, error: insertError.message };
+      }
 
-			if (updateError) {
-				return { success: false, error: updateError.message };
-			}
+      // Increment like_count on the comment
+      const { error: updateError } = await supabase.rpc(
+        "increment_comment_like_count",
+        {
+          comment_id_param: commentIdStr,
+        },
+      );
 
-			return { success: true, data: { isLiked: true } };
-		}
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to update like" };
-	}
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+
+      return { success: true, data: { isLiked: true } };
+    }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to update like" };
+  }
 }
 
 /**
@@ -864,18 +910,24 @@ export async function likeComment(commentId: string, supabaseClient?: any) {
  * @param supabaseClient - Optional Supabase client instance (used for testing)
  * @returns Promise resolving to DataResponse with FeedPostItem or null if not found
  */
-export async function getPostDetail(postId: string, supabaseClient?: any): Promise<{ success: true; data: FeedPostItem | null } | { success: false; error: string }> {
-	try {
-		const postIdStr = String(postId);
-		idSchema.parse(postIdStr);
+export async function getPostDetail(
+  postId: string,
+  supabaseClient?: any,
+): Promise<
+  | { success: true; data: FeedPostItem | null }
+  | { success: false; error: string }
+> {
+  try {
+    const postIdStr = String(postId);
+    idSchema.parse(postIdStr);
 
-		const supabase = supabaseClient ?? (await createClient());
-		const { data: authData } = await supabase.auth.getUser();
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
 
-		const { data: post, error } = await supabase
-			.from("posts")
-			.select(
-				`
+    const { data: post, error } = await supabase
+      .from("posts")
+      .select(
+        `
 				post_id,
 				created_at,
 				category,
@@ -888,52 +940,61 @@ export async function getPostDetail(postId: string, supabaseClient?: any): Promi
         media_height,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				likes(user_id)
-			`
-			)
-			.eq("post_id", postIdStr)
-			.maybeSingle();
+			`,
+      )
+      .eq("post_id", postIdStr)
+      .eq("taken_down", false)
+      .maybeSingle();
 
-		if (error) {
-			return { success: false, error: error.message };
-		}
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
-		if (!post) {
-			return { success: true, data: null };
-		}
+    if (!post) {
+      return { success: true, data: null };
+    }
 
-		const getTimeAgo = (date: string): string => {
-			const now = new Date();
-			const postDate = new Date(date);
-			const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+    const getTimeAgo = (date: string): string => {
+      const now = new Date();
+      const postDate = new Date(date);
+      const diffInSeconds = Math.floor(
+        (now.getTime() - postDate.getTime()) / 1000,
+      );
 
-			if (diffInSeconds < 60) return "just now";
-			if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-			if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-			if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-			return postDate.toLocaleDateString();
-		};
+      if (diffInSeconds < 60) return "just now";
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+      if (diffInSeconds < 86400)
+        return `${Math.floor(diffInSeconds / 3600)}h ago`;
+      if (diffInSeconds < 604800)
+        return `${Math.floor(diffInSeconds / 86400)}d ago`;
+      return postDate.toLocaleDateString();
+    };
 
-		const { data: comments } = await supabase
-			.from("comment")
-			.select(
-				`
+    const { data: comments } = await supabase
+      .from("comment")
+      .select(
+        `
 				comment_id,
 				text,
 				created_at,
 				user_id,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				comment_likes(user_id)
-			`
-			)
-			.eq("post_id", postIdStr)
-			.order("created_at", { ascending: false });
+			`,
+      )
+      .eq("post_id", postIdStr)
+      .eq("taken_down", false)
+      .order("created_at", { ascending: false });
 
-		const mediaUrl = post.media_path
-			? supabase.storage.from(postMediaBucket).getPublicUrl(post.media_path).data.publicUrl
-			: null;
-		const postAvatarUrl = post.users?.profile_pic_path
-			? supabase.storage.from("profile_pictures").getPublicUrl(post.users.profile_pic_path).data.publicUrl
-			: null;
+    const mediaUrl = post.media_path
+      ? supabase.storage.from(postMediaBucket).getPublicUrl(post.media_path)
+          .data.publicUrl
+      : null;
+    const postAvatarUrl = post.users?.profile_pic_path
+      ? supabase.storage
+          .from("profile_pictures")
+          .getPublicUrl(post.users.profile_pic_path).data.publicUrl
+      : null;
 
 		const formatted: FeedPostItem = {
 			id: post.post_id,
@@ -965,14 +1026,14 @@ export async function getPostDetail(postId: string, supabaseClient?: any): Promi
       mediaHeight: post.media_height
 		};
 
-		return { success: true, data: formatted };
-	} catch (error) {
-		if (error instanceof z.ZodError) {
-			return {
-				success: false,
-				error: error.issues[0]?.message ?? "Validation failed",
-			};
-		}
-		return { success: false, error: "Failed to fetch post" };
-	}
+    return { success: true, data: formatted };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to fetch post" };
+  }
 }

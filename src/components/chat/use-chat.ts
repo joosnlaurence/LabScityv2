@@ -9,6 +9,7 @@ import {
   createChat,
   editMessage,
   getChatsWithPreview,
+  getConversationParticipants,
   getOldMessages,
   leaveConversation,
   updateConversationName,
@@ -84,6 +85,13 @@ export function useGetChatsWithPreview() {
   return useQuery({
     queryKey: chatKeys.chatsWithPreview(),
     queryFn: async () => getChatsWithPreview(),
+  });
+}
+
+export function useGetConversationParticipants(conversation_id: number) {
+  return useQuery({
+    queryKey: chatKeys.conversationParticipants(conversation_id),
+    queryFn: async () => getConversationParticipants(conversation_id),
   });
 }
 

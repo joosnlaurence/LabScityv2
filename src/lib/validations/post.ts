@@ -14,7 +14,8 @@ export const createPostSchema = z.object({
 	}),
 	mediaPath: z.string().min(1).optional(),
   mediaWidth: z.number().optional(),
-  mediaHeight: z.number().optional()
+  mediaHeight: z.number().optional(),
+	groupId: z.number().int().positive().optional(),
 });
 
 export const feedFilterSchema = z.object({
@@ -23,6 +24,7 @@ export const feedFilterSchema = z.object({
 		.optional(),
 	cursor: z.string().optional(),
 	limit: z.number().int().positive().max(50).optional().default(20),
+	groupId: z.number().int().positive().optional(),
 });
 
 export const createCommentSchema = z.object({
