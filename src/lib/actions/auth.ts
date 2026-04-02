@@ -43,6 +43,13 @@ export async function loginAction(formData: FormData) {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
+  const { data: ping, error: pingError } = await supabase
+    .from("users")
+    .select("*")
+    .limit(1);
+
+  console.log("SUPABASE PING:", { ping, pingError });
+
   // Validate with Zod schema
   try {
     const parsed = loginSchema.parse({ email, password });
@@ -121,6 +128,13 @@ export async function signupAction(formData: FormData) {
   const workplace = formData.get("workplace") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
   const supabase = await createClient();
+
+  const { data: ping, error: pingError } = await supabase
+    .from("Users")
+    .select("*")
+    .limit(1);
+
+  console.log("SUPABASE PING:", { ping, pingError });
 
   // Validate with Zod schema
   try {
