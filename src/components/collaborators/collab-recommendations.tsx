@@ -1,97 +1,203 @@
 'use client';
 
 import { GetCollaboratorsResult } from "@/lib/types/collab";
-import { Anchor, Avatar, Box, Button, Card, Divider, Group, Skeleton, Stack, Text, UnstyledButton } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
-import Link from 'next/link';
-import classes from './collab-recommendations.module.css';
+import { 
+  Anchor, 
+  Avatar, 
+  Badge, 
+  Box, 
+  Button, 
+  Card, 
+  Divider, 
+  Flex, 
+  Group, 
+  Stack, 
+  Text, 
+  UnstyledButton, 
+} from "@mantine/core";
 import { Fragment } from "react/jsx-runtime";
+import { 
+  IconChevronRight, 
+  IconMessageCircle, 
+  IconRefresh, 
+  IconStarFilled, 
+  IconUserPlus 
+} from "@tabler/icons-react";
+import Link from 'next/link';
+import CollabRecommendationsSkeleton from "./collab-recommendations-skeleton";
 
-function CollabHeaderSkeleton() {
-  return (
-    <Group align="center" wrap='nowrap' style={{ overflow: 'hidden' }}>
-      <Skeleton mih='38' h='0%' miw='38' w='0%' circle/>
-      <Skeleton h={16} w='100%'/>
-    </Group>
-  )
+// import { useDisclosure } from "@mantine/hooks";
+import classes from './collab-recommendations.module.css';
+import { useQuery } from "@tanstack/react-query";
+
+interface CollabProfileProps {
+  percentMatch: number;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  occupation: string | null;
+  workplace: string | null;
+  last: boolean;
+  closestTopics: string[];
 }
 
-function CollabRecommendationsSkeleton() {
-  return (
-    <Card bg="gray.0" p="md" w="100%" radius="md" bd='1px solid gray.3'>
-      <Stack gap='16'>
-        <Text
-          c="gray.7"
-          fw="bold"
-          fz="xl"
-          style={{ wordBreak: 'break-word' }}
-        >
-          Recommended Collaborators
-        </Text>
-        <Stack>
-          {
-            Array.from({ length: 5 }).map((_, i) => 
-              <CollabHeaderSkeleton key={i}/>
-            )
-          }
-        </Stack>
-      </Stack>
-    </Card>
-  )
-}
-
-function CollabHeader (
-  {userId, firstName, lastName, avatarUrl}
+function CollabProfile (
+  {
+    percentMatch, 
+    userId, 
+    firstName, 
+    lastName, 
+    avatarUrl, 
+    occupation,
+    workplace,
+    last,
+    closestTopics
+  }
   : 
-  {userId: string, firstName: string, lastName: string, avatarUrl: string | null}
+  CollabProfileProps 
 ) {
   const userName = `${firstName} ${lastName}`.trim()
   const initials = `${firstName[0]}${lastName[0]}`
-      
+  const hasMiddot = occupation && workplace;
+  let similarityColor = 'gray';
+  if(percentMatch >= 85)
+    similarityColor = 'teal';
+  else if(percentMatch >= 60)
+    similarityColor = 'blue';
+
   return (
-    <UnstyledButton
-      component={Link} 
-      href={`/profile/${userId}`} 
-      p='6'
-      bdrs='lg'
-      className={classes.collabHeader}
-    >
-      <Group 
-        bdrs='md' 
-        gap="sm" 
-        align="center" 
+    <>
+      <Group
+        p='0.75rem 1rem'
         wrap='nowrap' 
+        mr='1rem'
         style={{ overflow: 'hidden' }}
       >
-        <Avatar
-          size="md"
-          radius="xl"
-          color="navy.7"
-          bg="navy.7"
-          src={avatarUrl || undefined}
+        <Anchor
+          component={Link}
+          href={`/profile/${userId}`}
+          underline='never'
+          miw='0'
+          draggable={false}
         >
-          {initials}
-        </Avatar>
-
-        <Stack gap={-1}>
-          <Text 
-            component="span" 
-            fw={700} 
-            c="navy.7" 
-            lh={1.1}
-            className={classes.headerName}
+          <Group 
+            gap="sm" 
+            align="center" 
+            wrap='nowrap' 
+            style={{ overflow: 'hidden' }}
           >
-            {userName}
-            {/* {audienceLabel ? (
-              <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
-                {audienceLabel}
+            <Avatar
+              size="md"
+              radius="xl"
+              color="navy.7"
+              bg="navy.7"
+              src={avatarUrl || undefined}
+            >
+              {initials}
+            </Avatar>
+            <Stack 
+              gap='0' 
+              style={{ flex: 1, overflow: 'hidden' }}
+            >
+              <Box lh='0'>
+                <Text 
+                  component="span" 
+                  fw='600'
+                  fz='0.875rem'
+                  c="navy.7" 
+                  lh='0.875rem'
+                  style={{ display: 'inline' }}
+                  className={classes.headerName}
+                >
+                  {userName}
+                </Text>
+              </Box>
+              <Text
+                fz='0.6875rem'
+                fw='400'
+                c='dimmed'
+                truncate='end'
+                mt='2px'
+              >
+                {`${occupation || ''}${hasMiddot ? ' · ': ''}${workplace || ''}`}
               </Text>
-            ) : null} */}
-          </Text>
-          {/* <Text c="navy.7" size="sm" mt={-4}>{field}</Text> */}
+              <Group 
+                gap='4px' 
+                mt='4px'
+              >
+                {
+                  closestTopics.map((topic, i) => 
+                    <Badge
+                      key={i}
+                      bg='gray.2'
+                      c='navy.7'
+                      fw='500'
+                      tt='none'
+                      fz='0.625rem'
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {topic}
+                    </Badge>
+                  )
+                }
+              </Group>
+              <Badge
+                bg={`${similarityColor}.1`}
+                mt='4px'
+                bd={`1px solid ${similarityColor}.3`}
+                p='2px 6px'
+                style={{ cursor: 'pointer' }}
+              >
+                <Group wrap='nowrap' gap='2'>
+                  <IconStarFilled 
+                    color={`var(--mantine-color-${similarityColor}-8)`}
+                    size='12'
+                  />
+                  <Text
+                    fz='0.625rem'
+                    fw='600'
+                    c={`${similarityColor}.8`}
+                  >
+                    {percentMatch}%
+                  </Text>
+                </Group>
+              </Badge>
+            </Stack>
+          </Group>
+        </Anchor>
+        <Stack 
+          flex='1'
+          align='flex-end'
+          gap='6px'
+        >
+          <Button
+            bg='navy.7'
+            bdrs='8px'
+            p='6px 10px'
+            fz='0.75rem'
+            className={classes.followBtn}
+          >
+            <Group 
+              gap='4px' 
+              wrap='nowrap' 
+            >
+              <IconUserPlus size='0.75rem' stroke='2.2'/>
+              <Text fz='0.75rem' fw='500'>
+                Follow
+              </Text>
+            </Group>
+          </Button>
+          <UnstyledButton p='4px'>
+            <IconMessageCircle 
+              size='1rem'
+              color='var(--mantine-color-dimmed)'
+            />
+          </UnstyledButton>
         </Stack>
       </Group>
-    </UnstyledButton>
+      { last && <Divider mr='1rem' color='gray.2'/> }
+    </>
   )
 };
 
@@ -112,59 +218,109 @@ export default function CollabRecommendations() {
     )
   }
 
-  if (error) {
-    console.error(error);
-    return (
-      <Card bg="gray.0" p="md" w="100%" radius="md" bd='1px solid gray.3'>
-        <Stack gap='16'>
-          <Text
-            c="gray.7"
-            fw="bold"
-            fz="xl"
-            style={{ wordBreak: 'break-word' }}
-          >
-            Recommended Collaborators
-          </Text>
-          <Stack gap='0'>
-            <Text c='red.7' fw='700'>
-              Error:
-            </Text>
-            <Text c='red.7' style={{ wordBreak: 'break-word' }}>
-              Unexpected error occurred trying to find collaborators...
-            </Text>
-          </Stack>
-        </Stack>
-      </Card>
-    )
+  if(error) {
+    console.error(error.message);
   }
 
-  console.log(collabs)
   return (
-    <Card bg="gray.0" p="md" w="100%" radius="md" bd='1px solid gray.3'>
-      <Stack gap='16'>
-        <Text
-          c="gray.7"
-          fw="bold"
-          fz="xl"
-          style={{ wordBreak: 'break-word' }}
+    <Card 
+      bg="gray.0" 
+      p="0" 
+      w="100%" 
+      radius="md" 
+      bd='1px solid gray.3'
+      bdrs="lg"
+    >
+      <Stack gap='0'>
+        <Group
+          p='0.875rem 1rem'
+          wrap='nowrap'
+          justify='space-between'
+          style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}
         >
-          Recommended Collaborators
-        </Text>
+          <Stack gap='2'>
+            <Text
+              c="navy.7"
+              fw="600"
+              fz="md"
+              lh='1.2rem'
+              style={{ wordBreak: 'break-word' }}
+            >
+              Recommended Collaborators
+            </Text>
+            <Text
+              c='dimmed'
+              fz='xs'
+              lh='1rem'
+            >
+              Based on your research and skills
+            </Text>
+          </Stack>
+          <Group wrap='nowrap'>
+            <UnstyledButton>
+              <IconRefresh
+                size='1.25rem'
+                color='var(--mantine-color-dimmed)'
+                stroke='1.5'
+                style={{ flexShrink: 0 }}
+              />
+            </UnstyledButton>
+            {
+              !error
+              ? 
+              <UnstyledButton
+                ta='center'
+                fz='xs'
+                c='blue.8'
+                fw='500'
+              >
+                <Flex 
+                  wrap='nowrap'
+                  justify='flex-end'
+                  align='center'
+                >
+                  See all
+                  <IconChevronRight
+                    size='0.75rem'
+                    color='var(--mantine-color-blue-8)'
+                    stroke='2.5'
+                    style={{ flexShrink: 0 }}
+                  />
+                </Flex>
+              </UnstyledButton>
+              : undefined
+            }
+          </Group>
+        </Group>
         <Stack gap='0'>
           {
-            collabs?.map((c, i) => 
+            (!error && collabs) 
+            ?
+            collabs
+            .map((c, i) => 
               <Fragment key={c.profile_user_id}>
-                <CollabHeader 
+                <CollabProfile 
+                  percentMatch={parseInt((c.cosine_similarity*100).toFixed(2))}
                   userId={c.profile_user_id}
                   firstName={c.first_name}
                   lastName={c.last_name}
                   avatarUrl={c.profile_pic_path}
+                  occupation={c.occupation}
+                  workplace={c.workplace}
+                  last={i < collabs.length - 1}
+                  closestTopics={['Topically 1', 'Topically 2', 'Topically 3']}
                 />
-                {i < collabs.length-1 &&
-                  <Divider color='gray.3' mt='3' mb='3'/>
-                }
               </Fragment>
             )
+            : 
+            <Stack gap='0' p='0.75rem 1rem'>
+              <Text c='red.7' fw='700'>
+                Error:
+              </Text>
+              <Text c='red.7'>
+                Unexpected error occurred trying to find collaborators...
+              </Text>
+            </Stack>
           }
         </Stack>
       </Stack>

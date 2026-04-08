@@ -31,6 +31,7 @@ export function LSLoginForm({
 }) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [signInSuccess, setSignInSuccess] = useState(false);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -50,8 +51,10 @@ export function LSLoginForm({
       formData.append("password", data.password);
       const result = await loginAction(formData);
       if (result.success) {
+        setSignInSuccess(true);
         router.push("/home");
       } else if (result.error) {
+        setSignInSuccess(false);
         setServerError(result.error);
       }
     } catch (error) {
@@ -135,7 +138,7 @@ export function LSLoginForm({
           </Anchor>
           <Button
             type="submit"
-            loading={form.formState.isSubmitting}
+            loading={form.formState.isSubmitting || signInSuccess}
             bg="navy.7"
             c="navy.0"
             fw={600}

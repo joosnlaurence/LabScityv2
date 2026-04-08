@@ -1,7 +1,9 @@
-.collabHeader:hover {
-    background-color: var(--mantine-color-gray-2);
-}
-
 .headerName:hover {
     text-decoration: underline;
+    color: var(--mantine-color-navy-6) !important;
+}
+
+.followBtn:hover {
+    background: var(--mantine-color-navy-6) !important;
+    color: var(--mantine-color-gray-2) !important;
 }
