@@ -72,7 +72,12 @@ function CollabProfile (
         p='0.75rem 1rem'
         wrap='nowrap' 
         mr='1rem'
-        style={{ overflow: 'hidden' }}
+        style={{ 
+          padding: '0.75rem 1rem',
+          wrap: 'nowrap',
+          marginRight: '1rem',
+          overflow: 'hidden' 
+        }}
       >
         <Anchor
           component={Link}
@@ -190,7 +195,8 @@ function CollabProfile (
           </Button>
           <UnstyledButton p='4px'>
             <IconMessageCircle 
-              size='1rem'
+              size='1.25rem'
+              stroke='1.5'
               color='var(--mantine-color-dimmed)'
             />
           </UnstyledButton>
@@ -230,6 +236,7 @@ export default function CollabRecommendations() {
       radius="md" 
       bd='1px solid gray.3'
       bdrs="lg"
+      shadow="sm"
     >
       <Stack gap='0'>
         <Group
@@ -237,6 +244,7 @@ export default function CollabRecommendations() {
           wrap='nowrap'
           justify='space-between'
           style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}
+          gap='0'
         >
           <Stack gap='2'>
             <Text
@@ -256,8 +264,13 @@ export default function CollabRecommendations() {
               Based on your research and skills
             </Text>
           </Stack>
-          <Group wrap='nowrap'>
-            <UnstyledButton>
+          <Group wrap='nowrap' gap='4px'>
+            <UnstyledButton
+              display='flex'
+              p='8px'
+              bdrs='100px'
+              className={classes.headerBtn}
+            >
               <IconRefresh
                 size='1.25rem'
                 color='var(--mantine-color-dimmed)'
@@ -271,8 +284,11 @@ export default function CollabRecommendations() {
               <UnstyledButton
                 ta='center'
                 fz='xs'
-                c='blue.8'
+                c='indigo.9'
                 fw='500'
+                p='8px'
+                bdrs='100px'
+                className={classes.headerBtn}
               >
                 <Flex 
                   wrap='nowrap'
@@ -282,7 +298,7 @@ export default function CollabRecommendations() {
                   See all
                   <IconChevronRight
                     size='0.75rem'
-                    color='var(--mantine-color-blue-8)'
+                    color='currentColor'
                     stroke='2.5'
                     style={{ flexShrink: 0 }}
                   />

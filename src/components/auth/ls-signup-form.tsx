@@ -72,7 +72,6 @@ export function LSSignupForm({
   // check if we are on mobile to change some layout stuff around
   const isMobile = useIsMobile()
 
-  console.log(isMobile);
   return (
     <Paper
       miw={400}
