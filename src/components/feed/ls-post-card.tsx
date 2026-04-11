@@ -1,8 +1,21 @@
 "use client";
 
-import { ActionIcon, Anchor, Avatar, Box, Button, Card, Flex, Group, Image, Menu, Modal, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
+import {
+  ActionIcon,
+  Anchor,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Group,
+  Image,
+  Menu,
+  Modal,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import Link from "next/link";
 import {
   IconDots,
   IconHeart,
@@ -12,6 +25,7 @@ import {
   IconShare3,
   IconTrash,
 } from "@tabler/icons-react";
+import Link from "next/link";
 
 /**
  * Props for LSPostCard.
@@ -38,6 +52,7 @@ import {
 interface LSPostCardProps {
   userId?: string;
   userName: string;
+  nameRightSection?: React.ReactNode;
   field: string;
   timeAgo: string;
   content: string;
@@ -68,6 +83,7 @@ interface LSPostCardProps {
 export function LSPostCard({
   userId,
   userName,
+  nameRightSection,
   field,
   timeAgo,
   content,
@@ -89,7 +105,10 @@ export function LSPostCard({
   shareUrl,
   children,
 }: LSPostCardProps) {
-  const [confirmDeleteOpen, { open: openConfirmDelete, close: closeConfirmDelete }] = useDisclosure(false);
+  const [
+    confirmDeleteOpen,
+    { open: openConfirmDelete, close: closeConfirmDelete },
+  ] = useDisclosure(false);
 
   const initials = userName
     .split(" ")
@@ -100,7 +119,6 @@ export function LSPostCard({
 
   const userContent = (
     <Group gap="sm" align="center">
-
       <Avatar
         size="md"
         radius="xl"
@@ -112,9 +130,31 @@ export function LSPostCard({
       </Avatar>
 
       <Stack gap={-1}>
-        {userId ? (
-          <Anchor component={Link} href={`/profile/${userId}`} underline="hover" c="navy.7">
-            <Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
+        <Group gap="xs" wrap="nowrap" align="center">
+          {userId ? (
+            <Anchor
+              component={Link}
+              href={`/profile/${userId}`}
+              underline="hover"
+              c="navy.7"
+            >
+              <Text
+                component="span"
+                fw={700}
+                c="navy.7"
+                lh={1.1}
+                style={{ cursor: "pointer" }}
+              >
+                {userName}
+                {audienceLabel ? (
+                  <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
+                    {audienceLabel}
+                  </Text>
+                ) : null}
+              </Text>
+            </Anchor>
+          ) : (
+            <Text fw={600} c="navy.7" lh={1.1}>
               {userName}
               {audienceLabel ? (
                 <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
@@ -122,18 +162,12 @@ export function LSPostCard({
                 </Text>
               ) : null}
             </Text>
-          </Anchor>
-        ) : (
-          <Text fw={600} c="navy.7" lh={1.1}>
-            {userName}
-            {audienceLabel ? (
-              <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
-                {audienceLabel}
-              </Text>
-            ) : null}
-          </Text>
-        )}
-        <Text c="navy.7" size="sm" mt={-4}>{field}</Text>
+          )}
+          {nameRightSection}
+        </Group>
+        <Text c="navy.7" size="sm" mt={-4}>
+          {field}
+        </Text>
       </Stack>
     </Group>
   );
@@ -147,9 +181,14 @@ export function LSPostCard({
         centered
       >
         <Stack gap="md">
-          <Text size="sm">Are you sure you want to delete this post? This action cannot be undone.</Text>
+          <Text size="sm">
+            Are you sure you want to delete this post? This action cannot be
+            undone.
+          </Text>
           <Group justify="flex-end">
-            <Button variant="default" onClick={closeConfirmDelete}>Cancel</Button>
+            <Button variant="default" onClick={closeConfirmDelete}>
+              Cancel
+            </Button>
             <Button
               color="red"
               onClick={() => {
@@ -174,19 +213,29 @@ export function LSPostCard({
             <Group align="flex-start" justify="space-between">
               {userContent}
               <Group gap="xs" align="center">
-                <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{timeAgo}</Text>
+                <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>
+                  {timeAgo}
+                </Text>
                 {showMenu ? (
                   <Menu
                     withinPortal
                     position="bottom-end"
                     styles={{
                       dropdown: { padding: "6px" },
-                      item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+                      item: {
+                        borderRadius: "var(--mantine-radius-md)",
+                        fontWeight: 600,
+                        color: "var(--mantine-color-navy-7)",
+                      },
                     }}
                     id={menuId}
                   >
                     <Menu.Target>
-                      <ActionIcon variant="subtle" color="navy.6" aria-label="Post options">
+                      <ActionIcon
+                        variant="subtle"
+                        color="navy.6"
+                        aria-label="Post options"
+                      >
                         <IconDots size={18} />
                       </ActionIcon>
                     </Menu.Target>
@@ -203,7 +252,9 @@ export function LSPostCard({
                           {onReportClick ? <Menu.Divider /> : null}
                         </>
                       ) : null}
-                      {onReportClick ? <Menu.Item onClick={onReportClick}>Report</Menu.Item> : null}
+                      {onReportClick ? (
+                        <Menu.Item onClick={onReportClick}>Report</Menu.Item>
+                      ) : null}
                     </Menu.Dropdown>
                   </Menu>
                 ) : null}
@@ -228,9 +279,23 @@ export function LSPostCard({
               align="center"
               fw={600}
               onClick={onPostClick}
-              style={{ letterSpacing: "0.3px", overflow: "hidden", cursor: onPostClick ? "pointer" : undefined }}
+              style={{
+                letterSpacing: "0.3px",
+                overflow: "hidden",
+                cursor: onPostClick ? "pointer" : undefined,
+              }}
             >
-              <Image src={mediaUrl} alt="Post attachment" radius="md" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              <Image
+                src={mediaUrl}
+                alt="Post attachment"
+                radius="md"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
             </Flex>
           ) : mediaLabel ? (
             <Flex
@@ -242,7 +307,11 @@ export function LSPostCard({
               ta="center"
               fw={600}
               onClick={onPostClick}
-              style={{ letterSpacing: "0.3px", overflow: "hidden", cursor: onPostClick ? "pointer" : undefined }}
+              style={{
+                letterSpacing: "0.3px",
+                overflow: "hidden",
+                cursor: onPostClick ? "pointer" : undefined,
+              }}
             >
               <Text component="span" style={{ whiteSpace: "pre-line" }}>
                 {mediaLabel}
@@ -252,7 +321,6 @@ export function LSPostCard({
 
           {showActions ? (
             <Flex justify="space-around">
-
               {/* like button */}
               <Button
                 size="compact-xs"
@@ -271,9 +339,7 @@ export function LSPostCard({
               >
                 {/* like label */}
                 <Text span fz="sm" c={isLiked ? "#e03131" : "navy.6"}>
-                  {
-                    typeof likeCount == "number" ? likeCount : ""
-                  }
+                  {typeof likeCount === "number" ? likeCount : ""}
                 </Text>
               </Button>
 
@@ -296,7 +362,11 @@ export function LSPostCard({
                 position="top"
                 styles={{
                   dropdown: { padding: "6px" },
-                  item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+                  item: {
+                    borderRadius: "var(--mantine-radius-md)",
+                    fontWeight: 600,
+                    color: "var(--mantine-color-navy-7)",
+                  },
                 }}
               >
                 <Menu.Target>
@@ -321,12 +391,10 @@ export function LSPostCard({
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
-
             </Flex>
           ) : null}
 
           {children}
-
         </Stack>
       </Card>
     </>
