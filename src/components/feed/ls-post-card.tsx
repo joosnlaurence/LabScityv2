@@ -13,11 +13,14 @@ import {
   Menu,
   Modal,
   Stack,
+  Textarea,
   Text,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import {
   IconDots,
+  IconEdit,
   IconHeart,
   IconHeartFilled,
   IconLink,
@@ -26,6 +29,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 /**
  * Props for LSPostCard.
@@ -66,6 +70,8 @@ interface LSPostCardProps {
   commentCount?: number;
   onReportClick?: () => void;
   onDeleteClick?: () => void;
+  onEditSubmit?: (values: { content: string }) => Promise<void> | void;
+  isEditPending?: boolean;
   showMenu?: boolean;
   showActions?: boolean;
   audienceLabel?: string | null;
@@ -97,6 +103,8 @@ export function LSPostCard({
   commentCount,
   onReportClick,
   onDeleteClick,
+  onEditSubmit,
+  isEditPending = false,
   showMenu = true,
   showActions = true,
   audienceLabel = null,
@@ -109,6 +117,8 @@ export function LSPostCard({
     confirmDeleteOpen,
     { open: openConfirmDelete, close: closeConfirmDelete },
   ] = useDisclosure(false);
+  const [editOpen, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [draftContent, setDraftContent] = useState(content);
 
   const initials = userName
     .split(" ")
@@ -116,6 +126,31 @@ export function LSPostCard({
     .map((part) => part[0])
     .slice(0, 2)
     .join("");
+
+  useEffect(() => {
+    if (!editOpen) {
+      setDraftContent(content);
+    }
+  }, [content, editOpen]);
+
+  const handleEditSubmit = async () => {
+    const nextContent = draftContent.trim();
+    if (!nextContent) {
+      notifications.show({
+        title: "Could not update post",
+        message: "Content is required",
+        color: "red",
+      });
+      return;
+    }
+
+    try {
+      await onEditSubmit?.({ content: nextContent });
+      closeEdit();
+    } catch {
+      // Parent mutation handles the notification; keep the modal open.
+    }
+  };
 
   const userContent = (
     <Group gap="sm" align="center">
@@ -201,6 +236,34 @@ export function LSPostCard({
           </Group>
         </Stack>
       </Modal>
+      <Modal opened={editOpen} onClose={closeEdit} title="Edit post" centered>
+        <Stack gap="md">
+          <Textarea
+            label="Post"
+            minRows={4}
+            value={draftContent}
+            onChange={(event) => setDraftContent(event.currentTarget.value)}
+          />
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={closeEdit}
+              disabled={isEditPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleEditSubmit()}
+              loading={isEditPending}
+              disabled={
+                draftContent.trim().length === 0 || draftContent === content
+              }
+            >
+              Save
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
       <Card
         bg="gray.0"
         padding="md"
@@ -240,8 +303,17 @@ export function LSPostCard({
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
+                      {onEditSubmit ? (
+                        <Menu.Item
+                          leftSection={<IconEdit size={14} />}
+                          onClick={openEdit}
+                        >
+                          Edit post
+                        </Menu.Item>
+                      ) : null}
                       {onDeleteClick ? (
                         <>
+                          {onEditSubmit ? <Menu.Divider /> : null}
                           <Menu.Item
                             color="red"
                             leftSection={<IconTrash size={14} />}

@@ -38,6 +38,8 @@ export function HomeFeed(props: HomeFeedProps) {
     handleTogglePostLike,
     handleToggleCommentLike,
     handleDeletePost,
+    handleEditPost,
+    updatePostMutation,
     currentUserId,
     fetchNextPage,
     hasNextPage,
@@ -155,6 +157,12 @@ export function HomeFeed(props: HomeFeedProps) {
                 ? () => handleDeletePost(post.id)
                 : undefined
             }
+            onEditSubmit={
+              post.userId === currentUserId
+                ? (values) => handleEditPost(post.id, values)
+                : undefined
+            }
+            isEditPending={updatePostMutation.isPending}
             onPostClick={() => router.push(`/posts/${post.id}`)}
             shareUrl={`/posts/${post.id}`}
             audienceLabel={post.audienceLabel ?? null}

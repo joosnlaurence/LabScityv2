@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/components/auth/use-auth";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
@@ -17,9 +18,13 @@ import {
   createReport,
   likeComment,
   likePost,
+  updatePost,
 } from "@/lib/actions/feed";
 import { postKeys } from "@/lib/query-keys";
-import type { CreateReportValues } from "@/lib/validations/post";
+import type {
+  CreateReportValues,
+  UpdatePostValues,
+} from "@/lib/validations/post";
 
 /**
  * Post detail page: single post with comments, like/comment/report actions, and ReportOverlay.
@@ -29,6 +34,7 @@ export default function PostDetailPage() {
   const { post_id } = useParams<{ post_id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { data, isLoading, isError } = usePostDetail(post_id);
 
   /** Tracks which post or comment is being reported; null when report overlay is closed. */
@@ -43,16 +49,24 @@ export default function PostDetailPage() {
     queryClient.invalidateQueries({ queryKey: postKeys.detail(post_id) });
 
   const createCommentMutation = useMutation({
-    mutationFn: async ({ postId, values }: { postId: string; values: { content: string } }) => {
+    mutationFn: async ({
+      postId,
+      values,
+    }: {
+      postId: string;
+      values: { content: string };
+    }) => {
       const result = await createComment(postId, values);
-      if (!result.success) throw new Error(result.error ?? "Failed to create comment");
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to create comment");
       return result;
     },
     onSuccess: invalidate,
     onError: (error) => {
       notifications.show({
         title: "Could not add comment",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -61,14 +75,16 @@ export default function PostDetailPage() {
   const likePostMutation = useMutation({
     mutationFn: async (postId: string) => {
       const result = await likePost(postId);
-      if (!result.success) throw new Error(result.error ?? "Failed to update like");
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to update like");
       return result;
     },
     onSuccess: invalidate,
     onError: (error) => {
       notifications.show({
         title: "Could not update like",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -77,14 +93,16 @@ export default function PostDetailPage() {
   const likeCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
       const result = await likeComment(commentId);
-      if (!result.success) throw new Error(result.error ?? "Failed to update like");
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to update like");
       return result;
     },
     onSuccess: invalidate,
     onError: (error) => {
       notifications.show({
         title: "Could not update like",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -101,7 +119,8 @@ export default function PostDetailPage() {
       values: CreateReportValues;
     }) => {
       const result = await createReport(postId, commentId, values);
-      if (!result.success) throw new Error(result.error ?? "Failed to submit report");
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to submit report");
       return result;
     },
     onSuccess: () => {
@@ -115,13 +134,48 @@ export default function PostDetailPage() {
     onError: (error) => {
       notifications.show({
         title: "Could not submit report",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
   });
 
-  const handleAddComment = async (postId: string, values: { content: string }) => {
+  const updatePostMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      values,
+    }: {
+      postId: string;
+      values: UpdatePostValues;
+    }) => {
+      const result = await updatePost(postId, values);
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to update post");
+      return result;
+    },
+    onSuccess: () => {
+      invalidate();
+      notifications.show({
+        title: "Post updated",
+        message: "Your post has been saved.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: "Could not update post",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
+
+  const handleAddComment = async (
+    postId: string,
+    values: { content: string },
+  ) => {
     await createCommentMutation.mutateAsync({ postId, values });
   };
 
@@ -129,9 +183,14 @@ export default function PostDetailPage() {
     if (!reportTarget) return;
     await createReportMutation.mutateAsync({
       postId: reportTarget.postId,
-      commentId: reportTarget.type === "comment" ? reportTarget.commentId : null,
+      commentId:
+        reportTarget.type === "comment" ? reportTarget.commentId : null,
       values,
     });
+  };
+
+  const handleEditPost = async (postId: string, values: UpdatePostValues) => {
+    await updatePostMutation.mutateAsync({ postId, values });
   };
 
   if (isLoading) {
@@ -162,28 +221,33 @@ export default function PostDetailPage() {
 
   return (
     <Stack p="md" maw={700} mx="auto">
-      <ActionIcon variant="subtle" color="navy.7" size="xl" onClick={() => router.back()} aria-label="Go back">
+      <ActionIcon
+        variant="subtle"
+        color="navy.7"
+        size="xl"
+        onClick={() => router.back()}
+        aria-label="Go back"
+      >
         <IconArrowLeft size={22} />
       </ActionIcon>
       <ReportOverlay
         open={reportTarget !== null}
         title={reportTarget?.type === "post" ? "Report post" : "Report comment"}
         preview={
-          reportTarget?.type === "post"
-            ? (
-              <LSPostCard
-                userId={post.userId}
-                userName={post.userName}
-                avatarUrl={post.avatarUrl ?? null}
-                field={post.scientificField}
-                timeAgo={post.timeAgo}
-                content={post.content}
-                mediaUrl={post.mediaUrl ?? null}
-                showMenu={false}
-                showActions={false}
-              />
-            )
-            : post.comments
+          reportTarget?.type === "post" ? (
+            <LSPostCard
+              userId={post.userId}
+              userName={post.userName}
+              avatarUrl={post.avatarUrl ?? null}
+              field={post.scientificField}
+              timeAgo={post.timeAgo}
+              content={post.content}
+              mediaUrl={post.mediaUrl ?? null}
+              showMenu={false}
+              showActions={false}
+            />
+          ) : (
+            post.comments
               .filter((c) => c.id === reportTarget?.commentId)
               .map((c) => (
                 <LSPostCommentCard
@@ -193,6 +257,7 @@ export default function PostDetailPage() {
                   showActions={false}
                 />
               ))
+          )
         }
         onClose={() => setReportTarget(null)}
         onSubmit={onSubmitReport}
@@ -208,6 +273,12 @@ export default function PostDetailPage() {
         mediaUrl={post.mediaUrl ?? null}
         isLiked={post.isLiked ?? false}
         onLikeClick={() => likePostMutation.mutate(post.id)}
+        onEditSubmit={
+          post.userId === user?.id
+            ? (values) => handleEditPost(post.id, values)
+            : undefined
+        }
+        isEditPending={updatePostMutation.isPending}
         onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
         showActions
         showMenu
@@ -227,9 +298,15 @@ export default function PostDetailPage() {
                 <LSPostCommentCard
                   key={comment.id}
                   comment={comment}
-                  onLikeClick={(commentId) => likeCommentMutation.mutate(commentId)}
+                  onLikeClick={(commentId) =>
+                    likeCommentMutation.mutate(commentId)
+                  }
                   onReportClick={(commentId) =>
-                    setReportTarget({ type: "comment", postId: post.id, commentId })
+                    setReportTarget({
+                      type: "comment",
+                      postId: post.id,
+                      commentId,
+                    })
                   }
                   menuId={`comment-menu-${comment.id}`}
                 />

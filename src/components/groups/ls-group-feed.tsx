@@ -35,6 +35,9 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
     handleAddComment,
     handleTogglePostLike,
     handleToggleCommentLike,
+    handleEditPost,
+    updatePostMutation,
+    currentUserId,
   } = useGroupFeed(props);
 
   return (
@@ -131,6 +134,12 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
             }
             onLikeClick={() => handleTogglePostLike(post.id)}
             isLiked={post.isLiked ?? false}
+            onEditSubmit={
+              post.userId === currentUserId
+                ? (values) => handleEditPost(post.id, values)
+                : undefined
+            }
+            isEditPending={updatePostMutation.isPending}
             onReportClick={() =>
               setReportTarget({ type: "post", postId: post.id })
             }
