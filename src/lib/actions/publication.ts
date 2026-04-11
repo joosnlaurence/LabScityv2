@@ -8,6 +8,9 @@ import {
 } from "@/lib/validations/publication";
 import { createClient } from "@/supabase/server";
 
+type UserPublicationRow = {
+    publications: any;
+}
 
 export async function createPublication(
     input: CreatePublicationValues, 
@@ -69,4 +72,24 @@ export async function createPublication(
         }
         return {success: false, error: "Failed to create publication"};
     }
+}
+
+export async function getUserPublications(userId: string){
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from("user_publications")
+        .select(`
+            publications (*)
+        `)
+        .eq("user_id", userId);
+
+    if (error){
+        return { success: false, error: error.message };
+    }
+
+    return {
+        success: true, 
+        data: (data ?? []).map((row: UserPublicationRow) => row.publications),
+    };
 }

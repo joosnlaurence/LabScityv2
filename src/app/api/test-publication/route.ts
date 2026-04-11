@@ -1,6 +1,9 @@
-import { createPublication } from "@/lib/actions/publication";
+import { createPublication, getUserPublications } from "@/lib/actions/publication";
 import { NextResponse } from "next/server";
 
+// this is just for testing
+
+/*
 export async function GET() {
   const result = await createPublication({
     title: "Second Test Publication",
@@ -11,4 +14,12 @@ export async function GET() {
   });
 
   return NextResponse.json(result);
+}
+*/
+
+export async function GET(){
+    const result = await getUserPublications(
+        "b798c0c3-bd97-4595-8ac1-d05029206303"
+    )
+    return NextResponse.json(result);
 }
