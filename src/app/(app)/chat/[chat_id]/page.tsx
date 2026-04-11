@@ -1,127 +1,254 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/supabase/client'
 import {
-  Paper,
-  TextInput,
   ActionIcon,
+  Box,
+  Button,
+  Center,
+  Group,
+  Indicator,
+  Loader,
+  Modal,
+  Paper,
   ScrollArea,
   Stack,
-  Group,
   Text,
-  Box,
-  Loader,
-  Center,
-  Container,
+  TextInput,
   Title,
-  Avatar,
-  Indicator,
-  AppShell,
-  NavLink,
-  Button
-} from '@mantine/core'
-import { IconSend, IconMessageCircle2 } from '@tabler/icons-react'
-import { useParams } from 'next/navigation'
-import { ChatPreview, getChatsWithPreview, getOldMessages } from '@/lib/actions/chat'
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconInfoCircle, IconSend } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
+import { memo, useEffect, useRef, useState } from "react";
+import { useIsMobile } from "@/app/use-is-mobile";
+import {
+  useGetConversationParticipants,
+  useGetOldMessages,
+  useLeaveConversation,
+  useUpdateConversationName,
+} from "@/components/chat/use-chat";
+import {
+  getChatsWithPreview,
+  getOldMessages,
+  markConversationAsRead,
+} from "@/lib/actions/chat";
+import { chatKeys } from "@/lib/query-keys";
+import { createClient } from "@/supabase/client";
 
 interface Message {
-  id: number
-  conversation_id: number
-  sender_id: string
-  content: string
-  created_at: string
+  id: number;
+  conversation_id: number;
+  sender_id: string;
+  content: string;
+  created_at: string;
 }
 
+const MessageBubble = memo(function MessageBubble({
+  msg,
+  isMe,
+  isSending,
+  showTimestamp,
+}: {
+  msg: Message;
+  isMe: boolean;
+  isSending?: boolean;
+  showTimestamp: boolean;
+}) {
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
+
+  return (
+    <Box style={{ maxWidth: "70%" }} ml={isMe ? "auto" : 0}>
+      <Group
+        justify={isMe ? "flex-end" : "flex-start"}
+        align="flex-end"
+        gap="xs"
+      >
+        <Paper
+          p="sm"
+          px="md"
+          radius="lg"
+          bg={isMe ? "gray.6" : "navy.3"}
+          c={isMe ? "navy.0" : "navy.7"}
+          shadow="sm"
+          style={{ opacity: isSending ? 0.7 : 1 }}
+        >
+          <Text size="sm">{msg.content}</Text>
+          {isSending && (
+            <Text fz="10px" c={isMe ? "navy.1" : "dimmed"} mt={4}>
+              Sending...
+            </Text>
+          )}
+        </Paper>
+      </Group>
+      {showTimestamp && !isSending && (
+        <Text
+          fz="10px"
+          c="dimmed"
+          ta={isMe ? "right" : "left"}
+          mt={4}
+          ml={isMe ? 0 : "md"}
+          mr={isMe ? "md" : 0}
+        >
+          {formatTime(msg.created_at)}
+        </Text>
+      )}
+    </Box>
+  );
+});
+
 export default function ChatPage() {
-  const [supabase] = useState(() => createClient())
-  const { chat_id } = useParams<{ chat_id: string }>()
+  const supabase = useState(() => createClient())[0];
+  const { chat_id } = useParams<{ chat_id: string }>();
+  const router = useRouter();
+  const isMobile = useIsMobile();
 
-  // -- STATE --
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isConnected, setIsConnected] = useState(false)
-  const [inputText, setInputText] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
-  const [chats, setChats] = useState<ChatPreview[]>([])
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [optimisticIds, setOptimisticIds] = useState<Set<number>>(new Set());
+  const [chatTitle, setChatTitle] = useState<string>("");
 
-  // -- PAGINATION STATE --
-  const [hasMore, setHasMore] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // -- REFS --
-  const viewport = useRef<HTMLDivElement>(null)
-  // We use this to tell the UI *why* the messages array changed
-  const scrollReason = useRef<'init' | 'new_message' | 'pagination'>('init')
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [membersExpanded, setMembersExpanded] = useState(false);
 
-  // 1. INIT DATA
+  const [chatName, setChatName] = useState("");
+
+  const leaveConversationMutation = useLeaveConversation();
+  const updateConversationNameMutation = useUpdateConversationName();
+
+  const queryClient = useQueryClient();
+
+  const viewport = useRef<HTMLDivElement>(null);
+  const scrollReason = useRef<"init" | "new_message" | "pagination">("init");
+  const optimisticIdsRef = useRef<Set<number>>(new Set());
+
   useEffect(() => {
-    if (!chat_id) return
+    setMessages([]);
+    setHasMore(true);
+  }, [chat_id]);
 
-    const initData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setUserId(user.id)
-      if (!user) return;
+  useEffect(() => {
+    if (!chat_id) return;
 
-      try {
-        scrollReason.current = 'init' // Tell the UI to scroll to bottom on load
+    const fetchUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
 
-        // Ensure your getOldMessages server action is updated to accept a cursor!
-        const data = await getOldMessages(parseInt(chat_id))
+    fetchUser();
+  }, [chat_id, supabase]);
 
-        if (!data.data) return;
+  const { data: messagesResult } = useGetOldMessages(
+    chat_id ? parseInt(chat_id) : 0,
+  );
 
-        if (data.data.length < 50) setHasMore(false) // Assuming limit is 50
-        setMessages(data.data)
+  const { data: participantsData } = useGetConversationParticipants(
+    chat_id ? parseInt(chat_id) : 0,
+  );
 
-      } catch (error) {
-        console.error('Error fetching messages:', error)
+  useEffect(() => {
+    if (messagesResult?.success && messagesResult.data) {
+      scrollReason.current = "init";
+      setMessages(messagesResult.data);
+      setHasMore(messagesResult.data.length >= 50);
+      if (chat_id) {
+        markConversationAsRead(parseInt(chat_id));
+        queryClient.invalidateQueries({
+          queryKey: chatKeys.chatsWithPreview(),
+        });
       }
     }
+  }, [messagesResult, chat_id, queryClient]);
 
-    initData()
-  }, [chat_id, supabase])
-
-  // 2. INIT SIDEBAR
   useEffect(() => {
-    const initSideBar = async () => {
+    if (!chat_id) return;
+
+    const fetchChatTitle = async () => {
       try {
-        const sidebarData = await getChatsWithPreview();
-        if (!sidebarData.data) return;
-        setChats(sidebarData.data)
+        const { data: chatsData } = await getChatsWithPreview();
+        if (!chatsData) return;
+        const activeChat = chatsData.find(
+          (c) => c.conversation_id.toString() === chat_id,
+        );
+        setChatTitle(activeChat?.name || `Chat #${chat_id}`);
       } catch (error) {
-        console.error("issue getting chat preview: ", error);
+        console.error("Error fetching chat title:", error);
       }
-    }
-    initSideBar()
-  }, [])
+    };
 
-  // 3. REALTIME
+    fetchChatTitle();
+  }, [chat_id]);
+
   useEffect(() => {
-    if (!chat_id || !supabase || !userId) return;
+    if (!chat_id || !supabase) return;
 
     const uniqueChannelName = `room:${chat_id}-${Date.now()}`;
 
     const channel = supabase
       .channel(uniqueChannelName)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
           filter: `conversation_id=eq.${chat_id}`,
         },
         (payload) => {
-          console.log('Realtime message received:', payload.new);
           const newMessage = payload.new as Message;
 
-          scrollReason.current = 'new_message' // Tell UI to snap to bottom
-          setMessages((current) => [...current, newMessage]);
-        }
+          setMessages((current) => {
+            const optimisticIdToRemove = Array.from(
+              optimisticIdsRef.current,
+            ).find((id) => {
+              const optimisticMsg = current.find((m) => m.id === id);
+              return (
+                optimisticMsg &&
+                optimisticMsg.content === newMessage.content &&
+                optimisticMsg.sender_id === newMessage.sender_id
+              );
+            });
+
+            if (optimisticIdToRemove) {
+              optimisticIdsRef.current.delete(optimisticIdToRemove);
+              setOptimisticIds((current) => {
+                const next = new Set(current);
+                next.delete(optimisticIdToRemove);
+                return next;
+              });
+              return current
+                .filter((m) => m.id !== optimisticIdToRemove)
+                .concat(newMessage);
+            }
+
+            return [...current, newMessage];
+          });
+
+          scrollReason.current = "new_message";
+        },
       )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') setIsConnected(true);
-        if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setIsConnected(true);
+        if (status === "CLOSED" || status === "CHANNEL_ERROR") {
           setIsConnected(false);
         }
       });
@@ -130,209 +257,357 @@ export default function ChatPage() {
       supabase.removeChannel(channel);
       setIsConnected(false);
     };
-  }, [chat_id, supabase, userId]);
+  }, [chat_id, supabase]);
 
-  // 4. SMART SCROLLING
   useEffect(() => {
     if (!viewport.current) return;
 
-    if (scrollReason.current === 'init' || scrollReason.current === 'new_message') {
-      // Smoothly scroll to the very bottom
-      viewport.current.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' })
+    if (scrollReason.current === "init") {
+      viewport.current.scrollTo({
+        top: viewport.current.scrollHeight,
+        behavior: "instant",
+      });
+    } else if (scrollReason.current === "new_message") {
+      const { scrollTop, scrollHeight, clientHeight } = viewport.current;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      if (distanceFromBottom < 100) {
+        viewport.current.scrollTo({
+          top: scrollHeight,
+          behavior: "instant",
+        });
+      }
     }
-    // If reason is 'pagination', do absolutely nothing. We handle that in loadMore.
-  }, [messages])
+  }, [messages]);
 
-  // 5. LOAD MORE (PAGINATION)
   const loadMore = async () => {
-    if (isLoadingMore || !hasMore || messages.length === 0 || !chat_id) return
+    if (isLoadingMore || !hasMore || messages.length === 0 || !chat_id) return;
 
-    setIsLoadingMore(true)
-    scrollReason.current = 'pagination' // Stop the auto-scroller from firing
+    setIsLoadingMore(true);
+    scrollReason.current = "pagination";
 
-    // The cursor is the timestamp of the oldest message we currently see
-    const oldestMessageTimestamp = messages[0].created_at
-    const oldScrollHeight = viewport.current?.scrollHeight || 0
+    const oldestMessageTimestamp = messages[0].created_at;
+    const oldScrollHeight = viewport.current?.scrollHeight || 0;
 
-    const response = await getOldMessages(parseInt(chat_id), oldestMessageTimestamp)
+    const response = await getOldMessages(
+      parseInt(chat_id),
+      oldestMessageTimestamp,
+    );
 
     if (response.success && response.data) {
-      if (response.data.length < 50) setHasMore(false)
+      if (response.data.length < 50) setHasMore(false);
 
-      // Prepend old messages
-      setMessages(current => [...response.data!, ...current])
+      setMessages((current) => [...response.data!, ...current]);
 
-      // The Magic Scroll Fix: Keep the scrollbar perfectly still
       setTimeout(() => {
         if (viewport.current) {
-          const newScrollHeight = viewport.current.scrollHeight
-          viewport.current.scrollTop = newScrollHeight - oldScrollHeight
+          const newScrollHeight = viewport.current.scrollHeight;
+          viewport.current.scrollTop = newScrollHeight - oldScrollHeight;
         }
-      }, 0)
+      }, 0);
     }
 
-    setIsLoadingMore(false)
-  }
+    setIsLoadingMore(false);
+  };
 
-  // 6. HANDLERS
   const handleSend = async () => {
-    if (!inputText.trim() || !userId || !chat_id) return
+    if (!inputText.trim() || !userId || !chat_id) return;
 
-    const textToSend = inputText
-    setInputText('')
+    const textToSend = inputText;
+    setInputText("");
 
-    const { error } = await supabase.from('messages').insert({
+    const optimisticMessage: Message = {
+      id: Date.now(),
       conversation_id: parseInt(chat_id),
       sender_id: userId,
       content: textToSend,
-    })
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((current) => [...current, optimisticMessage]);
+    setOptimisticIds((current) => new Set(current).add(optimisticMessage.id));
+    optimisticIdsRef.current.add(optimisticMessage.id);
+
+    const { error } = await supabase.from("messages").insert({
+      conversation_id: parseInt(chat_id),
+      sender_id: userId,
+      content: textToSend,
+    });
 
     if (error) {
-      console.error('Error sending:', error)
-      setInputText(textToSend)
+      console.error("Error sending:", error);
+      setMessages((current) =>
+        current.filter((m) => m.id !== optimisticMessage.id),
+      );
+      setOptimisticIds((current) => {
+        const next = new Set(current);
+        next.delete(optimisticMessage.id);
+        return next;
+      });
+      optimisticIdsRef.current.delete(optimisticMessage.id);
+      notifications.show({
+        title: "Failed to send message",
+        message: "Please try again",
+        color: "red",
+      });
+      setInputText(textToSend);
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
-  }
+  };
 
-  if (!chat_id) return <Center h="100vh"><Loader /></Center>
+  if (!chat_id)
+    return (
+      <Center h="100vh">
+        <Loader />
+      </Center>
+    );
 
   return (
-    <AppShell navbar={{ width: 320, breakpoint: 'sm' }} padding={0}>
+    <Stack h="100%" gap={0} bg="gray.1" style={{ overflow: "hidden" }}>
+      {/* HEADER */}
+      <Paper
+        p={isMobile ? "sm" : "md"}
+        shadow="sm"
+        radius={0}
+        withBorder
+        bg="gray.2"
+        style={{ zIndex: 10, flexShrink: 0, position: "relative" }}
+      >
+        <Group justify="center" align="center" gap="xs">
+          <Title order={4} c="navy.7" style={{ margin: 0 }}>
+            {chatTitle || `Chat #${chat_id}`}
+          </Title>
+          <Indicator
+            color={isConnected ? "green" : "yellow"}
+            size={8}
+            processing
+          />
+        </Group>
+        <Box
+          style={{
+            position: "absolute",
+            right: isMobile ? 8 : 16,
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}
+        >
+          <ActionIcon
+            variant="subtle"
+            color="navy.7"
+            radius="xl"
+            size="lg"
+            onClick={() => setInfoModalOpen(true)}
+          >
+            <IconInfoCircle size="1.2rem" />
+          </ActionIcon>
+        </Box>
+      </Paper>
 
-      {/* SIDEBAR */}
-      <AppShell.Navbar bg="gray.1" style={{ borderRight: '1px solid #e9ecef' }}>
-        <Paper p="md" radius={0} shadow="xs" style={{ zIndex: 10 }}>
-          <Title order={4}>My Conversations</Title>
-        </Paper>
-        <ScrollArea flex={1}>
-          {chats.length === 0 ? (
-            <Center p="xl"><Text c="dimmed">No chats found.</Text></Center>
-          ) : (
-            chats.map((chat) => (
-              <NavLink
-                key={chat.conversation_id}
-                href={`/chat/${chat.conversation_id}`}
-                active={chat.conversation_id + "" === chat_id}
-                label={<Text fw={600}>{chat.name || `Chat #${chat.conversation_id}`}</Text>}
-                description={<Text size="xs"> {chat.message?.content as string || 'No messages yet'}</Text>}
-                leftSection={<Avatar radius="xl" size="sm" color="blue" />}
-                p="md"
-                style={{ borderBottom: '1px solid #e9ecef' }}
-              />
-            ))
+      {/* INFO MODAL */}
+      <Modal
+        opened={infoModalOpen}
+        onClose={() => setInfoModalOpen(false)}
+        title={
+          <Title order={4} c="navy.7">
+            {chatTitle || `Chat #${chat_id}`}
+          </Title>
+        }
+        centered
+      >
+        <Stack gap="md">
+          {messages.length > 0 && (
+            <Text size="sm" c="navy.7">
+              <Text span fw={600}>
+                Conversation started:{" "}
+              </Text>
+              {new Date(messages[0].created_at).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </Text>
           )}
-        </ScrollArea>
-      </AppShell.Navbar>
 
-      {/* MAIN CHAT */}
-      <AppShell.Main>
-        <Container fluid h="100vh" p={0}>
-          <Stack h="100%" gap={0} bg="gray.0">
-
-            {/* HEADER */}
-            <Paper p="md" shadow="xs" radius={0} withBorder style={{ zIndex: 10 }}>
-              <Group justify="space-between">
-                <Group>
-                  <Avatar color="blue" radius="xl"><IconMessageCircle2 size="1.5rem" /></Avatar>
-                  <div>
-                    <Title order={5}>Chat Room {chat_id}</Title>
-                    <Group gap={6}>
-                      <Indicator color={isConnected ? 'green' : 'yellow'} position="middle-start" size={6} processing>
-                        <Text size="xs" c="dimmed" ml={10}>
-                          {isConnected ? 'Live' : 'Connecting...'}
-                        </Text>
-                      </Indicator>
-                    </Group>
-                  </div>
-                </Group>
-              </Group>
-            </Paper>
-
-            {/* MESSAGES */}
-            <ScrollArea flex={1} p="md" viewportRef={viewport}>
-              <Stack gap="sm">
-
-                {/* PAGINATION BUTTON */}
-                {hasMore && messages.length > 0 && (
-                  <Center mb="sm">
-                    <Button
-                      variant="subtle"
-                      size="xs"
-                      loading={isLoadingMore}
-                      onClick={loadMore}
-                    >
-                      Load older messages
-                    </Button>
-                  </Center>
+          <Box>
+            <Text size="sm" fw={600} c="navy.7" mb={6}>
+              Members
+            </Text>
+            {participantsData?.success && participantsData.data ? (
+              <>
+                <Stack gap={4}>
+                  {participantsData.data
+                    .slice(0, membersExpanded ? undefined : 3)
+                    .map((participant) => (
+                      <Text key={participant.user_id} size="sm" c="dimmed">
+                        {participant.first_name} {participant.last_name} -{" "}
+                        {participant.email}
+                      </Text>
+                    ))}
+                </Stack>
+                {participantsData.data.length > 3 && (
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setMembersExpanded(!membersExpanded)}
+                    mt={4}
+                  >
+                    {membersExpanded
+                      ? "Show less"
+                      : `Show ${participantsData.data.length - 3} more`}
+                  </Button>
                 )}
+              </>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Unable to load members
+              </Text>
+            )}
+          </Box>
 
-                {messages.length === 0 && (
-                  <Center h={200}>
-                    <Text c="dimmed" size="sm">No messages yet. Say hello!</Text>
-                  </Center>
-                )}
-
-                {messages.map((msg) => {
-                  const isMe = msg.sender_id === userId
-                  return (
-                    <Group key={msg.id} justify={isMe ? 'flex-end' : 'flex-start'} align="flex-end" gap="xs">
-                      {!isMe && <Avatar radius="xl" size="sm" />}
-                      <Paper
-                        p="xs"
-                        px="md"
-                        radius="lg"
-                        bg={isMe ? 'blue.6' : 'white'}
-                        c={isMe ? 'white' : 'black'}
-                        style={{
-                          maxWidth: '70%',
-                          borderBottomRightRadius: isMe ? 0 : undefined,
-                          borderBottomLeftRadius: !isMe ? 0 : undefined
-                        }}
-                        shadow="xs"
-                      >
-                        <Text size="sm">{msg.content}</Text>
-                      </Paper>
-                    </Group>
+          <Box>
+            <Text size="sm" fw={600} c="navy.7" mb={6}>
+              Update Chat Name
+            </Text>
+            <Group gap="xs">
+              <TextInput
+                placeholder="Enter a new name..."
+                value={chatName}
+                onChange={(e) => setChatName(e.target.value)}
+                radius="xl"
+                size="sm"
+                style={{ flex: 1 }}
+              />
+              <Button
+                color="navy.7"
+                variant="filled"
+                radius="xl"
+                size="sm"
+                disabled={!chatName.trim()}
+                loading={updateConversationNameMutation.isPending}
+                onClick={() =>
+                  updateConversationNameMutation.mutate(
+                    { id: parseInt(chat_id), newName: chatName.trim() },
+                    {
+                      onSuccess: () => {
+                        setChatTitle(chatName.trim());
+                        setChatName("");
+                      },
+                    },
                   )
-                })}
-              </Stack>
-            </ScrollArea>
+                }
+              >
+                Save
+              </Button>
+            </Group>
+          </Box>
 
-            {/* INPUT */}
-            <Paper p="md" withBorder radius={0}>
-              <Group align="flex-end">
-                <TextInput
-                  placeholder="Type a message..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  style={{ flex: 1 }}
-                  radius="md"
-                  size="md"
-                  disabled={!isConnected}
-                />
-                <ActionIcon
-                  size="lg"
-                  variant="filled"
-                  color="blue"
-                  radius="xl"
-                  onClick={handleSend}
-                  disabled={!inputText.trim() || !isConnected}
-                >
-                  <IconSend size="1.1rem" />
-                </ActionIcon>
-              </Group>
-            </Paper>
+          <Button
+            fullWidth
+            color="red"
+            variant="light"
+            radius="xl"
+            loading={leaveConversationMutation.isPending}
+            onClick={() =>
+              leaveConversationMutation.mutate(parseInt(chat_id), {
+                onSuccess: () => {
+                  setInfoModalOpen(false);
+                  router.push("/chat");
+                },
+              })
+            }
+          >
+            Leave Chat
+          </Button>
+        </Stack>
+      </Modal>
 
-          </Stack>
-        </Container>
-      </AppShell.Main>
-    </AppShell>
-  )
+      {/* MESSAGES */}
+      <ScrollArea
+        flex={1}
+        viewportRef={viewport}
+        style={{ overflowX: "hidden" }}
+      >
+        <Stack gap="md" p={isMobile ? "sm" : "md"}>
+          {hasMore && messages.length > 0 && (
+            <Center mb="sm">
+              <Button
+                variant="subtle"
+                size="xs"
+                loading={isLoadingMore}
+                onClick={loadMore}
+              >
+                Load older messages
+              </Button>
+            </Center>
+          )}
+
+          {messages.length === 0 && (
+            <Center h={200}>
+              <Text c="dimmed" size="sm">
+                No messages yet. Say hello!
+              </Text>
+            </Center>
+          )}
+
+          {messages.map((msg, index) => {
+            const isMe = msg.sender_id === userId;
+            const isSending = optimisticIds.has(msg.id);
+            const prevMsg = index > 0 ? messages[index - 1] : null;
+            const timeDiff = prevMsg
+              ? (new Date(msg.created_at).getTime() -
+                  new Date(prevMsg.created_at).getTime()) /
+                (1000 * 60)
+              : Infinity;
+            const showTimestamp = !prevMsg || timeDiff >= 2;
+            return (
+              <MessageBubble
+                key={msg.id}
+                msg={msg}
+                isMe={isMe}
+                isSending={isSending}
+                showTimestamp={showTimestamp}
+              />
+            );
+          })}
+        </Stack>
+      </ScrollArea>
+
+      {/* INPUT */}
+      <Paper
+        p={isMobile ? "sm" : "md"}
+        withBorder
+        radius={0}
+        bg="gray.2"
+        style={{ flexShrink: 0 }}
+      >
+        <Group align="flex-end">
+          <TextInput
+            placeholder="Type a message..."
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{ flex: 1 }}
+            radius="md"
+            size="md"
+            disabled={!isConnected}
+          />
+          <ActionIcon
+            size="lg"
+            variant="filled"
+            color="navy.7"
+            radius="xl"
+            onClick={handleSend}
+            disabled={!inputText.trim() || !isConnected}
+          >
+            <IconSend size="1.1rem" />
+          </ActionIcon>
+        </Group>
+      </Paper>
+    </Stack>
+  );
 }

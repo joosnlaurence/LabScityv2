@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, Text, Stack, Flex, Badge } from "@mantine/core";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getTrendingScientificFields } from "@/lib/actions/feed";
 import { LSSpinner } from "../ui/ls-spinner";
@@ -10,6 +11,7 @@ interface TrendingWidgetProps {
 }
 
 export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProps) {
+  const router = useRouter();
   const [hashtags, setHashtags] = useState<string[]>(initialHashtags || []);
   const [isLoading, setIsLoading] = useState(!initialHashtags);
 
@@ -37,15 +39,9 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
   }, [initialHashtags]);
 
   return (
-    <Card
-      bg="gray.0"
-      p="md"
-      w="100%"
-      h="100%"
-      radius="md"
-      shadow="sm"
-    >
-      <Stack gap="md">
+    <Card bg="gray.0" p="md" w="100%" radius="md" shadow="sm">
+      <Stack>
+
         <Text
           c="gray.7"
           fw="bold"
@@ -53,23 +49,31 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
         >
           Trending
         </Text>
+
         {/* the hashtags */}
         {isLoading ? (
           <Flex justify="center" py="sm">
             <LSSpinner />
           </Flex>
         ) : (
-          <Flex wrap="wrap" gap={6} justify="flex-start">
+          <Flex wrap="wrap" gap={6} mb="lg" justify="flex-start">
             {
               hashtags.map((hashtag, index) => (
                 <Badge
                   key={index}
+                  component="button"
+                  type="button"
                   color="gray.7"
                   fw="normal"
                   fz="sm"
                   p={12}
                   tt="lowercase"
                   variant="outline"
+                  style={{ cursor: "pointer" }}
+                  onClick={() =>
+                    router.push(`/search?q=${encodeURIComponent(hashtag)}`)
+                  }
+                  aria-label={`Search for ${hashtag}`}
                 >
                   {hashtag}
                 </Badge>

@@ -1,33 +1,36 @@
 import {
-  QueryClient,
   dehydrate,
   HydrationBoundary,
+  QueryClient,
 } from "@tanstack/react-query";
-import { getUser, getUserPosts } from "@/lib/actions/data";
-import type { UserPostsResponse } from "@/lib/types/data";
-import {
-  getUserFollowers,
-  getUserFollowing,
-  getUserFriends,
-  updateProfileAction,
-  toggleFollowAction,
-  createProfilePictureUploadUrl,
-  updateOwnProfilePicture,
-  createProfileHeaderUploadUrl,
-  updateOwnProfileHeader,
-} from "@/lib/actions/profile";
-import {
-  createComment,
-  createPost,
-  createReport,
-  likeComment,
-  likePost,
-} from "@/lib/actions/feed";
-import { profileKeys } from "@/lib/query-keys";
 import {
   LSProfileView,
   type LSProfileViewProps,
 } from "@/components/profile/ls-profile-view";
+import { getUser, getUserPosts } from "@/lib/actions/data";
+import {
+  createComment,
+  createPost,
+  createReport,
+  deletePost,
+  likeComment,
+  likePost,
+} from "@/lib/actions/feed";
+import { getProfileVisibleGroups } from "@/lib/actions/groups";
+import {
+  createProfileHeaderUploadUrl,
+  createProfilePictureUploadUrl,
+  createUserReport,
+  getUserFollowers,
+  getUserFollowing,
+  getUserFriends,
+  toggleFollowAction,
+  updateOwnProfileHeader,
+  updateOwnProfilePicture,
+  updateProfileAction,
+} from "@/lib/actions/profile";
+import { profileKeys } from "@/lib/query-keys";
+import type { UserPostsResponse } from "@/lib/types/data";
 import { createClient } from "@/supabase/server";
 
 /**
@@ -119,6 +122,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         return result.data;
       },
     }),
+    ...(user?.id
+      ? [
+          queryClient.prefetchQuery({
+            queryKey: profileKeys.groups(userId),
+            queryFn: async () => {
+              const result = await getProfileVisibleGroups(userId);
+              if (!result.success || !result.data) {
+                throw new Error(
+                  result.error ?? "Failed to fetch profile groups",
+                );
+              }
+              return result.data;
+            },
+          }),
+        ]
+      : []),
   ]);
 
   const dehydratedState = dehydrate(queryClient);
@@ -136,8 +155,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     createPostAction: createPost,
     createCommentAction: createComment,
     createReportAction: createReport,
+    createUserReportAction: createUserReport,
     likePostAction: likePost,
     likeCommentAction: likeComment,
+    deletePostAction: deletePost,
   };
 
   return (
