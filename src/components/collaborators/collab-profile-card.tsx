@@ -4,6 +4,7 @@ import classes from './collaborators.module.css';
 
 import { CollabProfileProps } from "./collab-profile-types";
 import PercentMatchBadge from "./percent-match-badge";
+import FollowButton from "./follow-button";
 
 export default function CollabProfileCard(
   {
@@ -16,6 +17,7 @@ export default function CollabProfileCard(
     workplace,
     openToCollab,
     about,
+    isFollowing,
     closestTopics
   }
   : 
@@ -117,18 +119,10 @@ export default function CollabProfileCard(
           </Group>
           {/* Follow and DM Buttons */}
           <Group gap='8'>
-            <Button
-              bg='navy.7'
-              bdrs='8px'
-              p='6px 12px'
-              className={classes.followBtn}
-              leftSection={<IconUserPlus size='0.75rem' stroke='2.2'/>}
-              styles={{ section: { marginInlineEnd: '4px'} }}
-            >
-              <Text fz='0.75rem' fw='500'>
-                Follow
-              </Text>
-            </Button>
+            <FollowButton 
+              targetUserId={collabUserId}
+              isFollowing={isFollowing}
+            />
             <Button
               variant='outline'
               bdrs='8px'

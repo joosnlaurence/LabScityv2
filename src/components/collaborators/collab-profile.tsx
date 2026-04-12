@@ -7,6 +7,7 @@ import classes from './collaborators.module.css'
 
 import { useToggleFollow } from "@/components/profile/use-toggle-follow";
 import { useAuthContext } from "@/components/auth/auth-provider";
+import FollowButton from "./follow-button";
 
 export default function CollabProfile (
   {
@@ -25,11 +26,6 @@ export default function CollabProfile (
   : 
   CollabProfileProps 
 ) {
-  const { user } = useAuthContext();
-
-  const { 
-    mutate: followMutate, 
-  } = useToggleFollow(collabUserId, user?.id ?? '');
   const userName = `${firstName} ${lastName}`.trim()
   const initials = `${firstName[0]}${lastName[0]}`
   const hasMiddot = occupation && workplace;
@@ -134,24 +130,10 @@ export default function CollabProfile (
           align='flex-end'
           gap='6px'
         >
-          <Button
-            bg='navy.7'
-            bdrs='8px'
-            p='6px 10px'
-            fz='0.75rem'
-            onClick={() => followMutate()}
-            className={classes.followBtn}
-          >
-            <Group 
-              gap='4px' 
-              wrap='nowrap' 
-            >
-              <IconUserPlus size='0.875rem' stroke='2.2'/>
-              <Text fz='0.75rem' fw='500'>
-                {isFollowing ? 'Following' : 'Follow' }
-              </Text>
-            </Group>
-          </Button>
+          <FollowButton 
+            targetUserId={collabUserId}
+            isFollowing={isFollowing}
+          />
           <UnstyledButton p='4px'>
             <IconMessageCircle 
               size='1.25rem'
