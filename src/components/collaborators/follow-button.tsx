@@ -17,7 +17,8 @@ export default function FollowButton(
 
   return (
     <Button
-      bg='navy.7'
+      bg={isFollowing ? 'navy.3' : 'navy.7'}
+      c={isFollowing ? 'navy.7' : undefined}
       bdrs='8px'
       p='6px 10px'
       fz='0.75rem'
@@ -28,7 +29,10 @@ export default function FollowButton(
         gap='4px' 
         wrap='nowrap' 
       >
-        <IconUserPlus size='0.875rem' stroke='2.2'/>
+        {
+          !isFollowing && 
+          <IconUserPlus size='0.875rem' stroke='2.2'/>
+        }
         <Text fz='0.75rem' fw='500'>
           {isFollowing ? 'Following' : 'Follow' }
         </Text>

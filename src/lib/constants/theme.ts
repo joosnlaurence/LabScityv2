@@ -3,9 +3,6 @@
 import { 
   createTheme, 
   CSSVariablesResolver, 
-  defaultVariantColorsResolver,
-  VariantColorsResolver,
-  Button
 } from "@mantine/core";
 
 /** Mantine theme: Konkhmer Sleokchher font, navy and gray color palettes, primary color "navy". */
