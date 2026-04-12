@@ -31,13 +31,14 @@ import { useQuery } from "@tanstack/react-query";
 import CollabProfileCard from "./collab-profile-card";
 import CollabProfile from "./collab-profile";
 import LSChip from "./ls-chip";
-
-
+import { useAuthContext } from "../auth/auth-provider";
+import { useUserFollowing } from "../profile/use-profile";
 
 export default function CollabRecommendations() {
   const [opened, {open, close}] = useDisclosure(false);
-
-  const { data: collabs, isLoading, error } = useQuery({
+  const { user } = useAuthContext();
+  const { data: following, isLoading: followingLoading} = useUserFollowing(user?.id ?? '');
+  const { data: collabs, isLoading: collabsLoading, error } = useQuery({
     queryKey: ['collaborators'],
     queryFn: async () => {
       const res = await fetch('/api/collaborators');
@@ -45,9 +46,9 @@ export default function CollabRecommendations() {
       
       return data;
     },
-    select: (collabs) => collabs.map((c) => ({
+    select: (collabs) => collabs.map((c, i) => ({
       percentMatch: parseInt((c.cosine_similarity*100).toFixed(2)),
-      userId: c.profile_user_id,
+      collabUserId: c.profile_user_id,
       firstName: c.first_name,
       lastName: c.last_name,
       avatarUrl: c.profile_pic_path,
@@ -55,11 +56,13 @@ export default function CollabRecommendations() {
       workplace: c.workplace,
       openToCollab: true,
       about: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-      closestTopics: ['Topically 1', 'Topically 2', 'Topically 3']
+      closestTopics: ['Topically 1', 'Topically 2', 'Topically 3'],
+      isFollowing: following?.some((f) => f.user_id === c.profile_user_id) ?? false,
+      last: i === collabs.length - 1
     }))
   }) 
 
-  if (isLoading) {
+  if (collabsLoading || followingLoading) {
     return (
       <CollabRecommendationsSkeleton />
     )
@@ -174,9 +177,8 @@ export default function CollabRecommendations() {
               ?
               collabs?.map((c) => 
                 <CollabProfileCard 
-                  key={c.userId}
+                  key={c.collabUserId}
                   {...c}
-                  closestTopics={['Topically 1', 'Topically 2', 'Topically 3']}
                 />
               )
               : undefined
@@ -261,10 +263,9 @@ export default function CollabRecommendations() {
             ?
             collabs
             .map((c, i) => 
-              <Fragment key={c.userId}>
+              <Fragment key={c.collabUserId}>
                 <CollabProfile 
                   {...c}
-                  last={i < collabs.length - 1}
                 />
               </Fragment>
             )

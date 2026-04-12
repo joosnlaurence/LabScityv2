@@ -5,22 +5,31 @@ import PercentMatchBadge from "./percent-match-badge";
 import { IconMessageCircle, IconUserPlus } from "@tabler/icons-react";
 import classes from './collaborators.module.css'
 
+import { useToggleFollow } from "@/components/profile/use-toggle-follow";
+import { useAuthContext } from "@/components/auth/auth-provider";
+
 export default function CollabProfile (
   {
     percentMatch, 
-    userId, 
+    collabUserId, 
     firstName, 
     lastName, 
     avatarUrl, 
     occupation,
     workplace,
     openToCollab = false,
+    isFollowing,
     last,
     closestTopics
   }
   : 
   CollabProfileProps 
 ) {
+  const { user } = useAuthContext();
+
+  const { 
+    mutate: followMutate, 
+  } = useToggleFollow(collabUserId, user?.id ?? '');
   const userName = `${firstName} ${lastName}`.trim()
   const initials = `${firstName[0]}${lastName[0]}`
   const hasMiddot = occupation && workplace;
@@ -37,7 +46,7 @@ export default function CollabProfile (
       >
         <Anchor
           component={Link}
-          href={`/profile/${userId}`}
+          href={`/profile/${collabUserId}`}
           underline='never'
           miw='0'
           draggable={false}
@@ -130,6 +139,7 @@ export default function CollabProfile (
             bdrs='8px'
             p='6px 10px'
             fz='0.75rem'
+            onClick={() => followMutate()}
             className={classes.followBtn}
           >
             <Group 
@@ -138,7 +148,7 @@ export default function CollabProfile (
             >
               <IconUserPlus size='0.875rem' stroke='2.2'/>
               <Text fz='0.75rem' fw='500'>
-                Follow
+                {isFollowing ? 'Following' : 'Follow' }
               </Text>
             </Group>
           </Button>
@@ -151,7 +161,7 @@ export default function CollabProfile (
           </UnstyledButton>
         </Stack>
       </Group>
-      { last && <Divider mr='1rem' color='gray.2'/> }
+      { !last && <Divider mr='1rem' color='gray.2'/> }
     </>
   )
 };

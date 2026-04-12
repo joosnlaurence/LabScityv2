@@ -9,6 +9,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { Metadata } from "next"
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ReactQueryDevtools, ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+import { AuthProvider } from "@/components/auth/auth-provider";
 
 const inter = Inter({ subsets: ["latin"] }); // due to bundler ordering, globals.css doesnt import font; this does
 
@@ -39,11 +40,13 @@ export default function RootLayout({
 
       <body className={inter.className}>
         <QueryProvider>
-          <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} defaultColorScheme="light">
-            <ReactQueryDevtools initialIsOpen={false} position="right"/>
-            <Notifications />
-            {children}
-          </MantineProvider>
+          <AuthProvider>
+            <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} defaultColorScheme="light">
+              <ReactQueryDevtools initialIsOpen={false} position="right"/>
+              <Notifications />
+              {children}
+            </MantineProvider>
+          </AuthProvider>
         </QueryProvider>
       </body >
     </html >

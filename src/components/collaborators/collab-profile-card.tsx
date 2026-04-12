@@ -8,7 +8,7 @@ import PercentMatchBadge from "./percent-match-badge";
 export default function CollabProfileCard(
   {
     percentMatch, 
-    userId, 
+    collabUserId, 
     firstName, 
     lastName, 
     avatarUrl, 

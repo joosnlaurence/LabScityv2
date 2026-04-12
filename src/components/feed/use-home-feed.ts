@@ -398,7 +398,6 @@ export function useHomeFeed({
   };
 
   const handleToggleCommentLike = (postId: string, commentId: string) => {
-    console.log(postId);
     likeCommentMutation.mutate({ postId, commentId });
   };
 

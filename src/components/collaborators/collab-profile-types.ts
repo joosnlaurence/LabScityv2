@@ -1,6 +1,6 @@
 export interface CollabProfileProps {
   percentMatch: number;
-  userId: string;
+  collabUserId: string;
   firstName: string;
   lastName: string;
   avatarUrl?: string | null;
@@ -9,5 +9,6 @@ export interface CollabProfileProps {
   openToCollab: boolean;
   about?: string | null;
   last?: boolean;
+  isFollowing: boolean;
   closestTopics: string[];
 }
