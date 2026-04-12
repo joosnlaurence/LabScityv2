@@ -13,6 +13,7 @@ import StickyBox from 'react-sticky-box';
 import { TrendingWidget } from "@/components/sidebar/trending-widget";
 import { TrendingWidgetSkeleton } from "@/components/sidebar/trending-widget-skeleton";
 import CollabRecommendations from "@/components/collaborators/collab-recommendations";
+import classes from 'sidebar.module.css';
 
 export type HomePopularGroupsActions = {
   searchPublicGroupsAction: typeof searchPublicGroups;
@@ -81,7 +82,7 @@ export function HomeLayoutClient({
         >
 
           {/* miw={0} so the feed column can shrink; avoids stealing width from the sticky sidebar */}
-          <Flex flex={6} miw={0} maw="600">
+          <Flex flex={6} miw={0} maw={isMobile ? '100%' : '600'}>
             {children}
           </Flex>
 

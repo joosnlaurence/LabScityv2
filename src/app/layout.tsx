@@ -4,7 +4,7 @@ import "@mantine/notifications/styles.css";
 import { Inter } from "next/font/google";
 import { ColorSchemeScript, Flex, MantineProvider, Space } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
-import { theme } from "@/lib/constants/theme";
+import { theme, cssVariablesResolver } from "@/lib/constants/theme";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Metadata } from "next"
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -39,7 +39,7 @@ export default function RootLayout({
 
       <body className={inter.className}>
         <QueryProvider>
-          <MantineProvider theme={theme} defaultColorScheme="light">
+          <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} defaultColorScheme="light">
             <ReactQueryDevtools initialIsOpen={false} position="right"/>
             <Notifications />
             {children}
