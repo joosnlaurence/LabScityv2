@@ -82,4 +82,6 @@ export async function syncOpenAlexTopics(
             tag.id,
         ])
     );
+
+    console.log("hello");
 }
