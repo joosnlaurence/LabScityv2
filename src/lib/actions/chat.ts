@@ -134,9 +134,18 @@ export async function getChatsWithPreview(): Promise<
     .select("*")
     .order("last_message_at", { ascending: false });
 
-  if (error) console.log(error);
+  if (error) return { success: false, error: error.message };
 
-  return { success: true, data: data as ChatPreview[] };
+  const chatsWithUrls = (data as ChatPreview[]).map((chat) => ({
+    ...chat,
+    profile_pic_url: chat.profile_pic_url
+      ? supabase.storage
+          .from("profile_pictures")
+          .getPublicUrl(chat.profile_pic_url).data.publicUrl
+      : undefined,
+  }));
+
+  return { success: true, data: chatsWithUrls };
 }
 
 /**
@@ -342,4 +351,95 @@ export async function editMessage(
   }
 
   return { success: true, data: editedMessage as Message };
+}
+
+/**
+ * Marks a conversation as read by updating the last_read_at timestamp.
+ * Uses upsert to create or update the read status.
+ *
+ * @param conversation_id - The ID of the conversation to mark as read
+ * @returns Promise resolving to DataResponse indicating success or failure
+ *
+ * @example
+ * ```typescript
+ * const result = await markConversationAsRead(123);
+ * if (result.success) {
+ *   console.log("Conversation marked as read");
+ * }
+ * ```
+ */
+export async function markConversationAsRead(
+  conversation_id: number,
+): Promise<DataResponse<null>> {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData.user) {
+    return { success: false, error: "Authentication required" };
+  }
+
+  const { error } = await supabase.from("conversation_reads").upsert(
+    {
+      user_id: authData.user.id,
+      conversation_id,
+      last_read_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "user_id,conversation_id",
+    },
+  );
+
+  if (error) {
+    console.error("Error marking conversation as read:", error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data: null };
+}
+
+/**
+ * Retrieves all participants of a conversation with their user details.
+ *
+ * @param conversation_id - The ID of the conversation
+ * @returns Promise resolving to DataResponse containing an array of participant user details
+ */
+export async function getConversationParticipants(
+  conversation_id: number,
+): Promise<
+  DataResponse<
+    {
+      user_id: string;
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+    }[]
+  >
+> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("conversation_participants")
+    .select(`
+      user_id,
+      user:users (
+        email,
+        first_name,
+        last_name
+      )
+    `)
+    .eq("conversation_id", conversation_id);
+
+  if (error) {
+    console.error("Error fetching conversation participants:", error);
+    return { success: false, error: error.message };
+  }
+
+  const participants = (data ?? []).map((p: any) => ({
+    user_id: p.user_id,
+    email: p.user?.email ?? "",
+    first_name: p.user?.first_name ?? null,
+    last_name: p.user?.last_name ?? null,
+  }));
+
+  return { success: true, data: participants };
 }

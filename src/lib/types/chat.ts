@@ -83,7 +83,6 @@ export interface createChatResponse {
   conversation_id: number;
 }
 
-
 /**
  * Represents a chat preview shown in the sidebar.
  * Contains conversation info and the most recent message.
@@ -95,7 +94,16 @@ export interface ChatPreview {
   /** Optional custom name for the conversation (null for direct messages) */
   name?: string;
   /** Whether this is a group conversation */
-  isGroup?: boolean;
+  is_group?: boolean;
+  /** Profile picture URL (for direct messages, shows other user's avatar) */
+  profile_pic_url?: string;
   /** The most recent message in the conversation */
-  message: Message;
+  message?: {
+    id: number;
+    sender_id: string;
+    content: string;
+    created_at: string;
+  };
+  /** Number of unread messages in this conversation */
+  unread_count?: number;
 }
