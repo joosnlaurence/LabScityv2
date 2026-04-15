@@ -8,6 +8,7 @@ import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import { LSPostComposer } from "@/components/feed/ls-post-composer";
+import { PostFollowButton } from "@/components/feed/post-follow-button";
 import { useHomeFeed } from "@/components/feed/use-home-feed";
 import { ReportOverlay } from "@/components/report/report-overlay";
 
@@ -37,6 +38,8 @@ export function HomeFeed(props: HomeFeedProps) {
     handleTogglePostLike,
     handleToggleCommentLike,
     handleDeletePost,
+    handleEditPost,
+    updatePostMutation,
     currentUserId,
     fetchNextPage,
     hasNextPage,
@@ -125,6 +128,12 @@ export function HomeFeed(props: HomeFeedProps) {
             key={post.id}
             userId={post.userId}
             userName={post.userName}
+            nameRightSection={
+              <PostFollowButton
+                currentUserId={currentUserId}
+                targetUserId={post.userId}
+              />
+            }
             avatarUrl={post.avatarUrl ?? null}
             field={post.scientificField}
             timeAgo={post.timeAgo}
@@ -148,6 +157,12 @@ export function HomeFeed(props: HomeFeedProps) {
                 ? () => handleDeletePost(post.id)
                 : undefined
             }
+            onEditSubmit={
+              post.userId === currentUserId
+                ? (values) => handleEditPost(post.id, values)
+                : undefined
+            }
+            isEditPending={updatePostMutation.isPending}
             onPostClick={() => router.push(`/posts/${post.id}`)}
             shareUrl={`/posts/${post.id}`}
             audienceLabel={post.audienceLabel ?? null}
@@ -156,13 +171,11 @@ export function HomeFeed(props: HomeFeedProps) {
             {activeCommentPostId === post.id || post.comments.length > 0 ? (
               <Stack gap="md" w="100%">
                 {activeCommentPostId === post.id ? (
-                  <>
-                    <LSCommentComposer
-                      postId={post.id}
-                      onAddComment={handleAddComment}
-                      isSubmitting={createCommentMutation.isPending}
-                    />
-                  </>
+                  <LSCommentComposer
+                    postId={post.id}
+                    onAddComment={handleAddComment}
+                    isSubmitting={createCommentMutation.isPending}
+                  />
                 ) : null}
 
                 <Divider />

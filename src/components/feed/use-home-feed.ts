@@ -15,6 +15,7 @@ import {
   type CreateCommentValues,
   type CreatePostValues,
   type CreateReportValues,
+  type UpdatePostValues,
   feedFilterSchema,
 } from "@/lib/validations/post";
 import { createClient } from "@/supabase/client";
@@ -38,6 +39,7 @@ export function useHomeFeed({
   likePostAction,
   likeCommentAction,
   deletePostAction,
+  updatePostAction,
   currentUserId,
 }: HomeFeedProps) {
   const queryClient = useQueryClient();
@@ -305,6 +307,38 @@ export function useHomeFeed({
     },
   });
 
+  const updatePostMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      values,
+    }: {
+      postId: string;
+      values: UpdatePostValues;
+    }) => {
+      const result = await updatePostAction(postId, values);
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to update post");
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      notifications.show({
+        title: "Post updated",
+        message: "Your post has been saved.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: "Could not update post",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
+
   const likeCommentMutation = useMutation({
     mutationFn: async ({ commentId }: { commentId: string }) => {
       const result = await likeCommentAction(commentId);
@@ -368,6 +402,10 @@ export function useHomeFeed({
     deletePostMutation.mutate(postId);
   };
 
+  const handleEditPost = async (postId: string, values: UpdatePostValues) => {
+    await updatePostMutation.mutateAsync({ postId, values });
+  };
+
   return {
     posts,
     isFeedLoading,
@@ -390,6 +428,8 @@ export function useHomeFeed({
     handleTogglePostLike,
     handleToggleCommentLike,
     handleDeletePost,
+    handleEditPost,
+    updatePostMutation,
     currentUserId,
   };
 }

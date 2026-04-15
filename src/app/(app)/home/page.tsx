@@ -8,6 +8,7 @@ import {
   deletePost,
   likeComment,
   likePost,
+  updatePost,
 } from "@/lib/actions/feed";
 import { createClient } from "@/supabase/server";
 
@@ -31,6 +32,7 @@ export default async function HomePage() {
       likePostAction={likePost}
       likeCommentAction={likeComment}
       deletePostAction={deletePost}
+      updatePostAction={updatePost}
       currentUserId={user?.id ?? null}
     />
   );
