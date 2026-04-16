@@ -8,9 +8,9 @@ import {
 } from "@/lib/validations/publication";
 import { createClient } from "@/supabase/server";
 
-type UserPublicationRow = {
+/*  UserPublicationRow = {
     publications: any;
-}
+} */
 
 export async function createPublication(
     input: CreatePublicationValues, 
@@ -74,6 +74,7 @@ export async function createPublication(
     }
 }
 
+/*
 export async function getUserPublications(userId: string){
     const supabase = await createClient();
 
@@ -92,4 +93,4 @@ export async function getUserPublications(userId: string){
         success: true, 
         data: (data ?? []).map((row: UserPublicationRow) => row.publications),
     };
-}
+} */

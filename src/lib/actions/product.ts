@@ -84,22 +84,3 @@ export async function createProduct(
         return {success: false, error: "Failed to create product"};
     }
 } 
-
-export async function getUserProducts(userId: string){
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-        .from("user_products")
-        .select(`
-            products (*)
-        `)
-        .eq("user_id", userId)
-    if (error){
-        return { success: false, error: error.message};
-    }
-
-    return {
-        success: true,
-        data: (data ?? []).map((row) => row.products),
-    };
-}
