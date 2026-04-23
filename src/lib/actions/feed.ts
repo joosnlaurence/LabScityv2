@@ -6,9 +6,11 @@ import {
   type CreateCommentValues,
   type CreatePostValues,
   type CreateReportValues,
+  type UpdatePostValues,
   createCommentSchema,
   createPostSchema,
   createReportSchema,
+  updatePostSchema,
   type FeedFilterValues,
   feedFilterSchema,
 } from "@/lib/validations/post";
@@ -199,6 +201,52 @@ export async function deletePost(postId: string, supabaseClient?: any) {
       };
     }
     return { success: false, error: "Failed to delete post" };
+  }
+}
+
+export async function updatePost(
+  postId: string,
+  values: UpdatePostValues,
+  supabaseClient?: any,
+) {
+  try {
+    const postIdStr = String(postId);
+    idSchema.parse(postIdStr);
+    const parsed = updatePostSchema.parse(values);
+
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const { data, error } = await supabase
+      .from("posts")
+      .update({ text: parsed.content })
+      .eq("post_id", postIdStr)
+      .eq("user_id", authData.user.id)
+      .eq("taken_down", false)
+      .select("post_id")
+      .maybeSingle();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: "Post not found or not editable" };
+    }
+
+    return { success: true, data: { id: postIdStr, ...parsed } };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? "Validation failed",
+      };
+    }
+    return { success: false, error: "Failed to update post" };
   }
 }
 

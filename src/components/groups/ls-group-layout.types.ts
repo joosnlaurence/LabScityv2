@@ -5,6 +5,7 @@ import type {
   createReport,
   likeComment,
   likePost,
+  updatePost,
 } from "@/lib/actions/feed";
 import type {
   addMemberByEmail,
@@ -34,6 +35,7 @@ export type CreateCommentAction = typeof createComment;
 export type CreateReportAction = typeof createReport;
 export type LikePostAction = typeof likePost;
 export type LikeCommentAction = typeof likeComment;
+export type UpdatePostAction = typeof updatePost;
 
 export interface LSGroupLayoutProps {
   activeGroupId?: number;
@@ -52,14 +54,17 @@ export interface LSGroupLayoutProps {
   createReportAction: CreateReportAction;
   likePostAction: LikePostAction;
   likeCommentAction: LikeCommentAction;
+  updatePostAction: UpdatePostAction;
 }
 
 export interface LSGroupFeedProps {
   groupId: number;
+  currentUserId: string | null;
   createPostAction: CreatePostAction;
   createPostImageUploadUrlAction: CreatePostImageUploadUrlAction;
   createCommentAction: CreateCommentAction;
   createReportAction: CreateReportAction;
   likePostAction: LikePostAction;
   likeCommentAction: LikeCommentAction;
+  updatePostAction: UpdatePostAction;
 }

@@ -16,6 +16,7 @@ import {
   getFeed,
   likeComment,
   likePost,
+  updatePost,
 } from "@/lib/actions/feed";
 import {
   addMemberByEmail,
@@ -119,6 +120,7 @@ export default async function GroupsPage({
           createReportAction={createReport}
           likePostAction={likePost}
           likeCommentAction={likeComment}
+          updatePostAction={updatePost}
           searchPublicGroupsAction={searchPublicGroups}
           getGroupsAction={getGroups}
         />
