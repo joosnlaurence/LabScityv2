@@ -25,6 +25,7 @@
 *.pem
 *.sql
 notes.md
+.vscode/
 
 # debug
 npm-debug.log*

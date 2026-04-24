@@ -365,9 +365,10 @@ export function LSPostCard({
             <Box
               pos="relative"
               mah={600}
+              maw='100%'
               fw={600}
               style={{
-                aspectRatio: `${mediaWidth! / mediaHeight!}`,
+                aspectRatio: `${(mediaWidth ?? 1) / (mediaHeight ?? 1)}`,
                 overflow: "hidden",
                 letterSpacing: "0.3px",
               }}
