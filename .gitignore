@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 *.sql
+!supabase/migrations/*.sql
 notes.md
 .vscode/
 
