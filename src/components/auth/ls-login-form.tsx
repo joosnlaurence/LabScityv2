@@ -64,7 +64,6 @@ export function LSLoginForm({
 
   // check if we are on mobile to change some layout stuff around
   const isMobile = useIsMobile()
-
   return (
     <Paper
       miw={400}
@@ -125,10 +124,11 @@ export function LSLoginForm({
             <Controller
               name="password"
               control={form.control}
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <PasswordInput
                   {...field}
                   styles={{ input: inputStyles, root: { width: "100%" } }}
+                  error={fieldState.error?.message}
                 />
               )}
             />

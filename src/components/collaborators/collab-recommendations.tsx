@@ -42,8 +42,10 @@ export default function CollabRecommendations() {
     queryKey: ['collaborators'],
     queryFn: async () => {
       const res = await fetch('/api/collaborators');
+      if(!res.ok) throw new Error(`Failed to fetch collaborators: ${res.status}`);
+
       const data: GetCollaboratorsResult[] = await res.json();
-      
+
       return data;
     },
     select: (collabs) => collabs.map((c, i) => ({
@@ -69,7 +71,7 @@ export default function CollabRecommendations() {
   }
 
   if(error) {
-    console.error(error.message);
+    console.error(error);
   }
 
   const num_collabs = collabs?.length ?? 0;

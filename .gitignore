@@ -25,6 +25,7 @@
 *.pem
 *.sql
 !supabase/migrations/*.sql
+!supabase/seed.sql
 notes.md
 .vscode/
 
