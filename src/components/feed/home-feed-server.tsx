@@ -1,4 +1,4 @@
-import { createComment, createPost, createPostImageUploadUrl, createReport, deletePost, getFeed, likeComment, likePost } from "@/lib/actions/feed";
+import { createComment, createPost, createPostImageUploadUrl, createReport, deletePost, getFeed, likeComment, likePost, updatePost } from "@/lib/actions/feed";
 import { feedKeys } from "@/lib/query-keys";
 import { GetFeedResult } from "@/lib/types/feed";
 import { feedFilterSchema } from "@/lib/validations/post";
@@ -45,6 +45,7 @@ export default async function HomeFeedServer() {
         likeCommentAction={likeComment}
         currentUserId={user?.id ?? null}
         deletePostAction={deletePost}
+        updatePostAction={updatePost}
       />
     </HydrationBoundary>
   )
