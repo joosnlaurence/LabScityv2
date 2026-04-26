@@ -128,11 +128,13 @@ objects_path = "./seed-storage/post_images"
 public = true
 file_size_limit = "2MiB"
 allowed_mime_types = ["image/*"]
+objects_path = "./seed-storage/profile_header"
 
 [storage.buckets.profile_pictures]
 public = true
 file_size_limit = "1MiB"
 allowed_mime_types = ["image/*"]
+objects_path = "./seed-storage/profile_pictures"
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
