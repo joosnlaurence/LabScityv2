@@ -252,7 +252,7 @@ const LSAppTopBar = () => {
       align="center"
       style={{
         borderBottom: "1px solid var(--mantine-color-gray-3)",
-        zIndex: 200 /* keeps topbar above profile hero banner when scrolling */,
+        zIndex: 10 /* keeps topbar above profile hero banner when scrolling */,
       }}
     >
       {searchOpen ? (
@@ -437,7 +437,7 @@ const LSAppTopBar = () => {
             w={isMobile ? "100%" : desktopSearchDropdownSize}
             mah="60vh"
             p="sm"
-            style={{ zIndex: 99, overflowY: "auto" }}
+            style={{ zIndex: 9, overflowY: "auto" }}
           >
             {searching && (
               <Flex justify="center" py="sm">
