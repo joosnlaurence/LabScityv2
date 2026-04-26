@@ -185,7 +185,7 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 INSERT INTO "public"."profile" ("profession", "age", "about", "skill", "first_name", "user_id", "last_name", "header_pic_path", "occupation", "workplace", "articles", "banner_pic_url", "orcid", "timezone") VALUES
 	(NULL, NULL, 'I love music ', '{Other,Money,Economics}', 'Bob', '22222222-2222-4222-8222-222222222222', 'Brown', NULL, 'Postdoctoral Fellow', 'University of Central Florida', NULL, NULL, NULL, NULL),
 	(NULL, NULL, 'I am Carol Carlsen. I love planes', '{Other}', 'Carol', '33333333-3333-4333-8333-333333333333', 'Carter', NULL, 'Assistant Professor', 'University of Central Florida', NULL, NULL, NULL, NULL),
-	(NULL, NULL, 'I am Alice Anderson, and I love math!!', '{C++,Python,"Machine Learning","Data Analysis"}', 'Alice', '11111111-1111-4111-8111-111111111111', 'Anderson', '11111111-1111-4111-8111-111111111111/header-rmpc_logo.png', 'PhD Student', 'University of Central Florida', NULL, NULL, NULL, NULL);
+	(NULL, NULL, 'I am Alice Anderson, and I love math!!', '{C++,Python,"Machine Learning","Data Analysis"}', 'Alice', '11111111-1111-4111-8111-111111111111', 'Anderson', '11111111-1111-4111-8111-111111111111/header-rmpc_logo.webp', 'PhD Student', 'University of Central Florida', NULL, NULL, NULL, NULL);
 
 
 --
@@ -235,7 +235,7 @@ INSERT INTO "public"."groups" ("group_id", "name", "description", "created_at", 
 INSERT INTO "public"."users" ("first_name", "last_name", "email", "created_at", "user_id", "profile_pic_path", "is_banned", "banned_at", "banned_by") VALUES
 	('Bob', 'Bobberson', 'test2@ucf.edu', '2026-04-25 20:54:47.267116+00', '22222222-2222-4222-8222-222222222222', NULL, false, NULL, NULL),
 	('Carol', 'Carlsen', 'test3@ucf.edu', '2026-04-25 20:54:47.267116+00', '33333333-3333-4333-8333-333333333333', NULL, false, NULL, NULL),
-	('Alice', 'Anderson', 'test1@ucf.edu', '2026-04-25 20:54:47.267116+00', '11111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111111/balatro.jpeg', false, NULL, NULL);
+	('Alice', 'Anderson', 'test1@ucf.edu', '2026-04-25 20:54:47.267116+00', '11111111-1111-4111-8111-111111111111', '11111111-1111-4111-8111-111111111111/balatro.webp', false, NULL, NULL);
 
 
 --
