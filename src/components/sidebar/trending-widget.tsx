@@ -1,11 +1,9 @@
-"use client";
+'use client';
 
 import { Card, Text, Stack, Flex, Badge } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getTrendingScientificFields } from "@/lib/actions/feed";
-import { LSSpinner } from "../ui/ls-spinner";
-
 interface TrendingWidgetProps {
   hashtags?: string[];
 }
@@ -13,7 +11,6 @@ interface TrendingWidgetProps {
 export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProps) {
   const router = useRouter();
   const [hashtags, setHashtags] = useState<string[]>(initialHashtags || []);
-  const [isLoading, setIsLoading] = useState(!initialHashtags);
 
   useEffect(() => {
     if (initialHashtags) return; // Use provided hashtags if available
@@ -30,9 +27,7 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
       } catch {
         // Fallback if fetch fails
         setHashtags(Array(5).fill("#FeedMeMorePosts"));
-      } finally {
-        setIsLoading(false);
-      }
+      } 
     };
 
     fetchTrendingFields();
@@ -51,11 +46,6 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
         </Text>
 
         {/* the hashtags */}
-        {isLoading ? (
-          <Flex justify="center" py="sm">
-            <LSSpinner />
-          </Flex>
-        ) : (
           <Flex wrap="wrap" gap={6} mb="lg" justify="flex-start">
             {
               hashtags.map((hashtag, index) => (
@@ -80,7 +70,6 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
               ))
             }
           </Flex>
-        )}
       </Stack>
     </Card >
   );

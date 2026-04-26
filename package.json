@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "test": "vitest"
+    "test": "vitest",
+    "db-reset": "supabase db reset"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -20,11 +21,14 @@
     "@supabase/supabase-js": "^2.91.1",
     "@tabler/icons-react": "^3.36.1",
     "@tanstack/react-query": "^5.90.16",
+    "@tanstack/react-query-devtools": "^5.91.3",
     "dotenv": "^17.2.4",
     "next": "^16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.0",
+    "react-sticky-box": "^2.0.5",
+    "tsx": "^4.21.0",
     "zod": "^4.3.5",
     "zustand": "^5.0.9"
   },

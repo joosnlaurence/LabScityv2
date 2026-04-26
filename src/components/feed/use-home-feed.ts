@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import { getFeed } from "@/lib/actions/feed";
 import { feedKeys } from "@/lib/query-keys";
-import type { FeedPostItem, GetFeedResult } from "@/lib/types/feed";
+import type { FeedPostItem, GetFeedPaginatedResult, GetFeedResult } from "@/lib/types/feed";
 import {
   type CreateCommentValues,
   type CreatePostValues,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/validations/post";
 import { createClient } from "@/supabase/client";
 import type { HomeFeedProps } from "./home-feed.types";
+import { getImageDims } from "@/lib/utils";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 const maxPostImageBytes = 5 * 1024 * 1024;
@@ -78,10 +79,12 @@ export function useHomeFeed({
   });
 
   const createPostMutation = useMutation({
-    mutationFn: async (
-      values: CreatePostValues & { mediaFile?: File | null },
-    ) => {
-      let mediaPath: string | undefined;
+    mutationFn: async (values: CreatePostValues & { mediaFile?: File | null }) => {
+      let media: {mediaPath?: string, mediaWidth?: number, mediaHeight?: number} = {
+        mediaPath: undefined,
+        mediaWidth: undefined,
+        mediaHeight: undefined
+      };
 
       if (values.mediaFile) {
         if (!allowedImageMimeTypes.has(values.mediaFile.type)) {
@@ -112,19 +115,23 @@ export function useHomeFeed({
           throw new Error(uploadError.message || "Image upload failed");
         }
 
-        mediaPath = uploadInfo.data.path;
+        media.mediaPath = uploadInfo.data.path;
+        const { width, height } = await getImageDims(values.mediaFile);
+        media.mediaWidth = width;
+        media.mediaHeight = height;
       }
 
       const payload = {
         scientificField: values.scientificField,
         content: values.content,
         category: values.category,
-        mediaPath,
+        ...media,
       };
       const result = await createPostAction(payload);
       if (!result.success) {
         throw new Error(result.error ?? "Failed to create post");
       }
+      
       return result;
     },
     onSuccess: () => {
@@ -340,17 +347,48 @@ export function useHomeFeed({
   });
 
   const likeCommentMutation = useMutation({
-    mutationFn: async ({ commentId }: { commentId: string }) => {
+    mutationFn: async ({ postId, commentId }: { postId: string, commentId: string }) => {
       const result = await likeCommentAction(commentId);
       if (!result.success) {
         throw new Error(result.error ?? "Failed to update like");
       }
       return result;
     },
+    onMutate: async ({ postId, commentId }, context) => {
+      await context.client.cancelQueries({ queryKey: feedKeys.list(defaultFeedFilter) });
+      const snapshot = context.client.getQueryData<GetFeedResult>(feedKeys.list(defaultFeedFilter));
+      context.client.setQueryData<GetFeedPaginatedResult>(feedKeys.list(defaultFeedFilter), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({ 
+            ...page,
+            posts: page.posts.map((p) =>
+              p.id === postId
+                ? 
+                {
+                  ...p,
+                  comments: p.comments.map((c) => 
+                    c.id === commentId
+                      ? {...c, isLiked: !c.isLiked}
+                      : c
+                  ) 
+                }
+                : p
+              ),
+          }))
+        };
+      });
+      return { snapshot };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
-    onError: (error) => {
+    onError: (error, _variables, onMutateResult, context) => {
+      if(onMutateResult?.snapshot) {
+        context.client.setQueryData(feedKeys.list(defaultFeedFilter), onMutateResult.snapshot)
+      }
+      console.error(error);
       notifications.show({
         title: "Could not update like",
         message:
@@ -394,8 +432,7 @@ export function useHomeFeed({
   };
 
   const handleToggleCommentLike = (postId: string, commentId: string) => {
-    void postId;
-    likeCommentMutation.mutate({ commentId });
+    likeCommentMutation.mutate({ postId, commentId });
   };
 
   const handleDeletePost = (postId: string) => {

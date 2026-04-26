@@ -212,8 +212,8 @@ const LSProfileMobileLayout = ({
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      actions.handleToggleCommentLike(commentId)
+                    onLikeClick={() =>
+                      actions.handleToggleCommentLike({postId, commentId: comment.id})
                     }
                     showMenu={false}
                   />
@@ -361,7 +361,6 @@ const LSProfileDesktopLayout = ({
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
     const comments = post.comments ?? [];
-
     return (
       <li key={postId}>
         <LSPostCard
@@ -392,6 +391,8 @@ const LSProfileDesktopLayout = ({
           }
           isEditPending={actions.updatePostMutation.isPending}
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
+          mediaHeight={post.media_height}
+          mediaWidth={post.media_width}
           shareUrl={`/posts/${post.post_id}`}
         >
           <Stack gap="md" w="100%">
@@ -410,8 +411,8 @@ const LSProfileDesktopLayout = ({
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      actions.handleToggleCommentLike(commentId)
+                    onLikeClick={() =>
+                      actions.handleToggleCommentLike({postId, commentId: comment.id})
                     }
                     showMenu={false}
                   />
