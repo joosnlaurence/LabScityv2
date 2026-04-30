@@ -38,7 +38,7 @@ export async function createPublication(
                 title: parsed.title,
                 doi_link: parsed.doi ?? null,
                 journal: parsed.journal ?? null,
-                date_published: parsed.date_published ?? null,
+                date_published: parsed.datePublished ?? null,
                 authors: parsed.authors,
             })
             .select()

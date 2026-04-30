@@ -9,7 +9,7 @@ export async function GET() {
     title: "Second Test Publication",
     doi: "12.1000/test-doi2",
     journal: "Test Journal",
-    date_published: "2025-01-01",
+    datePublished: "2025-01-01",
     authors: ["Barbara Sharanowski", "Jane Smith"]
   });
 

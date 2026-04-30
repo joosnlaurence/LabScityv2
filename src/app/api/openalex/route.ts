@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     { status: 500 }
   );
 
-  const tagMap = new Map((tagRows ?? []).map((tag: any) => [tag.openalex_id, tag.id]));
+  const tagMap = new Map<string, number>((tagRows ?? []).map((tag: any) => [tag.openalex_id, tag.id]));
 
 
   const profileTags = topics

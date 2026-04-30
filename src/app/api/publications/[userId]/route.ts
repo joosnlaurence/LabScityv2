@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/supabase/server";
-import type { ApiResponse, Publication } from "@/lib/types/api";
+import type { ApiResponse } from "@/lib/types/api";
+import type { Publication } from "@/lib/types/publication";
 
 // this api is used to get any user's publications using their user id 
 export async function GET(

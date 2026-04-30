@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Divider, Flex, Stack } from "@mantine/core";
+import { Box, Button, Divider, Flex, Stack, Tabs } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -62,6 +62,9 @@ import type {
   updateOwnProfilePicture,
   updateProfileAction,
 } from "@/lib/actions/profile";
+import LSPublication from "./publications/ls-publication";
+import { Publication } from "@/lib/types/publication";
+import { useAuthContext } from "../auth/auth-provider";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -424,6 +427,24 @@ const LSProfileDesktopLayout = ({
       </li>
     );
   });
+  
+  const publications: Publication[] = Array.from({ length: 3 }).map((_, i) => ({
+    publication_id: i,
+    title: 'Phylogenomic Evidence Overturns Current Conceptions of Social Evolution in Wasps (Vespidae)',
+    doi_link: 'doi.org/10.1093/molbev/msy124',
+    is_oa: true,  
+    journal: 'Molecular Biology and Evolution',
+    date_published: '2018-6-19',
+    authors: ['Patrick K Piekarski', 'James M Carpenter', 'Alan R Lemmon', 'Emily Moriarty Lemmon', 'Barbara J Sharanowski'],
+    type: 'journal_article',
+    preview_path: 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/mbe/35/9/10.1093_molbev_msy124/1/m_msy124f1.jpeg?Expires=1839280244&Signature=dY9~wOXH22PfBt0D6A13aNJCgvV8A1XwXyi0bpnRqo~B88Mq9l22HEhNzy-nLzq4WFmcry6a7r3IUPUOV6o35HZVn9yxo2nUXhawhS5Lgf4aWv~UG1drZQwEJCGv2Cb8hWyvwsmzJWOQ8sXkGMbHz--JGM2dW8~RXYXYss-CZg7f7ZB0meLx0dsa8G6DlLErAUeQgANdbxfLdCKh4uvK~n9rJX5a25uihlNo9HysOcrMgNZGFKek3~wLy-uNDUCf-ySLiJ-tIqFnI~eSUM~6WcO6jH91a83VRTbeRXFNkrIz8bifDPb57DwCdRg2fzdstrVs7xVmZnHbNkoMK1ubmA__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA',
+    is_featured: true,
+    topics: ['Insect and Arachnid Ecology and Behavior', 'Animal Behavior and Reproduction', 'Plant and animal studies'],
+    pdf_url: 'https://academic.oup.com/mbe/article-pdf/35/9/2097/25534538/msy124.pdf'
+  }));
+
+  const { user } = useAuthContext();
+  const ownsPub = user?.id === userId;
 
   return (
     <Box py={24} px={80}>
@@ -481,29 +502,79 @@ const LSProfileDesktopLayout = ({
           </Box>
         </Flex>
       </Flex>
-      <Divider my={20} color="navy.1" />
-      <Stack mt={20} px="20%">
-        <Stack
-          component="ul"
-          gap="lg"
-          w="100%"
-          style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}
-        >
-          {listPosts}
-        </Stack>
-        {hasNextPage ? (
-          <Button
-            variant="subtle"
-            color="navy"
-            size="sm"
-            radius="xl"
-            onClick={() => userPostsQuery.fetchNextPage()}
-            loading={isFetchingNextPage}
-          >
-            Load more posts
-          </Button>
-        ) : null}
-      </Stack>
+      
+      <Divider mt={20} color="navy.1" />
+      <Tabs defaultValue='posts' activateTabWithKeyboard={false}
+        styles={{
+          panel: {
+            display: 'flex',
+            justifyContent: 'center'
+          }
+        }}
+      >
+
+        <Tabs.List mb={20} grow justify='center'>
+          <Tabs.Tab value='posts'>
+            Posts
+          </Tabs.Tab>
+          <Tabs.Tab value='publications'>
+            Publications
+          </Tabs.Tab>
+          <Tabs.Tab value='products'>
+            Research Products
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value='posts'>
+          <Stack w='100%' maw='600'>
+            <Stack
+              component="ul"
+              gap="lg"
+              w="100%"
+              style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}
+            >
+              {listPosts}
+            </Stack>
+            {hasNextPage ? (
+              <Button
+                variant="subtle"
+                color="navy"
+                size="sm"
+                radius="xl"
+                onClick={() => userPostsQuery.fetchNextPage()}
+                loading={isFetchingNextPage}
+              >
+                Load more posts
+              </Button>
+            ) : null}
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value='publications'>
+          <Stack w='800'>
+          {
+            publications 
+            ? 
+            publications.map((pub, i) => 
+              <LSPublication 
+                key={i}
+                pub={pub}
+                isOwner={ownsPub}
+              />
+            )
+            :
+            <>
+              No Publications found
+            </>
+          }
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value='products'>
+          Products
+        </Tabs.Panel>
+
+      </Tabs>
     </Box>
   );
 };
