@@ -17,7 +17,8 @@ import {
   UnstyledButton, 
   AspectRatio,
   Modal,
-  Textarea
+  Textarea,
+  Spoiler
  } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
@@ -33,7 +34,7 @@ import {
   IconShare3,
   IconTrash,
 } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Props for LSPostCard.
@@ -137,6 +138,8 @@ export function LSPostCard({
   ] = useDisclosure(false);
   const [editOpen, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   const [draftContent, setDraftContent] = useState(content);
+
+  const spoilerControlRef = useRef<HTMLButtonElement>(null);
 
   const initials = userName
     .split(" ")
@@ -245,10 +248,12 @@ export function LSPostCard({
             </Button>
             <Button
               color="red"
-              onClick={() => {
-                closeConfirmDelete();
-                onDeleteClick?.();
-              }}
+              onClick={
+                noPropagate(() => {
+                  closeConfirmDelete();
+                  onDeleteClick?.();
+                })
+              }
             >
               Delete
             </Button>
@@ -325,7 +330,7 @@ export function LSPostCard({
                       {onEditSubmit ? (
                         <Menu.Item
                           leftSection={<IconEdit size={14} />}
-                          onClick={openEdit}
+                          onClick={noPropagate(openEdit)}
                         >
                           Edit post
                         </Menu.Item>
@@ -336,7 +341,7 @@ export function LSPostCard({
                           <Menu.Item
                             color="red"
                             leftSection={<IconTrash size={14} />}
-                            onClick={openConfirmDelete}
+                            onClick={noPropagate(openConfirmDelete)}
                           >
                             Delete post
                           </Menu.Item>
@@ -344,7 +349,7 @@ export function LSPostCard({
                         </>
                       ) : null}
                       {onReportClick ? (
-                        <Menu.Item onClick={onReportClick}>Report</Menu.Item>
+                        <Menu.Item onClick={noPropagate(onReportClick)}>Report</Menu.Item>
                       ) : null}
                     </Menu.Dropdown>
                   </Menu>
@@ -353,13 +358,32 @@ export function LSPostCard({
             </Group>
           </Box>
         
-          <Text
-            fz="sm"
-            c="navy.7"
-            style={{ wordBreak: "break-word" }}
+          <Box
+            onClick={(e) => {
+              if (spoilerControlRef.current?.contains(e.target as Node)) {
+                e.stopPropagation();
+              }
+            }}
           >
-            {content}
-          </Text>
+            <Spoiler
+              controlRef={spoilerControlRef}
+              fz="sm"
+              c="navy.7"
+              maxHeight={176} // Enough for about 8 lines worth of content
+              showLabel='Show more'
+              hideLabel='Hide'
+              style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
+              styles={{
+                control: {
+                  color: 'var(--mantine-color-indigo-7)',
+                  fontSize: 'var(--mantine-font-size-sm)',
+                  fontWeight: 600
+                }
+              }}
+            >
+              {content}
+            </Spoiler>
+          </Box>
 
           {mediaUrl ? (
             <Box
