@@ -93,8 +93,9 @@ export function LSPostCommentCard({
             style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
             styles={{
               control: {
-                // color: 'var(--mantine-color-indigo-7)',
+                color: 'var(--mantine-color-indigo-7)',
                 fontSize: 'var(--mantine-font-size-sm)',
+                fontWeight: 600
               }
             }}
           >

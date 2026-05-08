@@ -22,11 +22,11 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
           setHashtags(result.data.hashtags);
         } else {
           // Fallback if fetch fails
-          setHashtags(Array(5).fill("#FeedMeMorePosts"));
+          setHashtags(Array(5).fill("FeedMeMorePosts"));
         }
       } catch {
         // Fallback if fetch fails
-        setHashtags(Array(5).fill("#FeedMeMorePosts"));
+        setHashtags(Array(5).fill("FeedMeMorePosts"));
       } 
     };
 
@@ -65,7 +65,7 @@ export function TrendingWidget({ hashtags: initialHashtags }: TrendingWidgetProp
                   }
                   aria-label={`Search for ${hashtag}`}
                 >
-                  {hashtag}
+                  #{hashtag}
                 </Badge>
               ))
             }

@@ -349,7 +349,7 @@ export function LSPostCard({
                         </>
                       ) : null}
                       {onReportClick ? (
-                        <Menu.Item onClick={onReportClick}>Report</Menu.Item>
+                        <Menu.Item onClick={noPropagate(onReportClick)}>Report</Menu.Item>
                       ) : null}
                     </Menu.Dropdown>
                   </Menu>
@@ -375,8 +375,9 @@ export function LSPostCard({
               style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
               styles={{
                 control: {
-                  // color: 'var(--mantine-color-indigo-7)',
-                  fontSize: 'var(--mantine-font-size-sm)'
+                  color: 'var(--mantine-color-indigo-7)',
+                  fontSize: 'var(--mantine-font-size-sm)',
+                  fontWeight: 600
                 }
               }}
             >

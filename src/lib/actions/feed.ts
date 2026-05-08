@@ -830,12 +830,12 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
     const topFields = fieldRankings
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
-      .map(({ field }) => `#${field}`);
+      .map(({ field }) => `${field}`);
 
     // Fill remaining slots with #FeedMeMorePosts if fewer than 5 fields
     const hashtags = [
       ...topFields,
-      ...Array(Math.max(0, 5 - topFields.length)).fill("#FeedMeMorePosts"),
+      ...Array(Math.max(0, 5 - topFields.length)).fill("FeedMeMorePosts"),
     ];
 
     return { success: true, data: { hashtags } };

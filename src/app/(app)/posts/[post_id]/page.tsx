@@ -22,7 +22,8 @@ import {
 } from "@/lib/actions/feed";
 import { feedKeys, postKeys } from "@/lib/query-keys";
 import { feedFilterSchema, type CreateReportValues, type UpdatePostValues } from "@/lib/validations/post";
-import { FeedPostItem, GetFeedResult, GetPostDetailResult } from "@/lib/types/feed";
+import { FeedPostItem, GetFeedPaginatedResult, GetFeedResult, GetPostDetailResult } from "@/lib/types/feed";
+import { keyof } from "zod";
 
 const defaultFeedFilter = feedFilterSchema.parse({});
 
@@ -45,8 +46,55 @@ export default function PostDetailPage() {
   >(null);
 
   /** Refetches post detail after successful like or comment so counts and list stay in sync. */
-  const invalidate = () =>
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: postKeys.detail(post_id) });
+    queryClient.invalidateQueries({ queryKey: feedKeys.all });
+  }
+
+  const optimisticPostUpdate = async (
+    detailUpdater: (post: FeedPostItem) =>  FeedPostItem,
+    feedUpdater: (post: FeedPostItem) =>  FeedPostItem = detailUpdater
+  ) => {
+    await queryClient.cancelQueries({ queryKey: postKeys.detail(post_id) });
+    await queryClient.cancelQueries({ queryKey: feedKeys.all });
+
+    console.log(feedKeys.all);
+
+    const detailSnapshot = queryClient.getQueryData<GetPostDetailResult>(postKeys.detail(post_id));
+    const feedSnapshots = queryClient.getQueriesData<GetFeedPaginatedResult>({ queryKey: feedKeys.all });
+
+    queryClient.setQueryData<GetPostDetailResult>(
+      postKeys.detail(post_id),
+      (old) => (old ? { ...old, data: detailUpdater(old.data) }: old)
+    )
+
+    queryClient.setQueriesData<GetFeedPaginatedResult>({ queryKey: feedKeys.all }, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page) => ({
+          ...page,
+          posts: page.posts.map((p) =>
+            p.id === post_id ? feedUpdater(p) : p,
+          ) 
+        }))
+      }
+    })
+
+    return { detailSnapshot, feedSnapshots }
+  }
+
+  const rollback = (context: Awaited<ReturnType<typeof optimisticPostUpdate>>) => {
+    if(context.detailSnapshot) {
+      queryClient.setQueryData<GetPostDetailResult>(
+        postKeys.detail(post_id), 
+        context.detailSnapshot
+      );
+    }
+    context.feedSnapshots?.forEach(([key, data]) => 
+      queryClient.setQueryData<GetFeedPaginatedResult>(key, data)
+    )
+  }
 
   const createCommentMutation = useMutation({
     mutationFn: async ({
@@ -80,26 +128,14 @@ export default function PostDetailPage() {
       }
       return result;
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: postKeys.detail(post_id) });
-      const snapshot = queryClient.getQueryData<GetPostDetailResult>(postKeys.detail(post_id));
-      queryClient.setQueryData<GetPostDetailResult>(postKeys.detail(post_id), (old) => {
-        if (!old) return old;
-        const post = old.data;
-        return {
-          ...old,
-          data: {
-            ...post,
-            isLiked: !post.isLiked, likeCount: (post.likeCount ?? 0) + (post.isLiked ? -1 : 1)
-          }
-        };
-      });
-      return { snapshot };
-    },
-    onError: (error, _postId, context) => {
-      if (context?.snapshot) {
-        queryClient.setQueryData(postKeys.detail(post_id), context.snapshot);
-      }
+    onMutate: () => 
+      optimisticPostUpdate((post) => ({
+        ...post,
+        isLiked: !post.isLiked,
+        likeCount: (post.likeCount ?? 0) + (post.isLiked ? -1 : 1),
+      })),
+    onError: (error, _vars, context) => {
+      if (context) rollback(context);
       notifications.show({
         title: "Could not update like",
         message:
@@ -107,10 +143,7 @@ export default function PostDetailPage() {
         color: "red",
       });
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      invalidate();
-    },
+    onSettled: invalidate
   });
 
   const likeCommentMutation = useMutation({
