@@ -1,18 +1,21 @@
-import { createProduct} from "@/lib/actions/product";
 import { NextResponse } from "next/server";
-
-// this is just for testing
-
+import { createProduct } from "@/lib/actions/product";
 
 export async function GET() {
-  const result = await createProduct({
-    title: "Second test Product",
-    short_summary: "Second product for LabScity",
-    website_link: "https://testwebsite.com",
-    publication_id: 2,
-  });
+    const result = await createProduct({
+        title: "Local Test Product",
+        short_summary: "This is a test product!!.",
+        website_link: "https://testtesttest.com",
+        publication_id: 1,
+        image_path: undefined,
+        github_link: "https://github.com/example/test-product",
+        other_links: ["https://example.com/docs"],
+        contributors: ["Hannah Sands"],
+        is_featured: false,
+        product_type: "tool",
+    });
 
-  return NextResponse.json(result);
+    return NextResponse.json(result);
 }
 
 

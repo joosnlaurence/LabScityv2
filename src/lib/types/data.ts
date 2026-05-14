@@ -31,6 +31,32 @@ export interface Group {
   rules: string | null;
 }
 
+export interface Product {
+  product_id: number;
+  title: string;
+  short_summary: string | null;
+  website_link: string | null;
+  publication_id: number | null;
+  image_path: string | null;
+  github_link: string | null;
+  other_links: string[] | null;
+  contributors: string[] | null;
+  is_featured: boolean | null;
+  product_type: string | null;
+}
+
+export interface Publication {
+  publication_id: number;
+  title: string;
+  doi_link: string | null;
+  journal: string | null;
+  date_published: string | null;
+  authors: string[] | null;
+  preview_path: string | null;
+  is_oa: boolean;
+  pdf_url: string | null;
+  type: string | null;
+}
 /** Extended post with optional author information */
 export interface PostWithAuthor extends Post {
   author?: {

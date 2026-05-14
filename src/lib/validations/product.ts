@@ -20,7 +20,33 @@ export const createProductSchema = z.object({
         .positive()
         .optional(),
 
-    //picture
+    image_path: z
+        .string()
+        .optional(),
+
+    github_link: z
+        .string()
+        .optional(),
+
+    other_links: z
+        .array(z.string())
+        .optional(),
+
+    contributors: z
+        .array(z.string())
+        .optional(),
+
+    is_featured: z
+        .boolean()
+        .optional(),
+
+    product_type: z
+        .string()
+        .optional(),
+    
 });  
 
+export const updateProductSchema = createProductSchema.partial(); // partial because users might only update one field
+
 export type CreateProductValues = z.infer<typeof createProductSchema>;
+export type UpdateProductValues = z.infer<typeof updateProductSchema>;

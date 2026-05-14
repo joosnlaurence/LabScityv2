@@ -1,32 +1,22 @@
 "use server";
 
 import { z } from "zod";
-
+import { createClient } from "@/supabase/server";
 import {
     createPublicationSchema,
     type CreatePublicationValues,
 } from "@/lib/validations/publication";
-import { createClient } from "@/supabase/server";
 
-/*  UserPublicationRow = {
-    publications: any;
-} */
+import type { DataResponse, Publication } from "@/lib/types/data";
 
 export async function createPublication(
-    input: CreatePublicationValues, 
-    supabaseClient?: any
-){
+  input: CreatePublicationValues
+): Promise<DataResponse<Publication>> {
     try {
         const parsed = createPublicationSchema.parse(input);
-
-        const supabase = supabaseClient ?? (await createClient());
+        const supabase = await createClient();
         
-        const authData = {
-            user: { id: "b798c0c3-bd97-4595-8ac1-d05029206303"}
-        };
-
-        //commenting out for now for local testing
-        //const { data: authData } = await supabase.auth.getUser();
+        const { data: authData } = await supabase.auth.getUser();
 
         if (!authData.user){
             return { success: false, error: "Authentication required"}
@@ -36,32 +26,37 @@ export async function createPublication(
             .from("publications")
             .insert({
                 title: parsed.title,
-                doi_link: parsed.doi ?? null,
-                journal: parsed.journal ?? null,
+                doi_link: parsed.doi || null,
+                journal: parsed.journal || null,
                 date_published: parsed.date_published ?? null,
-                authors: parsed.authors,
+                authors: parsed.authors ?? null,
+                preview_path: parsed.preview_path ?? null,
+                is_oa: parsed.is_oa ?? false,
+                pdf_url: parsed.pdf_url || null,
+                type: parsed.type ?? "other",
             })
             .select()
             .single();
 
-            if(publicationError){
-                return { success: false, error: publicationError.message}
-            }
+        if(publicationError){
+            return { success: false, error: publicationError.message}
+        }
 
-            const { error: linkError } = await supabase.from("user_publications").insert({
+        const { error: linkError } = await supabase
+            .from("user_publications")
+            .insert({
                 user_id: authData.user.id,
                 publication_id: publication.publication_id
             });
 
-            if(linkError){
-                return { success: false, error: linkError.message };
-            }
+        if(linkError){
+            return { success: false, error: linkError.message };
+        }
 
-            return {
-                success: true,
-                data: publication,
-            };
-
+        return {
+            success: true,
+            data: publication,
+        };
 
     } catch (error ){
         if(error instanceof z.ZodError){
@@ -73,24 +68,3 @@ export async function createPublication(
         return {success: false, error: "Failed to create publication"};
     }
 }
-
-/*
-export async function getUserPublications(userId: string){
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-        .from("user_publications")
-        .select(`
-            publications (*)
-        `)
-        .eq("user_id", userId);
-
-    if (error){
-        return { success: false, error: error.message };
-    }
-
-    return {
-        success: true, 
-        data: (data ?? []).map((row: UserPublicationRow) => row.publications),
-    };
-} */

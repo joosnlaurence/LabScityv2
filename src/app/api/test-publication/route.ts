@@ -1,25 +1,16 @@
-import { createPublication } from "@/lib/actions/publication";
 import { NextResponse } from "next/server";
-
-// this is just for testing
-
+import { createPublication } from "@/lib/actions/publication";
 
 export async function GET() {
-  const result = await createPublication({
-    title: "Second Test Publication",
-    doi: "12.1000/test-doi2",
-    journal: "Test Journal",
-    date_published: "2025-01-01",
-    authors: ["Barbara Sharanowski", "Jane Smith"]
-  });
+    const result = await createPublication({
+        title: "Local Test Publication",
+        doi: "10.1000/test",
+        journal: "Test Journal",
+        date_published: "2024-01-01",
+        authors: ["Alice Anderson", "Hannah Sans"],
+        is_oa: false,
+        type: "other",
+    });
 
-  return NextResponse.json(result);
-}
-
-/*
-export async function GET(){
-    const result = await getUserPublications(
-        "b798c0c3-bd97-4595-8ac1-d05029206303"
-    )
     return NextResponse.json(result);
-}*/
+}
