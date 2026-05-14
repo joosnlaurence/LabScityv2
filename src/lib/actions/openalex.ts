@@ -1,5 +1,4 @@
 "use server"
-
 import { createClient } from "@/supabase/server";
 
 interface OpenAlexTopic {
@@ -9,6 +8,7 @@ interface OpenAlexTopic {
 
 interface OpenAlexAuthor {
     topics?: OpenAlexTopic[];
+    works_count?: number;
 }
 
 interface OpenAlexResponse {
@@ -27,7 +27,7 @@ interface TagRow {
 }
 
 export async function syncOpenAlexTopics(
-    orcid: string, 
+    orcid: string,
     profile_user_id: string
 ): Promise<ActionResponse> {
     const cleanOrcid = String(orcid ?? "").trim();
@@ -53,11 +53,7 @@ export async function syncOpenAlexTopics(
     }
 
     const topics: OpenAlexTopic[] = author.topics ?? [];
-
-    // transform
-    const totalTopicCount: number = topics.reduce(
-        (sum: number, topic: OpenAlexTopic) => sum + topic.count, 0
-    );
+    const worksCount: number = author.works_count ?? 0;
 
     const cleanedTopicIds: string[] = topics.map((topic: OpenAlexTopic) =>
         topic.id.replace("https://openalex.org/", "")
@@ -71,7 +67,7 @@ export async function syncOpenAlexTopics(
         .select("id, openalex_id")
         .in("openalex_id", cleanedTopicIds)
         .eq("level", 3);
-    
+   
     if(tagError){
         return { success: false, error: tagError.message };
     }
@@ -83,5 +79,34 @@ export async function syncOpenAlexTopics(
         ])
     );
 
-    console.log("hello");
+    const profileTags = topics
+        .map((topic: OpenAlexTopic) => {
+            const cleanId = topic.id.replace("https://openalex.org/", "");
+            const tagId = tagMap.get(cleanId);
+            if(!tagId) return null;
+            
+            return {
+                profile_user_id,
+                tag_id: tagId,
+                raw_count: topic.count,
+                weight: worksCount > 0 ? topic.count / worksCount : 0
+            };
+        })
+        .filter(Boolean);
+
+
+    const { error: profileTagsErr } = await supabase
+        .from("profile_tags")
+        .upsert(profileTags, {
+            onConflict: "profile_user_id,tag_id",
+        });
+
+    if (profileTagsErr) {
+        return { success: false, error: profileTagsErr.message };
+    }
+
+    return {
+        success: true,
+        topicsInserted: profileTags.length,
+    };
 }
