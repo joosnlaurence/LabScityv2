@@ -10,6 +10,7 @@ import {
   type CreateCommentValues,
   type CreatePostValues,
   type CreateReportValues,
+  type UpdatePostValues,
   feedFilterSchema,
 } from "@/lib/validations/post";
 import { createClient } from "@/supabase/client";
@@ -30,12 +31,14 @@ const postMediaBucket = "post_images";
  */
 export function useGroupFeed({
   groupId,
+  currentUserId,
   createPostAction,
   createPostImageUploadUrlAction,
   createCommentAction,
   createReportAction,
   likePostAction,
   likeCommentAction,
+  updatePostAction,
 }: LSGroupFeedProps) {
   const queryClient = useQueryClient();
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -233,7 +236,7 @@ export function useGroupFeed({
 
   const likeCommentMutation = useMutation({
     mutationFn: async ({
-      postId,
+      postId: _postId,
       commentId,
     }: {
       postId: string;
@@ -253,6 +256,40 @@ export function useGroupFeed({
     onError: (error) => {
       notifications.show({
         title: "Could not update like",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
+
+  const updatePostMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      values,
+    }: {
+      postId: string;
+      values: UpdatePostValues;
+    }) => {
+      const result = await updatePostAction(postId, values);
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to update post");
+      }
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: groupKeys.feed(groupId, groupFeedFilter),
+      });
+      notifications.show({
+        title: "Post updated",
+        message: "Your post has been saved.",
+        color: "green",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: "Could not update post",
         message:
           error instanceof Error ? error.message : "Something went wrong",
         color: "red",
@@ -290,10 +327,16 @@ export function useGroupFeed({
   };
 
   const handleToggleCommentLike = (postId: string, commentId: string) => {
+    void postId;
     likeCommentMutation.mutate({ postId, commentId });
   };
 
+  const handleEditPost = async (postId: string, values: UpdatePostValues) => {
+    await updatePostMutation.mutateAsync({ postId, values });
+  };
+
   return {
+    currentUserId,
     posts,
     isFeedLoading,
     isFeedError,
@@ -311,5 +354,7 @@ export function useGroupFeed({
     handleAddComment,
     handleTogglePostLike,
     handleToggleCommentLike,
+    handleEditPost,
+    updatePostMutation,
   };
 }

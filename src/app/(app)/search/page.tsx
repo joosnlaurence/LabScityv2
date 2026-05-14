@@ -13,7 +13,9 @@ import {
 } from "@mantine/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/auth/use-auth";
 import { LSPostCard } from "@/components/feed/ls-post-card";
+import { PostFollowButton } from "@/components/feed/post-follow-button";
 import { usePostDetail } from "@/components/feed/use-post-detail";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import { searchUserContent } from "@/lib/actions/data";
@@ -39,7 +41,13 @@ function SearchSection({
   );
 }
 
-function SearchPostResult({ postId }: { postId: string }) {
+function SearchPostResult({
+  postId,
+  currentUserId,
+}: {
+  postId: string;
+  currentUserId: string | null;
+}) {
   const router = useRouter();
   const { data, isLoading, isError } = usePostDetail(postId);
 
@@ -67,6 +75,12 @@ function SearchPostResult({ postId }: { postId: string }) {
     <LSPostCard
       userId={post.userId}
       userName={post.userName}
+      nameRightSection={
+        <PostFollowButton
+          currentUserId={currentUserId}
+          targetUserId={post.userId}
+        />
+      }
       avatarUrl={post.avatarUrl ?? null}
       field={post.scientificField}
       timeAgo={post.timeAgo}
@@ -85,6 +99,7 @@ function SearchPostResult({ postId }: { postId: string }) {
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const query = searchParams.get("q")?.trim() ?? "";
 
   const [results, setResults] = useState<searchResult[]>([]);
@@ -232,6 +247,7 @@ export default function SearchPage() {
                     <SearchPostResult
                       key={`post-${result.id}`}
                       postId={result.id}
+                      currentUserId={user?.id ?? null}
                     />
                   ))}
                 </SearchSection>

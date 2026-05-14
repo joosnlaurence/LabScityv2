@@ -61,6 +61,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
     createReportAction,
     likePostAction,
     likeCommentAction,
+    updatePostAction,
   } = props;
 
   const isMobile = useIsMobile();
@@ -256,12 +257,14 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
         <Box px={8}>
           <LSGroupFeed
             groupId={activeGroupId}
+            currentUserId={user?.id ?? null}
             createPostAction={createPostAction}
             createPostImageUploadUrlAction={createPostImageUploadUrlAction}
             createCommentAction={createCommentAction}
             createReportAction={createReportAction}
             likePostAction={likePostAction}
             likeCommentAction={likeCommentAction}
+            updatePostAction={updatePostAction}
           />
         </Box>
       </Stack>

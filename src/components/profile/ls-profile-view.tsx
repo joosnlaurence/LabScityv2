@@ -39,6 +39,7 @@ import type {
   DeletePostAction,
   LikeCommentAction,
   LikePostAction,
+  UpdatePostAction,
 } from "@/components/feed/home-feed.types";
 import type {
   EditProfileHeroProps,
@@ -105,6 +106,7 @@ export interface LSProfileViewProps {
   likePostAction: LikePostAction;
   likeCommentAction: LikeCommentAction;
   deletePostAction: DeletePostAction;
+  updatePostAction: UpdatePostAction;
 }
 
 /** Props for mobile layout — single-column stack of hero, posts, friends, following. */
@@ -149,9 +151,7 @@ const LSProfileMobileLayout = ({
   const friends = friendsQuery.data;
 
   const friendIds = new Set(friends?.map((friend) => friend.user_id));
-  const notFollowedBack = following?.filter(
-    (u) => !friendIds.has(u.user_id),
-  );
+  const notFollowedBack = following?.filter((u) => !friendIds.has(u.user_id));
 
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
     null,
@@ -187,6 +187,12 @@ const LSProfileMobileLayout = ({
           onDeleteClick={
             isOwnProfile ? () => actions.handleDeletePost(postId) : undefined
           }
+          onEditSubmit={
+            isOwnProfile
+              ? (values) => actions.handleEditPost(postId, values)
+              : undefined
+          }
+          isEditPending={actions.updatePostMutation.isPending}
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
           shareUrl={`/posts/${post.post_id}`}
         >
@@ -206,8 +212,8 @@ const LSProfileMobileLayout = ({
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      actions.handleToggleCommentLike(commentId)
+                    onLikeClick={() =>
+                      actions.handleToggleCommentLike({postId, commentId: comment.id})
                     }
                     showMenu={false}
                   />
@@ -355,7 +361,6 @@ const LSProfileDesktopLayout = ({
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
     const comments = post.comments ?? [];
-
     return (
       <li key={postId}>
         <LSPostCard
@@ -379,7 +384,15 @@ const LSProfileDesktopLayout = ({
           onDeleteClick={
             isOwnProfile ? () => actions.handleDeletePost(postId) : undefined
           }
+          onEditSubmit={
+            isOwnProfile
+              ? (values) => actions.handleEditPost(postId, values)
+              : undefined
+          }
+          isEditPending={actions.updatePostMutation.isPending}
           onPostClick={() => router.push(`/posts/${post.post_id}`)}
+          mediaHeight={post.media_height}
+          mediaWidth={post.media_width}
           shareUrl={`/posts/${post.post_id}`}
         >
           <Stack gap="md" w="100%">
@@ -398,8 +411,8 @@ const LSProfileDesktopLayout = ({
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      actions.handleToggleCommentLike(commentId)
+                    onLikeClick={() =>
+                      actions.handleToggleCommentLike({postId, commentId: comment.id})
                     }
                     showMenu={false}
                   />

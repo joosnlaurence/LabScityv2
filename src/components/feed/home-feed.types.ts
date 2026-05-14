@@ -6,6 +6,7 @@ import type {
   deletePost,
   likeComment,
   likePost,
+  updatePost,
 } from "@/lib/actions/feed";
 
 export type CreatePostAction = typeof createPost;
@@ -15,6 +16,7 @@ export type CreateReportAction = typeof createReport;
 export type LikePostAction = typeof likePost;
 export type LikeCommentAction = typeof likeComment;
 export type DeletePostAction = typeof deletePost;
+export type UpdatePostAction = typeof updatePost;
 
 export interface HomeFeedProps {
   createPostAction: CreatePostAction;
@@ -24,5 +26,6 @@ export interface HomeFeedProps {
   likePostAction: LikePostAction;
   likeCommentAction: LikeCommentAction;
   deletePostAction: DeletePostAction;
+  updatePostAction: UpdatePostAction;
   currentUserId: string | null;
 }

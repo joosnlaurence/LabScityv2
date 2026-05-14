@@ -35,6 +35,9 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
     handleAddComment,
     handleTogglePostLike,
     handleToggleCommentLike,
+    handleEditPost,
+    updatePostMutation,
+    currentUserId,
   } = useGroupFeed(props);
 
   return (
@@ -131,6 +134,12 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
             }
             onLikeClick={() => handleTogglePostLike(post.id)}
             isLiked={post.isLiked ?? false}
+            onEditSubmit={
+              post.userId === currentUserId
+                ? (values) => handleEditPost(post.id, values)
+                : undefined
+            }
+            isEditPending={updatePostMutation.isPending}
             onReportClick={() =>
               setReportTarget({ type: "post", postId: post.id })
             }
@@ -154,14 +163,14 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}
-                    onLikeClick={(commentId) =>
-                      handleToggleCommentLike(post.id, commentId)
+                    onLikeClick={ () =>
+                      handleToggleCommentLike(post.id, comment.id)
                     }
-                    onReportClick={(commentId) =>
+                    onReportClick={() =>
                       setReportTarget({
                         type: "comment",
                         postId: post.id,
-                        commentId,
+                        commentId: comment.id,
                       })
                     }
                     menuId={`group-comment-menu-${comment.id}`}

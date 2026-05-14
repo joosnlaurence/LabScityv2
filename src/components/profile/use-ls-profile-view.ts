@@ -17,10 +17,12 @@ import type {
   DeletePostAction,
   LikeCommentAction,
   LikePostAction,
+  UpdatePostAction,
 } from "@/components/feed/home-feed.types";
 import type {
   CreateCommentValues,
   CreateReportValues,
+  UpdatePostValues,
 } from "@/lib/validations/post";
 import type { UpdateProfileValues } from "@/lib/validations/profile";
 import type {
@@ -55,6 +57,7 @@ export interface UseLSProfileViewParams {
   likePostAction: LikePostAction;
   likeCommentAction: LikeCommentAction;
   deletePostAction: DeletePostAction;
+  updatePostAction: UpdatePostAction;
 }
 
 /** Edit modal + form props passed from the hook into the hero. */
@@ -126,6 +129,7 @@ function useProfilePostActions(
     likePostAction: LikePostAction;
     likeCommentAction: LikeCommentAction;
     deletePostAction: DeletePostAction;
+    updatePostAction: UpdatePostAction;
   },
 ) {
   const queryClient = useQueryClient();
@@ -152,8 +156,12 @@ function useProfilePostActions(
             ...page,
             posts: page.posts.map((p: any) =>
               String(p.post_id) === postId
-                ? { ...p, isLiked: !p.isLiked, like_amount: (p.like_amount ?? 0) + (p.isLiked ? -1 : 1) }
-                : p
+                ? {
+                    ...p,
+                    isLiked: !p.isLiked,
+                    like_amount: (p.like_amount ?? 0) + (p.isLiked ? -1 : 1),
+                  }
+                : p,
             ),
           })),
         };
@@ -179,7 +187,8 @@ function useProfilePostActions(
   const deletePostMutation = useMutation({
     mutationFn: async (postId: string) => {
       const result = await actions.deletePostAction(postId);
-      if (!result.success) throw new Error(result.error ?? "Failed to delete post");
+      if (!result.success)
+        throw new Error(result.error ?? "Failed to delete post");
       return result;
     },
     onSuccess: (_result, postId) => {
@@ -197,7 +206,8 @@ function useProfilePostActions(
     onError: (error: unknown) => {
       notifications.show({
         title: "Could not delete post",
-        message: error instanceof Error ? error.message : "Something went wrong",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
         color: "red",
       });
     },
@@ -207,12 +217,37 @@ function useProfilePostActions(
   });
 
   const likeCommentMutation = useMutation({
-    mutationFn: async (commentId: string) => {
+    mutationFn: async ( {postId, commentId} : { postId: string, commentId: string}) => {
       const result = await actions.likeCommentAction(commentId);
       if (!result.success) {
         throw new Error(result.error ?? "Failed to update like");
       }
       return result;
+    },
+    onMutate: async ( {postId, commentId} ) => {
+      await queryClient.cancelQueries({ queryKey: profileKeys.posts(userId) });
+      const snapshot = queryClient.getQueryData(profileKeys.posts(userId));
+      queryClient.setQueryData(profileKeys.posts(userId), (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((p: any) =>
+              String(p.post_id) === postId
+                ? { ...p, 
+                  comments: p.comments.map((c: any) => 
+                    String(c.id) === commentId
+                    ? { ...c, isLiked: !c.isLiked }
+                    : c
+                  )
+                }
+                : p
+            ),
+          })),
+        };
+      });
+      return { snapshot };
     },
     onSuccess: () => {
       invalidatePosts();
@@ -280,12 +315,44 @@ function useProfilePostActions(
     },
   });
 
+  const updatePostMutation = useMutation({
+    mutationFn: async (params: {
+      postId: string;
+      values: UpdatePostValues;
+    }) => {
+      const result = await actions.updatePostAction(
+        params.postId,
+        params.values,
+      );
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to update post");
+      }
+      return result;
+    },
+    onSuccess: () => {
+      invalidatePosts();
+      notifications.show({
+        title: "Post updated",
+        message: "Your post has been saved.",
+        color: "green",
+      });
+    },
+    onError: (error: unknown) => {
+      notifications.show({
+        title: "Could not update post",
+        message:
+          error instanceof Error ? error.message : "Something went wrong",
+        color: "red",
+      });
+    },
+  });
+
   const handleTogglePostLike = (postId: string) => {
     likePostMutation.mutate(postId);
   };
 
-  const handleToggleCommentLike = (commentId: string) => {
-    likeCommentMutation.mutate(commentId);
+  const handleToggleCommentLike = ({ postId, commentId }: { postId: string; commentId: string }) => {
+    likeCommentMutation.mutate({postId, commentId});
   };
 
   const handleDeletePost = (postId: string) => {
@@ -294,6 +361,10 @@ function useProfilePostActions(
 
   const handleAddComment = (postId: string, values: CreateCommentValues) => {
     createCommentMutation.mutate({ postId, values });
+  };
+
+  const handleEditPost = async (postId: string, values: UpdatePostValues) => {
+    await updatePostMutation.mutateAsync({ postId, values });
   };
 
   const submitReport = (
@@ -310,6 +381,8 @@ function useProfilePostActions(
     handleAddComment,
     submitReport,
     handleDeletePost,
+    handleEditPost,
+    updatePostMutation,
   };
 }
 
@@ -335,6 +408,7 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
     likePostAction,
     likeCommentAction,
     deletePostAction,
+    updatePostAction,
   } = params;
 
   const [editModalOpened, setEditModalOpened] = useState(false);
@@ -422,24 +496,24 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
 
   const editProfile: EditProfileHeroProps = isOwnProfile
     ? {
-      onOpenEditProfile: () => setEditModalOpened(true),
-      editModalOpened,
-      onEditModalClose: () => setEditModalOpened(false),
-      editInitialValues: profile
-        ? profileToEditInitialValues(profile)
-        : undefined,
-      onEditSubmit: (values) => updateProfileMutation.mutate(values),
-      isEditSubmitting: updateProfileMutation.isPending,
-    }
+        onOpenEditProfile: () => setEditModalOpened(true),
+        editModalOpened,
+        onEditModalClose: () => setEditModalOpened(false),
+        editInitialValues: profile
+          ? profileToEditInitialValues(profile)
+          : undefined,
+        onEditSubmit: (values) => updateProfileMutation.mutate(values),
+        isEditSubmitting: updateProfileMutation.isPending,
+      }
     : {};
 
   const followProfile: FollowProfileHeroProps | undefined =
     !isOwnProfile && currentUserId
       ? {
-        isFollowing,
-        onToggleFollow: () => toggleFollowMutation.mutate(),
-        isTogglePending: toggleFollowMutation.isPending,
-      }
+          isFollowing,
+          onToggleFollow: () => toggleFollowMutation.mutate(),
+          isTogglePending: toggleFollowMutation.isPending,
+        }
       : undefined;
 
   const actions = useProfilePostActions(userId, {
@@ -448,6 +522,7 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
     likePostAction,
     likeCommentAction,
     deletePostAction,
+    updatePostAction,
   });
 
   // --- Profile picture & banner upload ---
@@ -489,22 +564,17 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
 
       setIsUploadingProfilePic(true);
       try {
-        const uploadInfo =
-          await params.createProfilePictureUploadUrlAction(file.type);
+        const uploadInfo = await params.createProfilePictureUploadUrlAction(
+          file.type,
+        );
         if (!uploadInfo.success || !uploadInfo.data) {
-          throw new Error(
-            uploadInfo.error ?? "Could not prepare image upload",
-          );
+          throw new Error(uploadInfo.error ?? "Could not prepare image upload");
         }
 
         const supabase = createClient();
         const { error: uploadError } = await supabase.storage
           .from(profilePicBucket)
-          .uploadToSignedUrl(
-            uploadInfo.data.path,
-            uploadInfo.data.token,
-            file,
-          );
+          .uploadToSignedUrl(uploadInfo.data.path, uploadInfo.data.token, file);
         if (uploadError) {
           throw new Error(uploadError.message || "Image upload failed");
         }
@@ -560,22 +630,17 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
 
       setIsUploadingProfileHeader(true);
       try {
-        const uploadInfo =
-          await params.createProfileHeaderUploadUrlAction(file.type);
+        const uploadInfo = await params.createProfileHeaderUploadUrlAction(
+          file.type,
+        );
         if (!uploadInfo.success || !uploadInfo.data) {
-          throw new Error(
-            uploadInfo.error ?? "Could not prepare image upload",
-          );
+          throw new Error(uploadInfo.error ?? "Could not prepare image upload");
         }
 
         const supabase = createClient();
         const { error: uploadError } = await supabase.storage
           .from(profileHeaderBucket)
-          .uploadToSignedUrl(
-            uploadInfo.data.path,
-            uploadInfo.data.token,
-            file,
-          );
+          .uploadToSignedUrl(uploadInfo.data.path, uploadInfo.data.token, file);
         if (uploadError) {
           throw new Error(uploadError.message || "Image upload failed");
         }
@@ -609,11 +674,11 @@ export function useLSProfileView(params: UseLSProfileViewParams) {
 
   const mediaUpload: ProfileMediaUploadProps | undefined = isOwnProfile
     ? {
-      onProfilePicSelect: handleProfilePicSelect,
-      isUploadingProfilePic,
-      onProfileHeaderSelect: handleProfileHeaderSelect,
-      isUploadingProfileHeader,
-    }
+        onProfilePicSelect: handleProfilePicSelect,
+        isUploadingProfilePic,
+        onProfileHeaderSelect: handleProfileHeaderSelect,
+        isUploadingProfileHeader,
+      }
     : undefined;
 
   return { actions, editProfile, followProfile, mediaUpload };

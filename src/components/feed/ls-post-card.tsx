@@ -1,10 +1,32 @@
 "use client";
 
-import { ActionIcon, Anchor, Avatar, Box, Button, Card, Flex, Group, Image, Menu, Modal, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
+import { 
+  ActionIcon, 
+  Anchor, 
+  Avatar, 
+  Box, 
+  Button, 
+  Card, 
+  Flex, 
+  Group, 
+  SimpleGrid, 
+  Image, 
+  Menu, 
+  Stack, 
+  Text, 
+  UnstyledButton, 
+  AspectRatio,
+  Modal,
+  Textarea,
+  Spoiler
+ } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
+import NextImage from 'next/image';
+import { notifications } from "@mantine/notifications";
 import {
   IconDots,
+  IconEdit,
   IconHeart,
   IconHeartFilled,
   IconLink,
@@ -12,6 +34,7 @@ import {
   IconShare3,
   IconTrash,
 } from "@tabler/icons-react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Props for LSPostCard.
@@ -38,11 +61,14 @@ import {
 interface LSPostCardProps {
   userId?: string;
   userName: string;
+  nameRightSection?: React.ReactNode;
   field: string;
   timeAgo: string;
   content: string;
   mediaLabel?: string | null;
   mediaUrl?: string | null;
+  mediaWidth?: number | null;
+  mediaHeight?: number | null;
   avatarUrl?: string | null;
   onCommentClick?: () => void;
   onLikeClick?: () => void;
@@ -51,6 +77,8 @@ interface LSPostCardProps {
   commentCount?: number;
   onReportClick?: () => void;
   onDeleteClick?: () => void;
+  onEditSubmit?: (values: { content: string }) => Promise<void> | void;
+  isEditPending?: boolean;
   showMenu?: boolean;
   showActions?: boolean;
   audienceLabel?: string | null;
@@ -58,6 +86,16 @@ interface LSPostCardProps {
   onPostClick?: () => void;
   shareUrl?: string;
   children?: React.ReactNode;
+}
+
+// Helper to prevent clicks on things like the like button or profile name from
+// bubbling up to handling onPostClick, since post card overlaps with each 
+// part 
+function noPropagate(fn?: () => void) {
+  return (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fn?.();
+  };
 }
 
 /**
@@ -68,11 +106,14 @@ interface LSPostCardProps {
 export function LSPostCard({
   userId,
   userName,
+  nameRightSection,
   field,
   timeAgo,
   content,
   mediaLabel,
   mediaUrl,
+  mediaWidth,
+  mediaHeight,
   avatarUrl,
   onCommentClick,
   onLikeClick,
@@ -81,6 +122,8 @@ export function LSPostCard({
   commentCount,
   onReportClick,
   onDeleteClick,
+  onEditSubmit,
+  isEditPending = false,
   showMenu = true,
   showActions = true,
   audienceLabel = null,
@@ -89,7 +132,14 @@ export function LSPostCard({
   shareUrl,
   children,
 }: LSPostCardProps) {
-  const [confirmDeleteOpen, { open: openConfirmDelete, close: closeConfirmDelete }] = useDisclosure(false);
+  const [
+    confirmDeleteOpen,
+    { open: openConfirmDelete, close: closeConfirmDelete },
+  ] = useDisclosure(false);
+  const [editOpen, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [draftContent, setDraftContent] = useState(content);
+
+  const spoilerControlRef = useRef<HTMLButtonElement>(null);
 
   const initials = userName
     .split(" ")
@@ -98,9 +148,33 @@ export function LSPostCard({
     .slice(0, 2)
     .join("");
 
-  const userContent = (
-    <Group gap="sm" align="center">
+  useEffect(() => {
+    if (!editOpen) {
+      setDraftContent(content);
+    }
+  }, [content, editOpen]);
 
+  const handleEditSubmit = async () => {
+    const nextContent = draftContent.trim();
+    if (!nextContent) {
+      notifications.show({
+        title: "Could not update post",
+        message: "Content is required",
+        color: "red",
+      });
+      return;
+    }
+
+    try {
+      await onEditSubmit?.({ content: nextContent });
+      closeEdit();
+    } catch {
+      // Parent mutation handles the notification; keep the modal open.
+    }
+  };
+
+  const postHeader = (
+    <Group gap="sm" align="center">
       <Avatar
         size="md"
         radius="xl"
@@ -112,9 +186,32 @@ export function LSPostCard({
       </Avatar>
 
       <Stack gap={-1}>
-        {userId ? (
-          <Anchor component={Link} href={`/profile/${userId}`} underline="hover" c="navy.7">
-            <Text component="span" fw={700} c="navy.7" lh={1.1} style={{ cursor: "pointer" }}>
+        <Group gap="xs" wrap="nowrap" align="center">
+          {userId ? (
+            <Anchor
+              component={Link}
+              href={`/profile/${userId}`}
+              underline="hover"
+              c="navy.7"
+              onClick={noPropagate()}
+            >
+              <Text
+                component="span"
+                fw={700}
+                c="navy.7"
+                lh={1.1}
+                style={{ cursor: "pointer" }}
+              >
+                {userName}
+                {audienceLabel ? (
+                  <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
+                    {audienceLabel}
+                  </Text>
+                ) : null}
+              </Text>
+            </Anchor>
+          ) : (
+            <Text fw={600} c="navy.7" lh={1.1}>
               {userName}
               {audienceLabel ? (
                 <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
@@ -122,18 +219,12 @@ export function LSPostCard({
                 </Text>
               ) : null}
             </Text>
-          </Anchor>
-        ) : (
-          <Text fw={600} c="navy.7" lh={1.1}>
-            {userName}
-            {audienceLabel ? (
-              <Text component="span" ml="xs" size="xs" fw={600} c="navy.7">
-                {audienceLabel}
-              </Text>
-            ) : null}
-          </Text>
-        )}
-        <Text c="navy.7" size="sm" mt={-4}>{field}</Text>
+          )}
+          {nameRightSection}
+        </Group>
+        <Text c="navy.7" size="sm" mt={-4}>
+          {field}
+        </Text>
       </Stack>
     </Group>
   );
@@ -147,17 +238,52 @@ export function LSPostCard({
         centered
       >
         <Stack gap="md">
-          <Text size="sm">Are you sure you want to delete this post? This action cannot be undone.</Text>
+          <Text size="sm">
+            Are you sure you want to delete this post? This action cannot be
+            undone.
+          </Text>
           <Group justify="flex-end">
-            <Button variant="default" onClick={closeConfirmDelete}>Cancel</Button>
+            <Button variant="default" onClick={closeConfirmDelete}>
+              Cancel
+            </Button>
             <Button
               color="red"
-              onClick={() => {
-                closeConfirmDelete();
-                onDeleteClick?.();
-              }}
+              onClick={
+                noPropagate(() => {
+                  closeConfirmDelete();
+                  onDeleteClick?.();
+                })
+              }
             >
               Delete
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+      <Modal opened={editOpen} onClose={closeEdit} title="Edit post" centered>
+        <Stack gap="md">
+          <Textarea
+            label="Post"
+            minRows={4}
+            value={draftContent}
+            onChange={(event) => setDraftContent(event.currentTarget.value)}
+          />
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={closeEdit}
+              disabled={isEditPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void handleEditSubmit()}
+              loading={isEditPending}
+              disabled={
+                draftContent.trim().length === 0 || draftContent === content
+              }
+            >
+              Save
             </Button>
           </Group>
         </Stack>
@@ -167,71 +293,122 @@ export function LSPostCard({
         padding="md"
         radius="md"
         shadow="sm"
-        style={{ overflow: "hidden" }}
+        onClick={onPostClick}
+        style={{ 
+          cursor: onPostClick ? 'pointer' : undefined, 
+          overflow: "hidden", 
+        }}
       >
-        <Stack gap={16}>
+        <Stack gap="lg">
           <Box>
             <Group align="flex-start" justify="space-between">
-              {userContent}
+              {postHeader}
               <Group gap="xs" align="center">
-                <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{timeAgo}</Text>
+                <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>
+                  {timeAgo}
+                </Text>
                 {showMenu ? (
                   <Menu
                     withinPortal
                     position="bottom-end"
                     styles={{
                       dropdown: { padding: "6px" },
-                      item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+                      item: {
+                        borderRadius: "var(--mantine-radius-md)",
+                        fontWeight: 600,
+                        color: "var(--mantine-color-navy-7)",
+                      },
                     }}
                     id={menuId}
                   >
                     <Menu.Target>
-                      <ActionIcon variant="subtle" color="navy.6" aria-label="Post options">
+                      <ActionIcon onClick={noPropagate()} variant="subtle" color="navy.6" aria-label="Post options">
                         <IconDots size={18} />
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
+                      {onEditSubmit ? (
+                        <Menu.Item
+                          leftSection={<IconEdit size={14} />}
+                          onClick={noPropagate(openEdit)}
+                        >
+                          Edit post
+                        </Menu.Item>
+                      ) : null}
                       {onDeleteClick ? (
                         <>
+                          {onEditSubmit ? <Menu.Divider /> : null}
                           <Menu.Item
                             color="red"
                             leftSection={<IconTrash size={14} />}
-                            onClick={openConfirmDelete}
+                            onClick={noPropagate(openConfirmDelete)}
                           >
                             Delete post
                           </Menu.Item>
                           {onReportClick ? <Menu.Divider /> : null}
                         </>
                       ) : null}
-                      {onReportClick ? <Menu.Item onClick={onReportClick}>Report</Menu.Item> : null}
+                      {onReportClick ? (
+                        <Menu.Item onClick={noPropagate(onReportClick)}>Report</Menu.Item>
+                      ) : null}
                     </Menu.Dropdown>
                   </Menu>
                 ) : null}
               </Group>
             </Group>
           </Box>
-
-          <Text
-            fz="sm"
-            c="navy.7"
-            onClick={onPostClick}
-            style={onPostClick ? { cursor: "pointer" } : undefined}
+        
+          <Box
+            onClick={(e) => {
+              if (spoilerControlRef.current?.contains(e.target as Node)) {
+                e.stopPropagation();
+              }
+            }}
           >
-            {content}
-          </Text>
+            <Spoiler
+              controlRef={spoilerControlRef}
+              fz="sm"
+              c="navy.7"
+              maxHeight={176} // Enough for about 8 lines worth of content
+              showLabel='Show more'
+              hideLabel='Hide'
+              style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
+              styles={{
+                control: {
+                  color: 'var(--mantine-color-indigo-7)',
+                  fontSize: 'var(--mantine-font-size-sm)',
+                  fontWeight: 600
+                }
+              }}
+            >
+              {content}
+            </Spoiler>
+          </Box>
 
           {mediaUrl ? (
-            <Flex
-              c="navy.0"
-              mih={180}
-              justify="center"
-              align="center"
+            <Box
+              pos="relative"
+              mah={600}
+              maw='100%'
               fw={600}
-              onClick={onPostClick}
-              style={{ letterSpacing: "0.3px", overflow: "hidden", cursor: onPostClick ? "pointer" : undefined }}
+              style={{
+                aspectRatio: `${(mediaWidth ?? 1) / (mediaHeight ?? 1)}`,
+                overflow: "hidden",
+                letterSpacing: "0.3px",
+              }}
             >
-              <Image src={mediaUrl} alt="Post attachment" radius="md" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            </Flex>
+              <Image
+                component={NextImage}
+                src={mediaUrl}
+                alt="Post attachment"
+                bdrs="lg"
+                bg='navy.0'
+                fill
+                mah={600}
+                style={{ objectFit: "contain" }}
+              />
+            </Box>
+
           ) : mediaLabel ? (
             <Flex
               bg="navy.7"
@@ -241,8 +418,7 @@ export function LSPostCard({
               align="center"
               ta="center"
               fw={600}
-              onClick={onPostClick}
-              style={{ letterSpacing: "0.3px", overflow: "hidden", cursor: onPostClick ? "pointer" : undefined }}
+              style={{ letterSpacing: "0.3px", overflow: "hidden" }}
             >
               <Text component="span" style={{ whiteSpace: "pre-line" }}>
                 {mediaLabel}
@@ -251,12 +427,12 @@ export function LSPostCard({
           ) : null}
 
           {showActions ? (
-            <Flex justify="space-around">
+            <SimpleGrid cols={3}>
 
               {/* like button */}
+              <Flex justify="center">
               <Button
-                size="compact-xs"
-                mr={3} // HACK: small margin here to make things look a bit nicer
+                size="compact-md"
                 variant="transparent"
                 color="navy.6"
                 // like icon
@@ -267,36 +443,41 @@ export function LSPostCard({
                     <IconHeart size={18} />
                   )
                 }
-                onClick={onLikeClick}
+                onClick={noPropagate(onLikeClick)}
               >
-                {/* like label */}
                 <Text span fz="sm" c={isLiked ? "#e03131" : "navy.6"}>
-                  {
-                    typeof likeCount == "number" ? likeCount : ""
-                  }
+                  {typeof likeCount === "number" ? likeCount : ""}
                 </Text>
               </Button>
+              </Flex>
 
               {/* comment button */}
+              <Flex justify="center">
               <Button
-                size="compact-xs"
+                size="compact-md"
                 variant="transparent"
                 color="navy.6"
                 leftSection={<IconMessageCircle size={18} />}
-                onClick={onCommentClick}
+                onClick={noPropagate(onCommentClick)}
               >
                 <Text span fz="sm" c="navy.6">
                   {typeof commentCount === "number" ? commentCount : ""}
                 </Text>
               </Button>
+              </Flex>
 
               {/* share button */}
+              <Flex justify="center">
               <Menu
                 withinPortal
                 position="top"
                 styles={{
                   dropdown: { padding: "6px" },
-                  item: { borderRadius: "var(--mantine-radius-md)", fontWeight: 600, color: "var(--mantine-color-navy-7)" },
+                  item: {
+                    borderRadius: "var(--mantine-radius-md)",
+                    fontWeight: 600,
+                    color: "var(--mantine-color-navy-7)",
+                  },
                 }}
               >
                 <Menu.Target>
@@ -305,29 +486,28 @@ export function LSPostCard({
                     variant="transparent"
                     color="navy.6"
                     leftSection={<IconShare3 size={18} />}
+                    onClick={noPropagate()}
                   />
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Item
                     leftSection={<IconLink size={14} />}
-                    onClick={() => {
+                    onClick={noPropagate(() => {
                       const url = shareUrl
                         ? window.location.origin + shareUrl
                         : window.location.href;
                       navigator.clipboard.writeText(url);
-                    }}
+                    })}
                   >
                     Copy link
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
-
-            </Flex>
-          ) : null}
-
-          {children}
-
+              </Flex>
+            </SimpleGrid>
+          ) : null }
         </Stack>
+          {children}
       </Card>
     </>
   );

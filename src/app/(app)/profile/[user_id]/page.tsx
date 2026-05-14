@@ -15,6 +15,7 @@ import {
   deletePost,
   likeComment,
   likePost,
+  updatePost,
 } from "@/lib/actions/feed";
 import { getProfileVisibleGroups } from "@/lib/actions/groups";
 import {
@@ -159,6 +160,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     likePostAction: likePost,
     likeCommentAction: likeComment,
     deletePostAction: deletePost,
+    updatePostAction: updatePost,
   };
 
   return (
