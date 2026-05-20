@@ -55,7 +55,23 @@ export interface Publication {
   preview_path: string | null;
   is_oa: boolean;
   pdf_url: string | null;
-  type: string | null;
+  type: "journal_article" | "conference_paper" | "preprint" | "dissertation" | "review_article" | "technical_report" | "other" | "book_chapter" | null;
+}
+
+export interface Job {
+  id: number;
+  title: string;
+  description: string;
+  created_at: string;
+  poster_id: string;
+  summary: string | null;
+  location: string | null;
+  department: string | null;
+  organization: string | null;
+  work_mode: "on-site" | "remote" | "hybrid" | null;
+  job_type: "Full-time" | "Part-time" | "Internship" | "Contract" | null;
+  academia_role: "Postdoc" | "Faculty" | "PhD" | "Grad Student"  | null;
+  application_link: string | null;
 }
 /** Extended post with optional author information */
 export interface PostWithAuthor extends Post {
