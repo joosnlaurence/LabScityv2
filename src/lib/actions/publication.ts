@@ -4,7 +4,9 @@ import { z } from "zod";
 import { createClient } from "@/supabase/server";
 import {
     createPublicationSchema,
+    updatePublicationSchema,
     type CreatePublicationValues,
+    type UpdatePublicationValues
 } from "@/lib/validations/publication";
 
 import type { DataResponse, Publication } from "@/lib/types/data";
@@ -66,6 +68,104 @@ export async function createPublication(
             }
         }
         return {success: false, error: "Failed to create publication"};
+    }
+}
+
+// validates the input, with partial letter users update fields optionally
+// gets the logged in user, returns early if not authenticated
+// make sure the publicationId is a valid positive integer
+// confirms that the user owns the publication, and returns unauthorized otherwise
+// returns the updated publication row
+
+export async function updatePublication(
+    publicationId: number,
+    input: UpdatePublicationValues
+): Promise<DataResponse<Publication>> {
+    try {
+        const parsed = updatePublicationSchema.parse(input); 
+        const supabase = await createClient(); 
+
+        const { data: authData } = await supabase.auth.getUser(); 
+
+        if(!authData.user){ // will return early if it's not authenticated
+            return {
+                success: false,
+                error: 'Authentication Required',
+            }
+        }
+        
+        if (!Number.isInteger(publicationId) || publicationId <= 0) {
+            return {
+                success: false,
+                error: "Invalid publication id",
+            };
+        }
+
+        const { data: existingPublication, error: ownershipError } = await supabase
+            .from("user_publications")
+            .select("publication_id")
+            .eq("user_id", authData.user.id)
+            .eq("publication_id", publicationId)
+            .maybeSingle(); 
+
+        if (ownershipError) {
+            return {
+                success: false,
+                error: ownershipError.message,
+            };
+        }
+
+        if (!existingPublication) {
+            return { 
+                success: false, 
+                error: "Publication not found or unauthorized" 
+            };
+        }
+
+        const updateData = Object.fromEntries(
+            Object.entries({
+                title: parsed.title,
+                doi_link: parsed.doi,
+                journal: parsed.journal,
+                date_published: parsed.date_published,
+                authors: parsed.authors,
+                preview_path: parsed.preview_path,
+                is_oa: parsed.is_oa,
+                pdf_url: parsed.pdf_url,
+                type: parsed.type,
+            }).filter(([, value]) => value !== undefined)
+        );
+
+        const { data: publication, error: updateError } = await supabase
+            .from("publications")
+            .update(updateData)
+            .eq("publication_id", publicationId)
+            .select()
+            .single();
+
+        if (updateError){
+            return {
+                success: false,
+                error: updateError.message
+            };
+        }    
+
+        return {
+            success: true,
+            data: publication,
+        };
+
+    } catch (error){
+        if(error instanceof z.ZodError){
+            return {
+                success: false,
+                error: error.issues[0]?.message ?? "Validation failed",
+            };
+        }
+        return { 
+            success: false, 
+            error: "failed to update the publication"
+        };
     }
 }
 
