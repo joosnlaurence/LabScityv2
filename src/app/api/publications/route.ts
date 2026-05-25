@@ -1,56 +1,40 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/supabase/server";
 import type { ApiResponse } from "@/lib/types/api";
-import type { Publication } from "@/lib/types/publication";
+import type { Publication } from "@/lib/types/data";
 
-// this api is used to get your own publications to put them on your profile
-export async function GET() {
+// GET /api/publications?userId={userId}
+// returns all publications that belong to the specified user 
+// query params = userId
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) return NextResponse.json<ApiResponse<Publication[]>>(
+        { 
+            success: false, error: "userId required" 
+        }, { status: 400 }
+    );
+
     const supabase = await createClient();
-    const { data: authData } = await supabase.auth.getUser();
 
-    if (!authData.user) {
-        return NextResponse.json<ApiResponse<Publication[]>>(
-            { success: false, error: "Authentication required" },
-            { status: 401 }
-        );
-    }
-
-    const { data: userPublicationData, error: userPublicationLinkError } = await supabase
-        .from("user_publications")
-        .select("publication_id")
-        .eq("user_id", authData.user.id);
-
-    if (userPublicationLinkError) {
-        return NextResponse.json(
-            { 
-                success: false, 
-                error: userPublicationLinkError.message 
-            }, { status: 500 }
-        );
-    }
-
-    // extracting publication_id from each row in usePublicationData to get a plain array of ids
-    const userPublicationIds = (userPublicationData ?? []).map((row) => row.publication_id);
-
-    // .in filters results based on if a column's value matches any item in the userPublicationIds array
     const { data, error } = await supabase
-        .from("publications")
-        .select("*")
-        .in("publication_id", userPublicationIds);
+        .from("user_publications")
+        .select("publications(*)")
+        .eq("user_id", userId)
+        .returns<{ publications: Publication }[]>();
 
-    if (error) {
-        return NextResponse.json(
-            { 
-                success: false, 
-                error: error.message 
-            }, { status: 500 }
-        );
-    }
+    if (error) return NextResponse.json<ApiResponse<Publication[]>>(
+        { 
+            success: false, 
+            error: error.message 
+        }, { status: 500 }
+    );
 
-    return NextResponse.json<{success: boolean; data: Publication[]}>(
+    return NextResponse.json<ApiResponse<Publication[]>>(
         { 
             success: true, 
-            data: data ?? [] 
+            data: data.map((row) => row.publications) 
         }
     );
 }

@@ -260,34 +260,9 @@ export async function resetPasswordAction(formData: FormData) {
 
   try {
     const parsed = resetPasswordSchema.parse({
-      tokenHash: tokenHash ?? undefined,
-      code: code ?? undefined,
       password,
       confirmPassword,
     });
-
-    if (parsed.tokenHash) {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        type: "recovery",
-        token_hash: parsed.tokenHash,
-      });
-
-      if (verifyError) {
-        return {
-          success: false,
-          error: verifyError.message ?? "Invalid or expired reset link",
-        };
-      }
-    } else if (parsed.code) {
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(parsed.code);
-
-      if (exchangeError) {
-        return {
-          success: false,
-          error: exchangeError.message ?? "Invalid or expired reset link",
-        };
-      }
-    }
 
     const { error: updateError } = await supabase.auth.updateUser({
       password: parsed.password,

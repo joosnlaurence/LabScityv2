@@ -1,5 +1,4 @@
 "use server"
-
 import { createClient } from "@/supabase/server";
 
 interface OpenAlexTopic {
@@ -9,6 +8,7 @@ interface OpenAlexTopic {
 
 interface OpenAlexAuthor {
     topics?: OpenAlexTopic[];
+    works_count?: number;
 }
 
 interface OpenAlexResponse {
@@ -26,64 +26,91 @@ interface TagRow {
     openalex_id: string;
 }
 
-// Commented out temporarily so building with TypeScript has no errors. 
+export async function syncOpenAlexTopics(
+    orcid: string,
+    profile_user_id: string
+): Promise<ActionResponse> {
+    const cleanOrcid = String(orcid ?? "").trim();
+    // validating cleanOrcid and profile_user_id both exist
+    if (!cleanOrcid || !profile_user_id) {
+        return { success: false, error: "Missing orcid or user_id"};
+    }
 
-// export async function syncOpenAlexTopics(
-//     orcid: string, 
-//     profile_user_id: string
-// ): Promise<ActionResponse> {
-//     const cleanOrcid = String(orcid ?? "").trim();
+    const response = await fetch(
+        `https://api.openalex.org/authors?filter=orcid:${cleanOrcid}`
+    )
 
-//     // validating cleanOrcid and profile_user_id both exist
-//     if (!cleanOrcid || !profile_user_id) {
-//         return { success: false, error: "Missing orcid or user_id"};
-//     }
+    if (!response.ok){
+        return {success: false, error: "OpenAlex request failed"};
+    }
 
-//     const response = await fetch(
-//         `https://api.openalex.org/authors?filter=orcid:${cleanOrcid}`
-//     )
+    const data : OpenAlexResponse = await response.json();
+    const author: OpenAlexAuthor | undefined = data.results?.[0];
 
-//     if (!response.ok){
-//         return {success: false, error: "OpenAlex request failed"};
-//     }
+    if (!author ){
+        return {success: false, error: "Author not found"};
+    }
 
-//     const data : OpenAlexResponse = await response.json();
-//     const author: OpenAlexAuthor | undefined = data.results?.[0];
+    const topics: OpenAlexTopic[] = author.topics ?? [];
+    const worksCount: number = author.works_count ?? 0;
 
-//     if (!author ){
-//         return {success: false, error: "Author not found"};
-//     }
+    // transform
+    const totalTopicCount: number = topics.reduce(
+        (sum: number, topic: OpenAlexTopic) => sum + topic.count, 0
+    );
 
-//     const topics: OpenAlexTopic[] = author.topics ?? [];
+    const cleanedTopicIds: string[] = topics.map((topic: OpenAlexTopic) =>
+        topic.id.replace("https://openalex.org/", "")
+    );
 
-//     // transform
-//     const totalTopicCount: number = topics.reduce(
-//         (sum: number, topic: OpenAlexTopic) => sum + topic.count, 0
-//     );
+    const supabase = await createClient();
 
-//     const cleanedTopicIds: string[] = topics.map((topic: OpenAlexTopic) =>
-//         topic.id.replace("https://openalex.org/", "")
-//     );
+    // upsert the topics into supabase
+    const {data: tagRows, error: tagError } = await supabase
+        .from("tags")
+        .select("id, openalex_id")
+        .in("openalex_id", cleanedTopicIds)
+        .eq("level", 3);
+   
+    if(tagError){
+        return { success: false, error: tagError.message };
+    }
 
-//     const supabase = await createClient();
+    const tagMap: Map<string, number> = new Map(
+        (tagRows ?? []).map((tag: TagRow) => [
+            tag.openalex_id,
+            tag.id,
+        ])
+    );
 
-//     // upsert the topics into supabase
-//     const {data: tagRows, error: tagError } = await supabase
-//         .from("tags")
-//         .select("id, openalex_id")
-//         .in("openalex_id", cleanedTopicIds)
-//         .eq("level", 3);
-    
-//     if(tagError){
-//         return { success: false, error: tagError.message };
-//     }
+    const profileTags = topics
+        .flatMap((topic: OpenAlexTopic) => {
+            const cleanId = topic.id.replace("https://openalex.org/", "");
+            const tagId = tagMap.get(cleanId);
+            if(!tagId) return [];
+            
+            return [{
+                profile_user_id,
+                tag_id: tagId,
+                raw_count: topic.count,
+                weight: worksCount > 0 ? topic.count / worksCount : 0
+            }];
+        })
+        .filter(Boolean);
 
-//     const tagMap: Map<string, number> = new Map(
-//         (tagRows ?? []).map((tag: TagRow) => [
-//             tag.openalex_id,
-//             tag.id,
-//         ])
-//     );
 
-    
-// }
+    const { error: profileTagsErr } = await supabase
+        .from("profile_tags")
+        .upsert(profileTags, {
+            onConflict: "profile_user_id,tag_id",
+        });
+
+    if (profileTagsErr) {``
+        return { success: false, error: profileTagsErr.message };
+    }
+
+    return {
+        success: true,
+        topicsInserted: profileTags.length,
+    };
+}

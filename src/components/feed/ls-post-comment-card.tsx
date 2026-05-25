@@ -1,9 +1,10 @@
 "use client";
 
-import { ActionIcon, Anchor, Avatar, Box, Group, Menu, noop, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Anchor, Avatar, Box, Group, Menu, noop, Spoiler, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import { IconDots, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { FeedCommentItem } from "@/lib/types/feed";
+import { useRef } from "react";
 
 /**
  * Props for LSPostCommentCard.
@@ -43,6 +44,8 @@ export function LSPostCommentCard({
     };
   }
  
+  const spoilerControlRef = useRef<HTMLButtonElement>(null);
+
   const initials = comment.userName
     .split(" ")
     .filter(Boolean)
@@ -74,9 +77,31 @@ export function LSPostCommentCard({
       </Avatar>
 
       <Box style={{ flex: 1, minWidth: 0 }}>
-        <Text size="sm" c="navy.7" fw="normal">
-          {nameNode}{" "}{comment.content}
-        </Text>
+        <Box
+          onClick={(e) => {
+            if (spoilerControlRef.current?.contains(e.target as Node)) {
+              e.stopPropagation();
+            }
+          }}
+        >
+          <Spoiler 
+            controlRef={spoilerControlRef}
+            fz="sm" 
+            maxHeight={92} // Enough for about 4 lines worth of comment
+            showLabel='Show more'
+            hideLabel='Hide'
+            style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
+            styles={{
+              control: {
+                color: 'var(--mantine-color-indigo-7)',
+                fontSize: 'var(--mantine-font-size-sm)',
+                fontWeight: 600
+              }
+            }}
+          >
+            {nameNode}{" "}{comment.content}
+          </Spoiler>
+        </Box>
 
         <Group justify="flex-start" gap="xs" mt={4}>
           <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{comment.timeAgo}</Text>
