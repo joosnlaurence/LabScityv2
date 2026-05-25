@@ -8,6 +8,7 @@ export async function GET() {
   const result = await createPublication({
     title: "Second Test Publication",
     doi: "12.1000/test-doi2",
+    publicationType: 'journal_article',
     journal: "Test Journal",
     datePublished: "2025-01-01",
     authors: ["Barbara Sharanowski", "Jane Smith"]

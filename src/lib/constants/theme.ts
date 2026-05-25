@@ -40,7 +40,8 @@ export const theme = createTheme({
   components: {
     Button: Button.extend({
       defaultProps: {
-        color: 'var(--mantine-color-navy-7)'
+        color: 'var(--mantine-color-navy-7)',
+        bdrs: 'md'
       }
     })
   }

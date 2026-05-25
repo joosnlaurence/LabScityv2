@@ -1,6 +1,22 @@
 "use client";
 
-import { Box, Button, Divider, Flex, Stack, Tabs } from "@mantine/core";
+import { 
+  ActionIcon, 
+  Text, 
+  Box, 
+  Button, 
+  Divider, 
+  Flex, 
+  Group, 
+  Popover, 
+  Stack, 
+  Tabs, 
+  UnstyledButton, 
+  Anchor, 
+  TextInput, 
+  Collapse, 
+  Card
+} from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -65,6 +81,8 @@ import type {
 import LSPublication from "./publications/ls-publication";
 import { Publication } from "@/lib/types/publication";
 import { useAuthContext } from "../auth/auth-provider";
+import { IconHelp, IconPlus } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -339,6 +357,7 @@ const LSProfileDesktopLayout = ({
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
     null,
   );
+  const [doiInputExpanded, { toggle: toggleDoiInput }] = useDisclosure(false);
 
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
@@ -551,22 +570,134 @@ const LSProfileDesktopLayout = ({
         </Tabs.Panel>
 
         <Tabs.Panel value='publications'>
-          <Stack w='800'>
-          {
-            publications 
-            ? 
-            publications.map((pub, i) => 
-              <LSPublication 
-                key={i}
-                pub={pub}
-                isOwner={ownsPub}
-              />
-            )
-            :
-            <>
-              No Publications found
-            </>
-          }
+          <Stack>
+            <Group wrap='nowrap' justify='space-between'>
+              <Group wrap='nowrap'>
+                <Button 
+                  onClick={toggleDoiInput} 
+                  rightSection={
+                    <IconPlus 
+                      size='1rem'
+                      style={{
+                        transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
+                        transition: 'transform 200ms ease',
+                      }}
+                    />
+                  }
+                >
+                  Add Research
+                </Button>
+                <Collapse in={doiInputExpanded}>
+                  <TextInput placeholder="doi.org/..." bdrs='md' autoFocus/>
+                </Collapse>
+              </Group>
+              <Group wrap='nowrap'>
+                <Button variant='outline'>
+                  Link With ORCID iD
+                </Button>
+                <Popover width='200' withArrow position='top' shadow='xs'>
+                  <Popover.Target>
+                    <UnstyledButton variant='none' bdrs='100'>
+                      <Flex>
+                        <IconHelp size='2rem' stroke='1' color='var(--mantine-color-dimmed)'/>  
+                      </Flex>
+                    </UnstyledButton>  
+                  </Popover.Target>  
+                  <Popover.Dropdown 
+                    bdrs='md' 
+                    bd='1px solid navy.2'
+                    styles={{
+                      arrow: {
+                        border: '1px solid var(--mantine-color-navy-2)'
+                      }
+                    }}
+                  >
+                    <Text fz='xs'>
+                      An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
+                      is a unique identifier researchers can use to link all of your 
+                      research with you. Linking your account with an ORCID iD will
+                      enable LabScity to automatically fetch data about your 
+                      publications. 
+                    </Text>
+                    <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
+                      Learn more at orcid.org
+                    </Anchor>
+                  </Popover.Dropdown>
+                </Popover>
+              </Group>
+            </Group>
+            <Stack maw='800'>
+            {
+              publications 
+              ? 
+              publications.map((pub, i) => 
+                <LSPublication 
+                  key={i}
+                  pub={pub}
+                  isOwner={ownsPub}
+                />
+              )
+              :
+              <>
+                No Publications found
+              </>
+            }
+            </Stack>
+            {/* <Card bd='1px solid gray.3' bdrs='md'>
+              <Stack justify='space-between'>
+                <Button 
+                  onClick={toggleDoiInput} 
+                  // rightSection={
+                  //   <IconPlus 
+                  //     size='1rem'
+                  //     style={{
+                  //       transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
+                  //       transition: 'transform 200ms ease',
+                  //     }}
+                  //   />
+                  // }
+                >
+                  Add Research
+                </Button>
+                <Collapse in={doiInputExpanded}>
+                  <TextInput placeholder="doi.org/..." bdrs='md' autoFocus/>
+                </Collapse>
+                <Group wrap='nowrap'>
+                  <Button variant='outline'>
+                    Link With ORCID iD
+                  </Button>
+                  <Popover width='200' withArrow position='top' shadow='xs'>
+                    <Popover.Target>
+                      <UnstyledButton variant='none' bdrs='100'>
+                        <Flex>
+                          <IconHelp size='2rem' stroke='1' color='var(--mantine-color-dimmed)'/>  
+                        </Flex>
+                      </UnstyledButton>  
+                    </Popover.Target>  
+                    <Popover.Dropdown 
+                      bdrs='md' 
+                      bd='1px solid navy.2'
+                      styles={{
+                        arrow: {
+                          border: '1px solid var(--mantine-color-navy-2)'
+                        }
+                      }}
+                    >
+                      <Text fz='xs'>
+                        An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
+                        is a unique identifier researchers can use to link all of your 
+                        research with you. Linking your account with an ORCID iD will
+                        enable LabScity to automatically fetch data about your 
+                        publications. 
+                      </Text>
+                      <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
+                        Learn more at orcid.org
+                      </Anchor>
+                    </Popover.Dropdown>
+                  </Popover>
+                </Group>
+              </Stack>
+            </Card> */}
           </Stack>
         </Tabs.Panel>
 
