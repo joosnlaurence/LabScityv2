@@ -20,12 +20,12 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
         .from("publications")
-        .select("*, user_publications!inner(user_id), publication_topics(tags(name))")
+        .select("*, user_publications!inner(user_id), publication_tags(tags(name))")
         .eq("user_publications.user_id", userId)
         .order("date_published", { ascending: false, nullsFirst: false })
         .returns<(Publication & { 
           user_publications: { user_id: string }[] 
-          publication_topics: { tags: { name: string } }[]
+          publication_tags: { tags: { name: string } }[]
         })[]>();
 
     if (error) return NextResponse.json<ApiResponse<Publication[]>>(
@@ -39,9 +39,9 @@ export async function GET(request: Request) {
         { 
             success: true, 
             data: data.map(
-              ({ user_publications, publication_topics, ...pub }) => ({
+              ({ user_publications, publication_tags, ...pub }) => ({
                 ...pub,
-                topics: publication_topics.map((pt) => pt.tags.name)
+                topics: publication_tags.map((pt) => pt.tags.name)
               }))
         }
     );

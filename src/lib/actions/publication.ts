@@ -18,6 +18,13 @@ export async function addPublicationByDoi(
   doi: string
 ): Promise<DataResponse<Publication>> {
   try{
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user){
+        return { success: false, error: "Authentication required"}
+    }
+
     const parsedDoi = doiSchema.parse(doi);
     const res = await fetch(`https://api.openalex.org/works/doi:${parsedDoi}`);
     if(!res.ok) throw new Error(`OpenAlex Error: ${res.status}`);
@@ -37,6 +44,17 @@ export async function addPublicationByDoi(
       openAlexTopicIds: (data.topics ?? []).map((t) =>
         t.id.replace("https://openalex.org/", "")
       ),
+    }
+
+    const { data: existing } = await supabase
+      .from("user_publications")
+      .select("publication_id, publications!inner(doi)")
+      .eq("user_id", authData.user.id)
+      .eq("publications.doi", parsedDoi)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: false, error: "You've already added this publication" };
     }
 
     const createPubResult = await createPublication({
@@ -88,12 +106,12 @@ async function linkPublicationTopics(
 
   const links = tagRows.map((tag) => ({
     publication_id: publicationId,
-    topic_id: tag.id
+    tag_id: tag.id
   }));
 
   const { error: linkError } = await supabase
-    .from('publication_topics')
-    .upsert(links, { onConflict: 'publication_id,topic_id'});
+    .from('publication_tags')
+    .upsert(links, { onConflict: 'publication_id,tag_id'});
 
   if(linkError) {
     console.warn('Failed to link topics:', linkError.message);
