@@ -19,10 +19,14 @@ export async function GET(request: Request) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from("user_publications")
-        .select("publications(*)")
-        .eq("user_id", userId)
-        .returns<{ publications: Publication }[]>();
+        .from("publications")
+        .select("*, user_publications!inner(user_id), publication_topics(tags(name))")
+        .eq("user_publications.user_id", userId)
+        .order("date_published", { ascending: false, nullsFirst: false })
+        .returns<(Publication & { 
+          user_publications: { user_id: string }[] 
+          publication_topics: { tags: { name: string } }[]
+        })[]>();
 
     if (error) return NextResponse.json<ApiResponse<Publication[]>>(
         { 
@@ -30,11 +34,15 @@ export async function GET(request: Request) {
             error: error.message 
         }, { status: 500 }
     );
-
+    
     return NextResponse.json<ApiResponse<Publication[]>>(
         { 
             success: true, 
-            data: data.map((row) => row.publications) 
+            data: data.map(
+              ({ user_publications, publication_topics, ...pub }) => ({
+                ...pub,
+                topics: publication_topics.map((pt) => pt.tags.name)
+              }))
         }
     );
 }

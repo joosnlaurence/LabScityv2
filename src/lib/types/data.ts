@@ -58,7 +58,7 @@ export interface Publication {
   pdf_url: string | null;
   type: PublicationType | null;
   is_featured: boolean;
-  topics: Array<string>;
+  topics: Array<string> | null;
 }
 
 export interface Job {

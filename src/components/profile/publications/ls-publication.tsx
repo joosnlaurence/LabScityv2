@@ -263,23 +263,27 @@ export default function LSPublication(
           }
 
           {/* Topics */}
-          {/* <Group gap='xs'>
           {
-            pub.topics.map((topic) => 
-              <Badge
-                key={topic}
-                bd={pub.is_featured ? '1px solid indigo.2' : undefined}
-                bg={pub.is_featured ? 'indigo.0' : 'gray.2'}
-                c={pub.is_featured ? 'indigo.9' : 'var(--mantine-color-text)'}
-                fw='500'
-                tt='none'
-                fz='0.75rem'
-              >
-                {topic}
-              </Badge>
-            ) 
+            (pub?.topics && pub.topics.length > 0) ?
+            <Group gap='xs'>
+              {
+              pub.topics.map((topic) =>  
+                <Badge
+                  key={topic}
+                  bd={pub.is_featured ? '1px solid indigo.2' : undefined}
+                  bg={pub.is_featured ? 'indigo.0' : 'gray.2'}
+                  c={pub.is_featured ? 'indigo.9' : 'var(--mantine-color-text)'}
+                  fw='500'
+                  tt='none'
+                  fz='0.75rem'
+                >
+                  {topic}
+                </Badge>
+                )
+              }
+            </Group>
+            : undefined
           }
-          </Group> */}
         </Stack>
 
         <Divider />

@@ -11,15 +11,17 @@ export interface OpenAlexWork {
   authorships: Array<{author: { display_name: string }}>;
   type: string | null;
   open_access: { is_oa: boolean, oa_url: string | null } | null;
+  topics: Array<{id: string; display_name: string; score: number}>;
 }
 
 export interface ParsedOpenAlexWork {
   title: string;
   doi: string;
   journal: string | null;
-  publicationDate: string;
+  publicationDate: string | null;
   authors: string[];
   type: PublicationType;
   isOA: boolean;
   pdfUrl: string | null;
+  openAlexTopicIds: string[];
 }

@@ -11,7 +11,7 @@ import {
 } from "@/lib/validations/publication";
 
 import type { DataResponse, Publication } from "@/lib/types/data";
-import { OpenAlexWork } from "../types/publication";
+import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
 import { OPENALEX_TYPE_MAP } from "../constants/publications";
 
 export async function addPublicationByDoi(
@@ -25,24 +25,78 @@ export async function addPublicationByDoi(
 
     const pubType = OPENALEX_TYPE_MAP[data.type ?? ''] ?? 'other';
 
-    const parsed: CreatePublicationValues = {
+    const parsed: ParsedOpenAlexWork = {
       doi: parsedDoi,
       title: data.title ?? '',
       authors: data.authorships.map((a) => a.author.display_name),
-      publicationType: pubType,
-      journal: data.primary_location?.source?.display_name ?? undefined,
-      datePublished: data.publication_date ?? undefined,
-      previewPath: undefined,
-      isOA: data.open_access?.is_oa,
-      pdfUrl: data.open_access?.oa_url ?? undefined
+      type: pubType,
+      journal: data.primary_location?.source?.display_name ?? null,
+      publicationDate: data.publication_date,
+      isOA: data.open_access?.is_oa ?? false,
+      pdfUrl: data.open_access?.oa_url ?? null,
+      openAlexTopicIds: (data.topics ?? []).map((t) =>
+        t.id.replace("https://openalex.org/", "")
+      ),
     }
 
-    return createPublication(parsed);
+    const createPubResult = await createPublication({
+      title: parsed.title,
+      doi: parsed.doi,
+      journal: parsed.journal,
+      datePublished: parsed.publicationDate,
+      authors: parsed.authors,
+      isOA: parsed.isOA,
+      pdfUrl: parsed.pdfUrl,
+      publicationType: parsed.type,
+    });
+
+    if(!createPubResult.success) return createPubResult;
+
+    if(parsed?.openAlexTopicIds && parsed.openAlexTopicIds.length > 0) {
+      await linkPublicationTopics(
+        createPubResult.data!.publication_id,
+        parsed.openAlexTopicIds
+      )
+    }
+
+    return createPubResult;
   } catch(err) {
     if (err instanceof z.ZodError) {
       return { success: false, error: err.issues[0]?.message ?? "Invalid DOI"};
     }
     return { success: false, error: 'Failed to add publication'};
+  }
+}
+
+async function linkPublicationTopics(
+  publicationId: number,
+  openAlexTopicIds: string[],
+): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: tagRows, error: tagError } = await supabase
+    .from('tags')
+    .select('id, openalex_id')
+    .in('openalex_id', openAlexTopicIds);
+
+  if(tagError) {
+    console.warn('Failed to look up tags: ', tagError.message);
+    return;
+  }
+
+  if(!tagRows || tagRows.length == 0) return;
+
+  const links = tagRows.map((tag) => ({
+    publication_id: publicationId,
+    topic_id: tag.id
+  }));
+
+  const { error: linkError } = await supabase
+    .from('publication_topics')
+    .upsert(links, { onConflict: 'publication_id,topic_id'});
+
+  if(linkError) {
+    console.warn('Failed to link topics:', linkError.message);
   }
 }
 

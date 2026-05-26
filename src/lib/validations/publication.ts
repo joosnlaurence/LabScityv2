@@ -13,10 +13,12 @@ export const createPublicationSchema = z.object({
         .optional(),
     journal: z
         .string()
-        .optional(),
+        .optional()
+        .nullable(),
     datePublished: z
         .iso.date()
-        .optional(),
+        .optional()
+        .nullable(),
     authors: z // making an authors array for now, later creating a table to link authors to current users
        .array(z.string().min(1, { message: "Author name is required" }))
         .min(1, {
@@ -30,12 +32,13 @@ export const createPublicationSchema = z.object({
       .optional(),
 
     isOA: z
-        .boolean()
-        .optional(),
+      .boolean()
+      .optional(),
 
     pdfUrl: z
-        .string()
-        .optional(),
+      .string()
+      .optional()
+      .nullable(),
 });
 
 export const doiSchema = z
