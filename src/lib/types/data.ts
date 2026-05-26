@@ -1,4 +1,5 @@
 import { FeedCommentItem, User } from '@/lib/types/feed'
+import { PublicationType } from './publication';
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -48,14 +49,16 @@ export interface Product {
 export interface Publication {
   publication_id: number;
   title: string;
-  doi_link: string | null;
+  doi: string | null;
   journal: string | null;
   date_published: string | null;
   authors: string[] | null;
   preview_path: string | null;
   is_oa: boolean;
   pdf_url: string | null;
-  type: "journal_article" | "conference_paper" | "preprint" | "dissertation" | "review_article" | "technical_report" | "other" | "book_chapter" | null;
+  type: PublicationType | null;
+  is_featured: boolean;
+  topics: Array<string>;
 }
 
 export interface Job {

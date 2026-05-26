@@ -1,4 +1,3 @@
-import type { Publication } from "@/lib/types/publication"
 import { 
   ActionIcon,
   Anchor,
@@ -9,7 +8,6 @@ import {
   Card, 
   Divider, 
   Group, 
-  Popover, 
   Stack, 
   Text, 
 } from "@mantine/core"
@@ -20,7 +18,6 @@ import {
   IconChevronRight, 
   IconClipboardText, 
   IconClock, 
-  IconDots, 
   IconEdit, 
   IconFile, 
   IconLink, 
@@ -33,8 +30,9 @@ import {
 } from "@tabler/icons-react"
 import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications"
 import { Fragment } from "react/jsx-runtime"
-import NextLink from 'next/link';
+// import NextLink from 'next/link';
 import classes from './ls-publications.module.css';
+import { Publication } from "@/lib/types/data";
 
 const ICON_SIZE = "0.85rem";
 
@@ -72,8 +70,8 @@ export default function LSPublication(
       break;
   }
   
-  const visibleAuthors = pub.authors.slice(0, 3);
-  const authorOverflow = pub.authors.length - visibleAuthors.length;
+  const visibleAuthors = (pub?.authors ?? []).slice(0, 3);
+  const authorOverflow = (pub?.authors ?? []).length - visibleAuthors.length;
 
   const date = pub.date_published ? 
   new Intl.DateTimeFormat("en-US", { 
@@ -82,7 +80,7 @@ export default function LSPublication(
   }).format(new Date(pub.date_published))
   : undefined;
 
-  const doiUrl = pub.doi_link ? `https://${pub.doi_link}` : null;
+  const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
   // pub.is_featured = true;
   return (
     <Card
@@ -138,7 +136,7 @@ export default function LSPublication(
             lh='1rem'
             leftSection={typeIcon}
           >
-            {PUBLICATION_TYPE_LABELS[pub.type]}
+            {PUBLICATION_TYPE_LABELS[pub.type ?? 'other']}
           </Badge>
           {
             pub.is_oa && 
@@ -258,14 +256,14 @@ export default function LSPublication(
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 4}}
               >
                 <IconLink color='var(--mantine-color-indigo-8)' size='var(--mantine-font-size-sm)'/>
-                {pub.doi_link}
+                doi.org/{pub.doi}
               </Anchor>
             </Box>
             : undefined
           }
 
           {/* Topics */}
-          <Group gap='xs'>
+          {/* <Group gap='xs'>
           {
             pub.topics.map((topic) => 
               <Badge
@@ -281,7 +279,7 @@ export default function LSPublication(
               </Badge>
             ) 
           }
-          </Group>
+          </Group> */}
         </Stack>
 
         <Divider />

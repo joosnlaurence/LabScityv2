@@ -4,12 +4,47 @@ import { z } from "zod";
 import { createClient } from "@/supabase/server";
 import {
     createPublicationSchema,
+    doiSchema,
     updatePublicationSchema,
     type CreatePublicationValues,
     type UpdatePublicationValues
 } from "@/lib/validations/publication";
 
 import type { DataResponse, Publication } from "@/lib/types/data";
+import { OpenAlexWork } from "../types/publication";
+import { OPENALEX_TYPE_MAP } from "../constants/publications";
+
+export async function addPublicationByDoi(
+  doi: string
+): Promise<DataResponse<Publication>> {
+  try{
+    const parsedDoi = doiSchema.parse(doi);
+    const res = await fetch(`https://api.openalex.org/works/doi:${parsedDoi}`);
+    if(!res.ok) throw new Error(`OpenAlex Error: ${res.status}`);
+    const data: OpenAlexWork = await res.json();
+
+    const pubType = OPENALEX_TYPE_MAP[data.type ?? ''] ?? 'other';
+
+    const parsed: CreatePublicationValues = {
+      doi: parsedDoi,
+      title: data.title ?? '',
+      authors: data.authorships.map((a) => a.author.display_name),
+      publicationType: pubType,
+      journal: data.primary_location?.source?.display_name ?? undefined,
+      datePublished: data.publication_date ?? undefined,
+      previewPath: undefined,
+      isOA: data.open_access?.is_oa,
+      pdfUrl: data.open_access?.oa_url ?? undefined
+    }
+
+    return createPublication(parsed);
+  } catch(err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message ?? "Invalid DOI"};
+    }
+    return { success: false, error: 'Failed to add publication'};
+  }
+}
 
 export async function createPublication(
   input: CreatePublicationValues
@@ -28,14 +63,14 @@ export async function createPublication(
             .from("publications")
             .insert({
                 title: parsed.title,
-                doi_link: parsed.doi || null,
+                doi: parsed.doi || null,
                 journal: parsed.journal || null,
                 date_published: parsed.datePublished ?? null,
                 authors: parsed.authors ?? null,
                 preview_path: parsed.previewPath ?? null,
                 is_oa: parsed.isOA ?? false,
                 pdf_url: parsed.pdfUrl || null,
-                type: parsed.type ?? "other",
+                type: parsed.publicationType ?? "other",
             })
             .select()
             .single();
@@ -125,14 +160,14 @@ export async function updatePublication(
         const updateData = Object.fromEntries(
             Object.entries({
                 title: parsed.title,
-                doi_link: parsed.doi,
+                doi: parsed.doi,
                 journal: parsed.journal,
                 date_published: parsed.datePublished,
                 authors: parsed.authors,
                 preview_path: parsed.previewPath,
                 is_oa: parsed.isOA,
                 pdf_url: parsed.pdfUrl,
-                type: parsed.type,
+                type: parsed.publicationType ?? "other",
             }).filter(([, value]) => value !== undefined)
         );
 

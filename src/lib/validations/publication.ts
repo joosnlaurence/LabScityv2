@@ -36,22 +36,23 @@ export const createPublicationSchema = z.object({
     pdfUrl: z
         .string()
         .optional(),
-
-    type: z
-        .enum([
-            "journal_article",
-            "conference_paper",
-            "preprint",
-            "dissertation",
-            "review_article",
-            "technical_report",
-            "other",
-            "book_chapter",
-        ])
-        .optional(),
 });
+
+export const doiSchema = z
+  .string()
+  .trim()
+  .transform((s) => s.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//i, ''))
+  .pipe(
+    z.string().regex(
+      /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i, 
+      "Invalid DOI Format"
+    )  
+  );
 
 export const updatePublicationSchema = createPublicationSchema.partial();
 
+export const doiFormSchema = z.object({ doi: doiSchema });
+
+export type DoiFormValues = z.infer<typeof doiFormSchema>;
 export type CreatePublicationValues = z.infer<typeof createPublicationSchema>;
 export type UpdatePublicationValues = z.infer<typeof updatePublicationSchema>;

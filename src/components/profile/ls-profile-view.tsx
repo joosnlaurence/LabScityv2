@@ -1,7 +1,6 @@
 "use client";
 
 import { 
-  ActionIcon, 
   Text, 
   Box, 
   Button, 
@@ -15,7 +14,6 @@ import {
   Anchor, 
   TextInput, 
   Collapse, 
-  Card
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -79,10 +77,13 @@ import type {
   updateProfileAction,
 } from "@/lib/actions/profile";
 import LSPublication from "./publications/ls-publication";
-import { Publication } from "@/lib/types/publication";
 import { useAuthContext } from "../auth/auth-provider";
 import { IconHelp, IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
+import { useAddPubByDoi, usePublications } from "./publications/use-publications";
+import { useForm } from "@mantine/form";
+import { doiFormSchema, DoiFormValues, doiSchema } from "@/lib/validations/publication";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -447,24 +448,52 @@ const LSProfileDesktopLayout = ({
     );
   });
   
-  const publications: Publication[] = Array.from({ length: 3 }).map((_, i) => ({
-    publication_id: i,
-    title: 'Phylogenomic Evidence Overturns Current Conceptions of Social Evolution in Wasps (Vespidae)',
-    doi_link: 'doi.org/10.1093/molbev/msy124',
-    is_oa: true,  
-    journal: 'Molecular Biology and Evolution',
-    date_published: '2018-6-19',
-    authors: ['Patrick K Piekarski', 'James M Carpenter', 'Alan R Lemmon', 'Emily Moriarty Lemmon', 'Barbara J Sharanowski'],
-    type: 'journal_article',
-    preview_path: 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/mbe/35/9/10.1093_molbev_msy124/1/m_msy124f1.jpeg?Expires=1839280244&Signature=dY9~wOXH22PfBt0D6A13aNJCgvV8A1XwXyi0bpnRqo~B88Mq9l22HEhNzy-nLzq4WFmcry6a7r3IUPUOV6o35HZVn9yxo2nUXhawhS5Lgf4aWv~UG1drZQwEJCGv2Cb8hWyvwsmzJWOQ8sXkGMbHz--JGM2dW8~RXYXYss-CZg7f7ZB0meLx0dsa8G6DlLErAUeQgANdbxfLdCKh4uvK~n9rJX5a25uihlNo9HysOcrMgNZGFKek3~wLy-uNDUCf-ySLiJ-tIqFnI~eSUM~6WcO6jH91a83VRTbeRXFNkrIz8bifDPb57DwCdRg2fzdstrVs7xVmZnHbNkoMK1ubmA__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA',
-    is_featured: true,
-    topics: ['Insect and Arachnid Ecology and Behavior', 'Animal Behavior and Reproduction', 'Plant and animal studies'],
-    pdf_url: 'https://academic.oup.com/mbe/article-pdf/35/9/2097/25534538/msy124.pdf'
-  }));
+  // const publications: Publication[] = Array.from({ length: 3 }).map((_, i) => ({
+  //   publication_id: i,
+  //   title: 'Phylogenomic Evidence Overturns Current Conceptions of Social Evolution in Wasps (Vespidae)',
+  //   doi: 'doi.org/10.1093/molbev/msy124',
+  //   is_oa: true,  
+  //   journal: 'Molecular Biology and Evolution',
+  //   date_published: '2018-6-19',
+  //   authors: ['Patrick K Piekarski', 'James M Carpenter', 'Alan R Lemmon', 'Emily Moriarty Lemmon', 'Barbara J Sharanowski'],
+  //   type: 'journal_article',
+  //   preview_path: 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/mbe/35/9/10.1093_molbev_msy124/1/m_msy124f1.jpeg?Expires=1839280244&Signature=dY9~wOXH22PfBt0D6A13aNJCgvV8A1XwXyi0bpnRqo~B88Mq9l22HEhNzy-nLzq4WFmcry6a7r3IUPUOV6o35HZVn9yxo2nUXhawhS5Lgf4aWv~UG1drZQwEJCGv2Cb8hWyvwsmzJWOQ8sXkGMbHz--JGM2dW8~RXYXYss-CZg7f7ZB0meLx0dsa8G6DlLErAUeQgANdbxfLdCKh4uvK~n9rJX5a25uihlNo9HysOcrMgNZGFKek3~wLy-uNDUCf-ySLiJ-tIqFnI~eSUM~6WcO6jH91a83VRTbeRXFNkrIz8bifDPb57DwCdRg2fzdstrVs7xVmZnHbNkoMK1ubmA__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA',
+  //   is_featured: true,
+  //   topics: ['Insect and Arachnid Ecology and Behavior', 'Animal Behavior and Reproduction', 'Plant and animal studies'],
+  //   pdf_url: 'https://academic.oup.com/mbe/article-pdf/35/9/2097/25534538/msy124.pdf'
+  // }));
 
   const { user } = useAuthContext();
   const ownsPub = user?.id === userId;
 
+  const pubsQuery = usePublications(userId);
+  const publications = pubsQuery.data;
+  
+  const doiForm = useForm<DoiFormValues>({
+    mode: 'uncontrolled',
+    initialValues: { doi: ''},
+    validate: {
+      doi: (val) => {
+        if(!val.trim()) return null;
+        const res = doiSchema.safeParse(val);
+        return res.success ? null : res.error.issues[0].message;
+      }
+    },
+    validateInputOnBlur: true
+  });
+
+  const addPubByDoi = useAddPubByDoi({ 
+    userId,
+    onSuccess: () => {
+      doiForm.reset();
+      toggleDoiInput();
+    }
+  });  
+  const handleDoiSubmit = doiForm.onSubmit((vals) => {
+    addPubByDoi.mutate(vals.doi);
+  })
+
+  console.log(publications);
   return (
     <Box py={24} px={80}>
       <Flex p={8} direction="row" w="100%" gap={28} align="flex-start">
@@ -570,98 +599,36 @@ const LSProfileDesktopLayout = ({
         </Tabs.Panel>
 
         <Tabs.Panel value='publications'>
-          <Stack>
-            <Group wrap='nowrap' justify='space-between'>
-              <Group wrap='nowrap'>
-                <Button 
-                  onClick={toggleDoiInput} 
-                  rightSection={
-                    <IconPlus 
-                      size='1rem'
-                      style={{
-                        transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
-                        transition: 'transform 200ms ease',
-                      }}
-                    />
-                  }
-                >
-                  Add Research
-                </Button>
-                <Collapse in={doiInputExpanded}>
-                  <TextInput placeholder="doi.org/..." bdrs='md' autoFocus/>
-                </Collapse>
-              </Group>
-              <Group wrap='nowrap'>
-                <Button variant='outline'>
-                  Link With ORCID iD
-                </Button>
-                <Popover width='200' withArrow position='top' shadow='xs'>
-                  <Popover.Target>
-                    <UnstyledButton variant='none' bdrs='100'>
-                      <Flex>
-                        <IconHelp size='2rem' stroke='1' color='var(--mantine-color-dimmed)'/>  
-                      </Flex>
-                    </UnstyledButton>  
-                  </Popover.Target>  
-                  <Popover.Dropdown 
-                    bdrs='md' 
-                    bd='1px solid navy.2'
-                    styles={{
-                      arrow: {
-                        border: '1px solid var(--mantine-color-navy-2)'
-                      }
-                    }}
-                  >
-                    <Text fz='xs'>
-                      An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
-                      is a unique identifier researchers can use to link all of your 
-                      research with you. Linking your account with an ORCID iD will
-                      enable LabScity to automatically fetch data about your 
-                      publications. 
-                    </Text>
-                    <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
-                      Learn more at orcid.org
-                    </Anchor>
-                  </Popover.Dropdown>
-                </Popover>
-              </Group>
-            </Group>
-            <Stack maw='800'>
+          <Stack w='700'>
             {
-              publications 
-              ? 
-              publications.map((pub, i) => 
-                <LSPublication 
-                  key={i}
-                  pub={pub}
-                  isOwner={ownsPub}
-                />
-              )
-              :
-              <>
-                No Publications found
-              </>
-            }
-            </Stack>
-            {/* <Card bd='1px solid gray.3' bdrs='md'>
-              <Stack justify='space-between'>
-                <Button 
-                  onClick={toggleDoiInput} 
-                  // rightSection={
-                  //   <IconPlus 
-                  //     size='1rem'
-                  //     style={{
-                  //       transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
-                  //       transition: 'transform 200ms ease',
-                  //     }}
-                  //   />
-                  // }
-                >
-                  Add Research
-                </Button>
-                <Collapse in={doiInputExpanded}>
-                  <TextInput placeholder="doi.org/..." bdrs='md' autoFocus/>
-                </Collapse>
+              ownsPub && 
+              <Group wrap='nowrap' justify='space-between'>
+                <Group wrap='nowrap'>
+                  <Button 
+                    onClick={toggleDoiInput} 
+                    rightSection={
+                      <IconPlus 
+                        size='1rem'
+                        style={{
+                          transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
+                          transition: 'transform 200ms ease',
+                        }}
+                      />
+                    }
+                  >
+                    Add Research
+                  </Button>
+                  <Collapse in={doiInputExpanded}>
+                    <form onSubmit={handleDoiSubmit}>
+                      <TextInput 
+                        placeholder="doi.org/..." 
+                        bdrs='md' 
+                        disabled={addPubByDoi.isPending}
+                        {...doiForm.getInputProps("doi")}
+                      />
+                    </form>
+                  </Collapse>
+                </Group>
                 <Group wrap='nowrap'>
                   <Button variant='outline'>
                     Link With ORCID iD
@@ -696,8 +663,26 @@ const LSProfileDesktopLayout = ({
                     </Popover.Dropdown>
                   </Popover>
                 </Group>
-              </Stack>
-            </Card> */}
+              </Group>
+            }
+            
+            <Stack maw='800'>
+            {
+              (publications && publications.length > 0)
+              ? 
+              publications.map((pub, i) => 
+                <LSPublication 
+                  key={i}
+                  pub={pub}
+                  isOwner={ownsPub}
+                />
+              )
+              :
+              <>
+                No Publications found
+              </>
+            }
+            </Stack>
           </Stack>
         </Tabs.Panel>
 

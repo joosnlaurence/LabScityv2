@@ -1,25 +1,25 @@
-// publication_type enum values from supabase
-export type PublicationType =
-  | "journal_article"
-  | "book_chapter"
-  | "conference_paper"
-  | "preprint"
-  | "dissertation"
-  | "review_article"
-  | "technical_report"
-  | "other";
+import { PUBLICATION_TYPE_LABELS } from "../constants/publications";
 
-export interface Publication {
-  publication_id: number;
+// publication_type enum values from supabase
+export type PublicationType = keyof typeof PUBLICATION_TYPE_LABELS;
+
+export interface OpenAlexWork {
+  title: string | null;
+  doi: string | null;
+  primary_location: { source: { display_name: string } | null } | null;
+  publication_date: string | null;
+  authorships: Array<{author: { display_name: string }}>;
+  type: string | null;
+  open_access: { is_oa: boolean, oa_url: string | null } | null;
+}
+
+export interface ParsedOpenAlexWork {
   title: string;
-  doi_link: string | null;
+  doi: string;
   journal: string | null;
-  date_published: string | null;
+  publicationDate: string;
   authors: string[];
   type: PublicationType;
-  preview_path: string | null;
-  is_oa: boolean;
-  pdf_url: string | null;
-  is_featured: boolean;
-  topics: string[];
+  isOA: boolean;
+  pdfUrl: string | null;
 }
