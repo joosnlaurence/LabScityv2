@@ -1,4 +1,4 @@
-import { addPublicationByDoi } from "@/lib/actions/publication";
+import { addPublicationByDoi, deletePublication } from "@/lib/actions/publication";
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
 import { Publication } from "@/lib/types/data";
@@ -75,7 +75,31 @@ export function useAddPubByDoi ({
     },
 
     onSuccess: () => {
+      onSuccess?.();
       notifications.show({color: 'green', message: 'Publication Added!'});
+    }
+  })
+}
+
+export function useDeletePublication(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (publicationId: number) => {
+      const res = await deletePublication(publicationId); 
+      if(!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+      notifications.show({color: 'green', message: 'Publication successfully deleted!'})
+    },
+    onError: (err) => {
+      notifications.show({
+        color: 'red',
+        title: 'Couldn\'t delete publication',
+        message: err.message
+      });
     }
   })
 }

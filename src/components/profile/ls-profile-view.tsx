@@ -80,7 +80,7 @@ import LSPublication from "./publications/ls-publication";
 import { useAuthContext } from "../auth/auth-provider";
 import { IconHelp, IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useAddPubByDoi, usePublications } from "./publications/use-publications";
+import { useAddPubByDoi, useDeletePublication, usePublications } from "./publications/use-publications";
 import { useForm } from "@mantine/form";
 import { doiFormSchema, DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -447,21 +447,6 @@ const LSProfileDesktopLayout = ({
       </li>
     );
   });
-  
-  // const publications: Publication[] = Array.from({ length: 3 }).map((_, i) => ({
-  //   publication_id: i,
-  //   title: 'Phylogenomic Evidence Overturns Current Conceptions of Social Evolution in Wasps (Vespidae)',
-  //   doi: 'doi.org/10.1093/molbev/msy124',
-  //   is_oa: true,  
-  //   journal: 'Molecular Biology and Evolution',
-  //   date_published: '2018-6-19',
-  //   authors: ['Patrick K Piekarski', 'James M Carpenter', 'Alan R Lemmon', 'Emily Moriarty Lemmon', 'Barbara J Sharanowski'],
-  //   type: 'journal_article',
-  //   preview_path: 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/mbe/35/9/10.1093_molbev_msy124/1/m_msy124f1.jpeg?Expires=1839280244&Signature=dY9~wOXH22PfBt0D6A13aNJCgvV8A1XwXyi0bpnRqo~B88Mq9l22HEhNzy-nLzq4WFmcry6a7r3IUPUOV6o35HZVn9yxo2nUXhawhS5Lgf4aWv~UG1drZQwEJCGv2Cb8hWyvwsmzJWOQ8sXkGMbHz--JGM2dW8~RXYXYss-CZg7f7ZB0meLx0dsa8G6DlLErAUeQgANdbxfLdCKh4uvK~n9rJX5a25uihlNo9HysOcrMgNZGFKek3~wLy-uNDUCf-ySLiJ-tIqFnI~eSUM~6WcO6jH91a83VRTbeRXFNkrIz8bifDPb57DwCdRg2fzdstrVs7xVmZnHbNkoMK1ubmA__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA',
-  //   is_featured: true,
-  //   topics: ['Insect and Arachnid Ecology and Behavior', 'Animal Behavior and Reproduction', 'Plant and animal studies'],
-  //   pdf_url: 'https://academic.oup.com/mbe/article-pdf/35/9/2097/25534538/msy124.pdf'
-  // }));
 
   const { user } = useAuthContext();
   const ownsPub = user?.id === userId;
@@ -493,7 +478,8 @@ const LSProfileDesktopLayout = ({
     addPubByDoi.mutate(vals.doi);
   })
 
-  console.log(publications);
+  const deletePub = useDeletePublication(userId);
+
   return (
     <Box py={24} px={80}>
       <Flex p={8} direction="row" w="100%" gap={28} align="flex-start">
@@ -618,12 +604,13 @@ const LSProfileDesktopLayout = ({
                   >
                     Add Research
                   </Button>
-                  <Collapse in={doiInputExpanded}>
+                  <Collapse in={doiInputExpanded} flex='1'>
                     <form onSubmit={handleDoiSubmit}>
                       <TextInput 
                         placeholder="doi.org/..." 
                         bdrs='md' 
                         disabled={addPubByDoi.isPending}
+                        key={doiForm.key('doi')}
                         {...doiForm.getInputProps("doi")}
                       />
                     </form>
@@ -672,9 +659,11 @@ const LSProfileDesktopLayout = ({
               ? 
               publications.map((pub, i) => 
                 <LSPublication 
-                  key={i}
+                  key={pub.publication_id}
                   pub={pub}
                   isOwner={ownsPub}
+                  onDeleteClick={() => deletePub.mutate(pub.publication_id)}
+                  isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
                 />
               )
               :

@@ -8,6 +8,8 @@ import {
   Card, 
   Divider, 
   Group, 
+  Menu, 
+  Modal, 
   Stack, 
   Text, 
 } from "@mantine/core"
@@ -18,6 +20,7 @@ import {
   IconChevronRight, 
   IconClipboardText, 
   IconClock, 
+  IconDots, 
   IconEdit, 
   IconFile, 
   IconLink, 
@@ -33,14 +36,17 @@ import { Fragment } from "react/jsx-runtime"
 // import NextLink from 'next/link';
 import classes from './ls-publications.module.css';
 import { Publication } from "@/lib/types/data";
+import { useDisclosure } from "@mantine/hooks";
 
 const ICON_SIZE = "0.85rem";
 
 export default function LSPublication(
-  { pub, isOwner }
+  { pub, isOwner, onDeleteClick, isDeleting }
   : 
-  { pub: Publication, isOwner: boolean } 
+  { pub: Publication, isOwner: boolean, onDeleteClick?: () => void, isDeleting?: boolean } 
 ) {
+  const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
+
   const iconProps = { size: ICON_SIZE, color: 'var(--mantine-color-indigo-8)' };
   let typeIcon = <IconNotebook {...iconProps}/>;
   switch(pub.type) {
@@ -83,6 +89,28 @@ export default function LSPublication(
   const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
   // pub.is_featured = true;
   return (
+    <>
+    <Modal
+      opened={confirmOpen}
+      onClose={closeConfirm}
+      title="Delete publication"
+      centered
+      closeOnClickOutside={!isDeleting}
+      closeOnEscape={!isDeleting}
+      withCloseButton={!isDeleting}
+    >
+      <Text size="sm" mb="md">
+        Remove "{pub.title}" from your profile? This can't be undone.
+      </Text>
+      <Group justify="flex-end" gap="xs">
+        <Button variant="subtle" onClick={closeConfirm} disabled={isDeleting}>
+          Cancel
+        </Button>
+        <Button color="red" onClick={onDeleteClick} disabled={isDeleting} loading={isDeleting}>
+          Delete
+        </Button>
+      </Group>
+    </Modal>
     <Card
       w='100%'
       p='0'
@@ -324,41 +352,40 @@ export default function LSPublication(
           {/* Update Buttons */}
           {
             isOwner && 
-            <Group gap='6'>
-              <ActionIcon size='lg' variant='outline' bdrs='md'>
-                <IconEdit size='1rem' />
+            // <Group gap='6'>
+            //   <ActionIcon size='lg' variant='outline' bdrs='md'>
+            //     <IconEdit size='1rem' />
+            //   </ActionIcon>
+            //   <Divider />
+            //   <ActionIcon size='lg' bg='red.6' bdrs='md'>
+            //     <IconTrash size='1rem' />
+            //   </ActionIcon>
+            // </Group>
+            
+          <Menu position="top-end" shadow="md">
+            <Menu.Target>
+              <ActionIcon bdrs='md' variant='outline' size='lg'>
+                <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
               </ActionIcon>
-              <Divider />
-              <ActionIcon size='lg' bg='red.6' bdrs='md'>
-                <IconTrash size='1rem' />
-              </ActionIcon>
-            </Group>
-          }
-          
-          {/* <Popover withArrow position="top">
-            <Popover.Target >
-              <ActionIcon 
-                bdrs='md'
-                variant='subtle'
-                color={pub.is_featured ? 'indigo.7' : undefined}
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<IconEdit size='1rem' />}>
+                Edit
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size='1rem' />}
+                onClick={openConfirm}
               >
-                <IconDots size='1.25rem' />
-              </ActionIcon>
-            </Popover.Target>
-            <Popover.Dropdown p='4'>
-              <Stack gap='4'>
-                <Button variant='subtle' bdrs='md' leftSection={<IconEdit size='1rem' />}>
-                  Edit
-                </Button>
-                <Divider />
-                <Button bg='red.6' bdrs='md' leftSection={<IconTrash size='1rem' />}>
-                  Delete
-                </Button>
-              </Stack>
-            </Popover.Dropdown>
-          </Popover> */}
+                Delete
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          }
         </Group>
       </Stack>
     </Card>
+    </>
   )
 }
