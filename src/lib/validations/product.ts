@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PRODUCT_TYPE_VALUES } from "../constants/product";
 
 export const createProductSchema = z.object({
     title: z
@@ -41,9 +42,13 @@ export const createProductSchema = z.object({
         .optional(),
 
     product_type: z
-        .string()
+        .enum(PRODUCT_TYPE_VALUES)
         .optional(),
-    
+
+    tag_ids: z
+        .array(z.number().int().positive())
+        .max(3, { message: "Maximum of 3 tags allowed" }) // this number can change
+        .optional(),
 });  
 
 export const updateProductSchema = createProductSchema.partial(); // partial because users might only update one field

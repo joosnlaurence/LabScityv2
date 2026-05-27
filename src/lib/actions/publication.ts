@@ -128,7 +128,10 @@ export async function createPublication(
         const { data: authData } = await supabase.auth.getUser();
 
         if (!authData.user){
-            return { success: false, error: "Authentication required"}
+            return { 
+                success: false, 
+                error: "Authentication required"
+            }
         }
 
         const { data: publication, error: publicationError } = await supabase

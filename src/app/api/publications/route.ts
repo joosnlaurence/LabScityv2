@@ -7,7 +7,7 @@ import type { Publication } from "@/lib/types/data";
 // returns all publications that belong to the specified user 
 // query params = userId
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url); // searchParams = everything after ?
     const userId = searchParams.get("userId");
 
     if (!userId) return NextResponse.json<ApiResponse<Publication[]>>(
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
             data: data.map(
               ({ user_publications, publication_tags, ...pub }) => ({
                 ...pub,
-                topics: publication_tags.map((pt) => pt.tags.name)
+                topics: publication_tags.map((pt) => pt.tags.name) // to get the tag names separately
               }))
         }
     );

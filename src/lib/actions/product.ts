@@ -11,6 +11,144 @@ import {
 
 import type { DataResponse, Product } from "@/lib/types/data";
 
+// allows the user to remove a productTag
+export async function deleteProductTopics(
+    productId: number,
+    tagId: number,
+): Promise<DataResponse<{ tag_id: number}>> {
+    const supabase = await createClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+        return {
+            success: false,
+            error: 'Authentication Required'
+        };
+    }
+
+    const { data: existingProduct, error: ownershipError } = await supabase
+        .from('user_products')
+        .select('product_id')
+        .eq('user_id', authData.user.id)
+        .eq('product_id', productId)
+        .maybeSingle();
+
+    if (ownershipError) {
+            return {
+                success: false,
+                error: ownershipError.message,
+            };
+        }
+
+    if (!existingProduct) {
+        return { 
+            success: false, 
+            error: "Product not found or unauthorized" 
+        };
+    }
+
+    const { error: deleteError } = await supabase
+            .from("product_tags")
+            .delete()
+            .eq("product_id", productId)
+            .eq('tag_id', tagId);
+
+    if (deleteError) {
+        return {
+            success: false,
+            error: deleteError.message,
+        };
+    }
+
+    return {
+        success: true,
+        data: {
+            tag_id: tagId,
+        },
+    };
+}
+
+async function linkProductTopics(
+    productId: number,
+    tagIds: number[],
+): Promise<void> {
+    const supabase = await createClient();
+
+    const links = tagIds.map((tagId) => ({
+        product_id: productId,
+        tag_id: tagId,
+    }));
+
+    const { error: linkError } = await supabase
+        .from("product_tags")
+        .upsert(links, { onConflict: "product_id,tag_id" });
+            // onConflict prevents the user from adding duplicate tags
+
+    if (linkError) {
+        console.warn("Failed to link product tags:", linkError.message);
+    }
+}
+
+// to add new tags after creating a product
+// user will search for a tag with autofil
+// user can select tags from results, tags will be linked in product_tags 
+export async function addProductTopics(
+    productId: number,
+    tagIds: number[],
+): Promise<DataResponse<void>> {
+    const supabase = await createClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+        return { 
+            success: false, error: 'Authentication Required' 
+        };
+    }
+
+    const { data: existingProduct, error: ownershipError } = await supabase
+        .from("user_products")
+        .select("product_id")
+        .eq("user_id", authData.user.id)
+        .eq("product_id", productId)
+        .maybeSingle();
+
+    if (ownershipError) {
+        return { 
+            success: false, error: ownershipError.message 
+        };
+    }
+
+    if (!existingProduct) {
+        return { 
+            success: false, 
+            error: "Product not found or unauthorized" 
+        };
+    }
+
+    // counts the total number of rows
+    const { count, error: countError } = await supabase
+        .from("product_tags")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", productId);
+
+    if (countError) {
+        return { success: false, error: countError.message };
+    }
+
+    if ((count ?? 0) + tagIds.length > 3) {
+        return { success: false, error: "Maximum of 3 tags allowed" };
+    }
+
+    await linkProductTopics(productId, tagIds);
+
+    return { success: true };
+}
+
+// user fills out a product form passing in title, summary, link, and optional tags
+// createProduct inserts into the products table, links the product to user in user_proudcts
+// if tags were selected using the autofill tag search, it calls linkProductTopics to add the tags to product_tags 
 export async function createProduct(
   input: CreateProductValues
 ): Promise<DataResponse<Product>> {
@@ -23,7 +161,8 @@ export async function createProduct(
 
         if(!authData.user) {
             return { 
-                success: false, error: "Authentication required"
+                success: false, 
+                error: "Authentication required"
             };
         }
 
@@ -34,17 +173,19 @@ export async function createProduct(
                     .select("publication_id")
                     .eq("user_id", authData.user.id)
                     .eq("publication_id", parsed.publication_id)
-                    .maybeSingle(); // because may receive 0 or 1 row back
+                    .maybeSingle(); // because may receive 0 or 1 rows back
                 
             if (linkedPublicationError){
                 return { 
-                    success: false, error: linkedPublicationError.message
+                    success: false, 
+                    error: linkedPublicationError.message
                 };
             }
 
             if (!linkedPublication){
                 return { 
-                    success: false, error: "Publication link is invalid"
+                    success: false, 
+                    error: "Publication link is invalid"
                 };
             }
         }
@@ -86,10 +227,17 @@ export async function createProduct(
             };
         }
 
+        // user can search for tags using tags/search autofill
+        // will select a tag, and then attempts to add parsed product id and tag_ids to the product_tags table
+        if (parsed.tag_ids && parsed.tag_ids.length > 0) {
+            await linkProductTopics(product.product_id, parsed.tag_ids);
+        }
+
         return {
             success: true,
             data: product,
         };
+
     } catch (error){
         if(error instanceof z.ZodError){
             return {

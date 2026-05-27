@@ -44,6 +44,7 @@ export interface Product {
   contributors: string[] | null;
   is_featured: boolean | null;
   product_type: string | null;
+  topics: string[] | null;
 }
 
 export interface Publication {
@@ -61,6 +62,11 @@ export interface Publication {
   topics: Array<string> | null;
 }
 
+export interface TagSearchResult {
+  id: number;
+  name: string;
+}
+
 export interface Job {
   id: number;
   title: string;
@@ -76,6 +82,7 @@ export interface Job {
   academia_role: "Postdoc" | "Faculty" | "PhD" | "Grad Student"  | null;
   application_link: string | null;
 }
+
 /** Extended post with optional author information */
 export interface PostWithAuthor extends Post {
   author?: {
