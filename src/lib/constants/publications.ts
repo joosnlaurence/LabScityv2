@@ -34,3 +34,5 @@ export const OPENALEX_TYPE_MAP: Record<string, PublicationType> = {
 }
 
 export const PUBLICATION_TYPE_VALUES = Object.keys(PUBLICATION_TYPE_LABELS) as PublicationType[]
+
+export const MAX_FEATURED_PUBLICATIONS = 3

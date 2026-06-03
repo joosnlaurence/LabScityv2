@@ -19,12 +19,14 @@ export async function GET(request: Request) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from("publications")
-        .select("*, user_publications!inner(user_id, is_featured), publication_tags(tags(name))")
-        .eq("user_publications.user_id", userId)
+        .from("user_publications_full")
+        .select("*, publication_tags(tags(name))", { count: 'exact' })
+        .eq("user_id", userId)
+        .order("is_featured", { ascending: false })
         .order("date_published", { ascending: false, nullsFirst: false })
         .returns<(Publication & { 
-          user_publications: { user_id: string, is_featured: boolean }[] 
+          user_id: string;
+          is_featured: boolean;
           publication_tags: { tags: { name: string } }[]
         })[]>();
 
@@ -39,9 +41,9 @@ export async function GET(request: Request) {
         { 
             success: true, 
             data: data.map(
-              ({ user_publications, publication_tags, ...pub }) => ({
+              ({ is_featured, publication_tags, ...pub }) => ({
                 ...pub,
-                is_featured: user_publications[0]?.is_featured ?? false,
+                is_featured: is_featured,
                 topics: publication_tags.map((pt) => pt.tags.name)
               }))
         }

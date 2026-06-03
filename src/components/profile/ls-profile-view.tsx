@@ -83,6 +83,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./publications/use-publications";
 import { useForm } from "@mantine/form";
 import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
+import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -464,6 +465,7 @@ const LSProfileDesktopLayout = ({
   const deletePub = useDeletePublication(userId);
 
   const setFeaturedPub = useSetFeaturedPublication(userId);
+  const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
 
   if (profileQuery.status === "pending") {
     return (
@@ -472,7 +474,6 @@ const LSProfileDesktopLayout = ({
       </Flex>
     );
   }
-
   if (profileQuery.status === "error") {
     return <div> Error loading Profile... </div>;
   }
@@ -617,7 +618,7 @@ const LSProfileDesktopLayout = ({
                   <Button variant='outline'>
                     Link With ORCID iD
                   </Button>
-                  <Popover width='200' withArrow position='top' shadow='xs'>
+                  <Popover width='200' position='top' shadow='xs'>
                     <Popover.Target>
                       <UnstyledButton variant='none' bdrs='100'>
                         <Flex>
@@ -665,6 +666,7 @@ const LSProfileDesktopLayout = ({
                     publicationId: pub.publication_id, 
                     isFeatured: !pub.is_featured
                   })}
+                  featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
                 />
               )
               :

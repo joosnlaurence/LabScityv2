@@ -10,8 +10,11 @@ import {
   Group, 
   Menu, 
   Modal, 
+  Popover, 
   Stack, 
-  Text, 
+  Text,
+  Tooltip,
+  UnstyledButton, 
 } from "@mantine/core"
 import { 
   IconBook, 
@@ -33,7 +36,7 @@ import {
   IconStarFilled,
   IconTrash, 
 } from "@tabler/icons-react"
-import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications"
+import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications"
 import { Fragment } from "react/jsx-runtime"
 // import NextLink from 'next/link';
 import classes from './ls-publications.module.css';
@@ -49,14 +52,16 @@ export default function LSPublication(
     onDeleteClick, 
     isDeleting, 
     onFeaturedClick,
+    featureBtnDisabled
   }
   : 
   { 
     pub: Publication, 
     isOwner: boolean, 
     onDeleteClick?: () => void, 
-    isDeleting?: boolean 
-    onFeaturedClick: () => void
+    isDeleting?: boolean,
+    onFeaturedClick: () => void,
+    featureBtnDisabled: boolean,
   } 
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
@@ -214,15 +219,17 @@ export default function LSPublication(
 
           {/* Make Featured */}
           {
-            isOwner && 
-            <ActionIcon variant="subtle" onClick={onFeaturedClick}>
-              {
-                pub.is_featured ?
-                <IconPinFilled stroke='1.25' color='var(--mantine-color-yellow-7)'/>
-                :
-                <IconPin stroke='1.25'/>
-              }
-            </ActionIcon>
+            isOwner &&
+            <Tooltip label={`You can feature up to ${MAX_FEATURED_PUBLICATIONS} publications`} disabled={!featureBtnDisabled}> 
+              <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
+                {
+                  pub.is_featured ?
+                  <IconPinFilled stroke='1.25' color='var(--mantine-color-yellow-7)'/>
+                  :
+                  <IconPin stroke='1.25'/>
+                }
+              </ActionIcon>
+            </Tooltip>
           }
         </Group>
         {/* Title */}
@@ -272,14 +279,31 @@ export default function LSPublication(
                 <Fragment key={`${name}-${i}`}>
                   {i > 0 && " · "}
                   {name}
+                  {i === visibleAuthors.length-1 ? " " : undefined}
                 </Fragment>
               ))
             }
             {
               authorOverflow > 0 && (
-                <Text component="span" c="dimmed" fz='sm'>
-                  {` +${authorOverflow} more`}
-                </Text>
+                <Popover shadow='xs'>
+                  <Popover.Target>
+                    <UnstyledButton className={classes.authorOverflow} component="span" c="dimmed" fz='sm'>
+                      {`+${authorOverflow} more`}
+                    </UnstyledButton>
+                  </Popover.Target>
+                  <Popover.Dropdown
+                    bdrs='md' 
+                    bd='1px solid navy.2'
+                  >
+                    <Stack gap='2'>
+                      {
+                        (pub.authors ?? []).map((name, i) => 
+                          <Text key={`${pub.publication_id}-${name}-${i}`} size='sm'>{name}</Text>
+                        )
+                      }
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
               )
             }
           </Box>

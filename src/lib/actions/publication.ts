@@ -12,7 +12,7 @@ import {
 
 import type { DataResponse, Publication } from "@/lib/types/data";
 import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
-import { OPENALEX_TYPE_MAP } from "../constants/publications";
+import { MAX_FEATURED_PUBLICATIONS, OPENALEX_TYPE_MAP } from "../constants/publications";
 
 export async function addPublicationByDoi(
   doi: string
@@ -371,6 +371,29 @@ export async function setFeaturedPublication(
             success: false,
             error: "Authentication required",
         };
+    }
+
+    if(isFeatured) {
+      const { count, error: validationError } = 
+        await supabase
+          .from("user_publications")
+          .select("*", { count: 'exact', head: true })
+          .eq("user_id", authData.user.id)
+          .eq("is_featured", true)
+        
+      if (validationError) {
+        return {
+          success: false,
+          error: validationError.message
+        }
+      }
+
+      if((count ?? 0) >= 3) {
+        return { 
+          success: false,
+          error: `You can only feature up to ${MAX_FEATURED_PUBLICATIONS} publications`
+        }
+      }
     }
 
     const { data: publication, error } =
