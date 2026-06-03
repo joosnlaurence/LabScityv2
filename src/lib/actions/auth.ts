@@ -16,7 +16,7 @@ import { createClient } from "@/supabase/server";
  */
 function getAppBaseUrl() {
   const explicitUrl = process.env.NEXT_SITE_URL;
-  const resolvedUrl = explicitUrl ?? "http://labscity.org";
+  const resolvedUrl = explicitUrl ?? "https://labscity.org";
   return resolvedUrl.replace(/\/$/, "");
 }
 
