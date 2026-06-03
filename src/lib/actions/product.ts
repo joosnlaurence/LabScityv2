@@ -577,3 +577,75 @@ export async function saveProductImagePath(
     }
 
 }
+
+// gets the logged in user, checks that the product id is valid and also belongs to the user
+// also deleted from the join table
+// deletes the product row from product table and returns the deleted product id
+export async function deleteProduct(
+    productId: number
+): Promise<DataResponse<{ product_id: number }>> {
+    try {
+        const supabase = await createClient();
+
+        const { data: authData } = await supabase.auth.getUser();
+
+        if (!authData.user) {
+            return {
+                success: false,
+                error: "Authentication required",
+            };
+        }
+
+        if (!Number.isInteger(productId) || productId <= 0) {
+            return {
+                success: false,
+                error: "Invalid product id",
+            };
+        }
+
+        const { data: existingProduct, error: ownershipError } = await supabase
+            .from("user_products")
+            .select("product_id")
+            .eq("user_id", authData.user.id)
+            .eq("product_id", productId)
+            .maybeSingle();
+
+        if (ownershipError) {
+            return {
+                success: false,
+                error: ownershipError.message,
+            };
+        }
+
+        if (!existingProduct) {
+            return {
+                success: false,
+                error: "Product not found or unauthorized",
+            };
+        }
+
+        const { error: deleteError } = await supabase
+            .from("products")
+            .delete()
+            .eq("product_id", productId);
+
+        if (deleteError) {
+            return {
+                success: false,
+                error: deleteError.message,
+            };
+        }
+
+        return {
+            success: true,
+            data: {
+                product_id: productId,
+            },
+        };
+    } catch {
+        return {
+            success: false,
+            error: "Failed to delete product",
+        };
+    }
+}
