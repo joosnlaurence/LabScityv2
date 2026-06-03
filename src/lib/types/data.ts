@@ -38,7 +38,7 @@ export interface Product {
   short_summary: string | null;
   website_link: string | null;
   publication_id: number | null;
-  image_path: string | null;
+  images: string[] | null;
   github_link: string | null;
   other_links: string[] | null;
   contributors: string[] | null;

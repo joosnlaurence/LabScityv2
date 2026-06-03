@@ -5,12 +5,15 @@ import { createClient } from "@/supabase/server";
 import {
     createProductSchema,
     updateProductSchema,
+    productImageContentTypeSchema,
+    productImagePathSchema,
     type CreateProductValues,
     type UpdateProductValues,
 } from "@/lib/validations/product";
 
 import type { DataResponse, Product } from "@/lib/types/data";
-
+import type { ProductImageUploadData } from "@/lib/types/api";
+import { MAX_PRODUCT_IMAGE_BYTES, PRODUCT_IMAGE_BUCKET, extensionFromMime } from "@/lib/utils/storage";
 // allows the user to remove a productTag
 export async function deleteProductTopics(
     productId: number,
@@ -197,7 +200,6 @@ export async function createProduct(
                 short_summary: parsed.short_summary ?? null,
                 website_link: parsed.website_link || null,
                 publication_id: parsed.publication_id ?? null,
-                image_path: parsed.image_path ?? null,
                 github_link: parsed.github_link || null,
                 other_links: parsed.other_links ?? [],
                 contributors: parsed.contributors ?? [],
@@ -330,7 +332,6 @@ export async function updateProduct(
                 short_summary: parsed.short_summary,
                 website_link: parsed.website_link,
                 publication_id: parsed.publication_id,
-                image_path: parsed.image_path,
                 github_link: parsed.github_link,
                 other_links: parsed.other_links,
                 contributors: parsed.contributors,
@@ -371,74 +372,208 @@ export async function updateProduct(
     }
 }
 
-// gets the logged in user, checks that the product id is valid and also belongs to the user
-// also deleted from the join table
-// deletes the product row from product table and returns the deleted product id
-export async function deleteProduct(
-    productId: number
-): Promise<DataResponse<{ product_id: number }>> {
-    try {
-        const supabase = await createClient();
+// wrapper function to mark a product as featured specifically
+export async function setProductAsFeatured(
+    productId: number,
+    isFeatured: boolean,
+): Promise<DataResponse<Product>> {
+    return updateProduct( productId, { is_featured: isFeatured })
+}
 
-        const { data: authData } = await supabase.auth.getUser();
+export async function createProductImageUploadUrl(
+    productId: number,
+    contentType: string,
+): Promise<DataResponse<ProductImageUploadData>> {
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+    if(!authData.user ){
+        return { success: false, error: 'Authentication required' };
+    }
 
-        if (!authData.user) {
+    if(!Number.isInteger(productId) || productId <= 0){
             return {
                 success: false,
-                error: "Authentication required",
+                error: 'Invalid product id',
             };
         }
 
-        if (!Number.isInteger(productId) || productId <= 0) {
-            return {
-                success: false,
-                error: "Invalid product id",
-            };
-        }
-
-        const { data: existingProduct, error: ownershipError } = await supabase
+        const { data: existingProduct, error: ownershipError} = await supabase
             .from("user_products")
             .select("product_id")
             .eq("user_id", authData.user.id)
             .eq("product_id", productId)
             .maybeSingle();
 
-        if (ownershipError) {
+        if(ownershipError){
             return {
                 success: false,
                 error: ownershipError.message,
-            };
+            }
         }
 
-        if (!existingProduct) {
+        if(!existingProduct){
             return {
                 success: false,
-                error: "Product not found or unauthorized",
-            };
+                error: "Product not found or unauthorized"
+            }
         }
 
-        const { error: deleteError } = await supabase
-            .from("products")
-            .delete()
+        const { count, error: countError } = await supabase
+            .from("product_images")
+            .select("*", { count: "exact", head: true})
             .eq("product_id", productId);
 
-        if (deleteError) {
-            return {
-                success: false,
-                error: deleteError.message,
+        if(countError){
+            return { 
+                success: false, 
+                error: countError.message 
             };
         }
 
+        if((count ?? 0) >= 5){
+            return {
+                success: false,
+                error: "A maximum of 5 images are allowed"
+            }
+        }
+
+        try {
+            // to check that this is one of the allowed image types
+            const validatedContentType = productImageContentTypeSchema.parse(contentType); 
+            const extension = extensionFromMime(validatedContentType);
+            const path = `products/${productId}/${crypto.randomUUID()}.${extension}`;  // to build the bucket file path
+
+            const { data, error } = await supabase.storage
+                .from(PRODUCT_IMAGE_BUCKET)
+                .createSignedUploadUrl(path); // to create a temp authorized URL for frontned to upload file to storage
+
+            if (error || !data){
+                return {
+                    success: false,
+                    error: error?.message ?? "Image upload preparation failed"
+                };
+            }
+
+            return {
+                success: true,
+                data: {
+                    bucket: PRODUCT_IMAGE_BUCKET,
+                    path,
+                    token: data.token,
+                    maxBytes: MAX_PRODUCT_IMAGE_BYTES,
+                },
+            };
+        } catch (error) {
+            if(error instanceof z.ZodError) {
+                return {
+                    success: false,
+                    error: error.issues[0]?.message ?? "Invalid content type"
+                };
+            }
+            return { 
+                success: false, 
+                error: "Failed to prepare image upload" 
+            };
+        }
+}
+
+export async function saveProductImagePath(
+    productId: number,
+    imagePath: string,
+): Promise<DataResponse<{id: number; image_path: string }>> {
+    try {
+        const parsed_imagePath = productImagePathSchema.parse(imagePath); // to validate that the imagePath is a non empty string
+        const supabase = await createClient();
+        const { data: authData } = await supabase.auth.getUser();
+        if(!authData.user ){
+            return { success: false, error: 'Authentication required' };
+        }
+
+        if(!Number.isInteger(productId) || productId <= 0){
+                return {
+                    success: false,
+                    error: 'Invalid product id',
+                };
+            }
+
+            const { data: existingProduct, error: ownershipError} = await supabase
+                .from("user_products")
+                .select("product_id")
+                .eq("user_id", authData.user.id)
+                .eq("product_id", productId)
+                .maybeSingle();
+
+            if(ownershipError){
+                return {
+                    success: false,
+                    error: ownershipError.message,
+                }
+            }
+
+            if(!existingProduct){
+                return {
+                    success: false,
+                    error: "Product not found or unauthorized"
+                }
+            }
+
+            const { count, error: countError } = await supabase
+                .from("product_images")
+                .select("*", { count: "exact", head: true})
+                .eq("product_id", productId);
+
+        if(countError){
+            return { 
+                success: false, 
+                error: countError.message 
+            };
+        }
+
+        if((count ?? 0) >= 5){
+            return {
+                success: false,
+                error: "A maximum of 5 images are allowed"
+            }
+        }
+
+        if (!parsed_imagePath.startsWith(`products/${productId}/`)) {
+            return { success: false, error: "Invalid image path" };
+        }
+
+        const { data: product, error: productError} = await supabase
+            .from("product_images")
+            .insert({
+                product_id: productId,
+                image_path: parsed_imagePath,
+            })
+            .select()
+            .single();
+
+        if (productError){
+            return {
+                success: false, 
+                error: productError.message
+            };
+        }
         return {
             success: true,
             data: {
-                product_id: productId,
+                id: product.id,
+                image_path: product.image_path,
             },
         };
-    } catch {
-        return {
-            success: false,
-            error: "Failed to delete product",
+        
+    } catch (error){
+        if(error instanceof z.ZodError){
+            return {
+                    success: false,
+                    error: error.issues[0]?.message ?? "Invalid content type"
+            };
+        }
+         return { 
+                success: false, 
+                error: "Failed to prepare image upload" 
         };
     }
+
 }

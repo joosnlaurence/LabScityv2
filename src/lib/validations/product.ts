@@ -1,6 +1,18 @@
 import { z } from "zod";
 import { PRODUCT_TYPE_VALUES } from "../constants/product";
 
+const allowedProductImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+
+export const productImageContentTypeSchema = z
+  .string()
+  .refine((value) => allowedProductImageTypes.includes(value as (typeof allowedProductImageTypes)[number]), {
+    message: "Only JPG, PNG, WEBP, and GIF images are allowed",
+  });
+
+export const productImagePathSchema = z
+  .string()
+  .min(1, { message: "Image path is required" });
+
 export const createProductSchema = z.object({
     title: z
         .string()
@@ -19,10 +31,6 @@ export const createProductSchema = z.object({
         .number()
         .int()
         .positive()
-        .optional(),
-
-    image_path: z
-        .string()
         .optional(),
 
     github_link: z
