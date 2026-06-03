@@ -80,10 +80,9 @@ import LSPublication from "./publications/ls-publication";
 import { useAuthContext } from "../auth/auth-provider";
 import { IconHelp, IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useAddPubByDoi, useDeletePublication, usePublications } from "./publications/use-publications";
+import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./publications/use-publications";
 import { useForm } from "@mantine/form";
-import { doiFormSchema, DoiFormValues, doiSchema } from "@/lib/validations/publication";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -363,18 +362,6 @@ const LSProfileDesktopLayout = ({
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
 
-  if (profileQuery.status === "pending") {
-    return (
-      <Flex justify="center" align="center" h="calc(100vh - 120px)">
-        <LSSpinner />
-      </Flex>
-    );
-  }
-
-  if (profileQuery.status === "error") {
-    return <div> Error loading Profile... </div>;
-  }
-
   const friendIds = new Set(friends?.map((friend) => friend.user_id));
 
   const notFollowedBack = following?.filter(
@@ -447,10 +434,6 @@ const LSProfileDesktopLayout = ({
       </li>
     );
   });
-
-  const { user } = useAuthContext();
-  const ownsPub = user?.id === userId;
-
   const pubsQuery = usePublications(userId);
   const publications = pubsQuery.data;
   
@@ -480,8 +463,22 @@ const LSProfileDesktopLayout = ({
 
   const deletePub = useDeletePublication(userId);
 
+  const setFeaturedPub = useSetFeaturedPublication(userId);
+
+  if (profileQuery.status === "pending") {
+    return (
+      <Flex justify="center" align="center" h="calc(100vh - 120px)">
+        <LSSpinner />
+      </Flex>
+    );
+  }
+
+  if (profileQuery.status === "error") {
+    return <div> Error loading Profile... </div>;
+  }
+
   return (
-    <Box py={24} px={80}>
+    <Box pt={24} pb={300} px={80}>
       <Flex p={8} direction="row" w="100%" gap={28} align="flex-start">
         <Box flex={5}>
           <LSProfileHero
@@ -587,7 +584,7 @@ const LSProfileDesktopLayout = ({
         <Tabs.Panel value='publications'>
           <Stack w='700'>
             {
-              ownsPub && 
+              isOwnProfile && 
               <Group wrap='nowrap' justify='space-between'>
                 <Group wrap='nowrap'>
                   <Button 
@@ -661,9 +658,13 @@ const LSProfileDesktopLayout = ({
                 <LSPublication 
                   key={pub.publication_id}
                   pub={pub}
-                  isOwner={ownsPub}
+                  isOwner={isOwnProfile}
                   onDeleteClick={() => deletePub.mutate(pub.publication_id)}
                   isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
+                  onFeaturedClick={() => setFeaturedPub.mutate({ 
+                    publicationId: pub.publication_id, 
+                    isFeatured: !pub.is_featured
+                  })}
                 />
               )
               :

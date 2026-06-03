@@ -1,4 +1,4 @@
-import { addPublicationByDoi, deletePublication } from "@/lib/actions/publication";
+import { addPublicationByDoi, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
 import { Publication } from "@/lib/types/data";
@@ -102,4 +102,52 @@ export function useDeletePublication(userId: string) {
       });
     }
   })
+}
+
+export function useSetFeaturedPublication(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      { publicationId, isFeatured }
+      :
+      { publicationId: number, isFeatured: boolean }) => {
+      const res = await setFeaturedPublication(publicationId, isFeatured);
+      if(!res.success) throw new Error(res.error);
+      return res.success;
+    },
+    onMutate: async ({ publicationId, isFeatured}) => {
+      await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
+      const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
+
+      queryClient.setQueryData<Publication[]>(
+        publicationKeys.list(userId),
+        (old) => {
+          if(!old) return old;
+          return old.map((pub) => 
+            pub.publication_id === publicationId 
+              ? { ...pub, is_featured: isFeatured}
+              : pub
+          );
+        }
+      );
+
+      return { snapshot };
+    },
+    onSuccess: (_data, {publicationId, isFeatured}) => {
+      notifications.show({color: 'green', message: `Publication ${isFeatured ? 'pinned' : 'unpinned'}!`});
+    },
+    onError: (error, _vars, context) => {
+      if(context?.snapshot) 
+        queryClient.setQueryData(publicationKeys.list(userId), context.snapshot);
+      notifications.show({
+        color: "red",
+        title: "Error pinning publication",
+        message: error.message
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+    }
+  });
 }

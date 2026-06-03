@@ -349,3 +349,60 @@ export async function deletePublication(
         };
     }
 }
+
+export async function setFeaturedPublication(
+  publicationId: number,
+  isFeatured: boolean
+){
+  try {
+    if (!Number.isInteger(publicationId) || publicationId <= 0) {
+        return {
+            success: false,
+            error: "Invalid publication id",
+        };
+    }
+    
+    const supabase = await createClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+        return {
+            success: false,
+            error: "Authentication required",
+        };
+    }
+
+    const { data: publication, error } =
+      await supabase
+        .from("user_publications")
+        .update({ is_featured: isFeatured })
+        .eq("user_id", authData.user.id)
+        .eq("publication_id", publicationId)
+        .select()
+        .maybeSingle();
+
+    if (error){
+        return {
+            success: false,
+            error: error.message
+        };
+    }    
+
+    if(!publication) {
+      return {
+        success: false,
+        error: 'Publication does not exist or user not authorized'
+      }
+    }
+
+    return {success: true};
+    
+  } catch(error) {
+    console.error("[setFeaturedPublication] error:", error);
+    return {
+      success: false,
+      error: "Failed to set featured publication"
+    }
+  }
+}

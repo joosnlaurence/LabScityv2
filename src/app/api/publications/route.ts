@@ -20,11 +20,11 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
         .from("publications")
-        .select("*, user_publications!inner(user_id), publication_tags(tags(name))")
+        .select("*, user_publications!inner(user_id, is_featured), publication_tags(tags(name))")
         .eq("user_publications.user_id", userId)
         .order("date_published", { ascending: false, nullsFirst: false })
         .returns<(Publication & { 
-          user_publications: { user_id: string }[] 
+          user_publications: { user_id: string, is_featured: boolean }[] 
           publication_tags: { tags: { name: string } }[]
         })[]>();
 
@@ -41,6 +41,7 @@ export async function GET(request: Request) {
             data: data.map(
               ({ user_publications, publication_tags, ...pub }) => ({
                 ...pub,
+                is_featured: user_publications[0]?.is_featured ?? false,
                 topics: publication_tags.map((pt) => pt.tags.name)
               }))
         }

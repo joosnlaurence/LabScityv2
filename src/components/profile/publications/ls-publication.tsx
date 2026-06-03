@@ -26,6 +26,8 @@ import {
   IconLink, 
   IconNotebook, 
   IconPdf, 
+  IconPin, 
+  IconPinFilled, 
   IconPresentation, 
   IconSchool, 
   IconStarFilled,
@@ -41,9 +43,21 @@ import { useDisclosure } from "@mantine/hooks";
 const ICON_SIZE = "0.85rem";
 
 export default function LSPublication(
-  { pub, isOwner, onDeleteClick, isDeleting }
+  { 
+    pub, 
+    isOwner, 
+    onDeleteClick, 
+    isDeleting, 
+    onFeaturedClick,
+  }
   : 
-  { pub: Publication, isOwner: boolean, onDeleteClick?: () => void, isDeleting?: boolean } 
+  { 
+    pub: Publication, 
+    isOwner: boolean, 
+    onDeleteClick?: () => void, 
+    isDeleting?: boolean 
+    onFeaturedClick: () => void
+  } 
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
@@ -87,7 +101,6 @@ export default function LSPublication(
   : undefined;
 
   const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
-  // pub.is_featured = true;
   return (
     <>
     <Modal
@@ -138,65 +151,80 @@ export default function LSPublication(
         bdrs='12 12 0 0' 
         p='21'
       >
-        {/* Badges */}
-        <Group>
-          {
-            pub.is_featured &&
+        {/* Badges + Pin Icon */}
+        <Group justify="space-between" wrap='nowrap'>
+          {/* Badges */}
+          <Group>
+            {
+              pub.is_featured &&
+              <Badge 
+                tt='none' 
+                bg='yellow.1' 
+                bd='1px solid yellow.4'
+                fz='0.75rem'
+                fw='600'
+                lh='1rem'
+                c='orange.9'
+                leftSection={<IconStarFilled size={ICON_SIZE} color="var(--mantine-color-yellow-7)"/>}
+              >
+                Featured
+              </Badge>
+            }
             <Badge 
               tt='none' 
-              bg='yellow.1' 
-              bd='1px solid yellow.4'
+              bg='indigo.0' 
+              c='indigo.9' 
+              fw='500'
               fz='0.75rem'
-              fw='600'
               lh='1rem'
-              c='orange.9'
-              leftSection={<IconStarFilled size={ICON_SIZE} color="var(--mantine-color-yellow-7)"/>}
-             >
-              Featured
+              leftSection={typeIcon}
+            >
+              {PUBLICATION_TYPE_LABELS[pub.type ?? 'other']}
             </Badge>
-          }
-          <Badge 
-            tt='none' 
-            bg='indigo.0' 
-            c='indigo.9' 
-            fw='500'
-            fz='0.75rem'
-            lh='1rem'
-            leftSection={typeIcon}
-          >
-            {PUBLICATION_TYPE_LABELS[pub.type ?? 'other']}
-          </Badge>
+            {
+              pub.is_oa && 
+              <Badge 
+                tt='none' 
+                bg='indigo.0' 
+                c='indigo.9' 
+                fw='500'
+                fz='0.75rem'
+                lh='1rem'
+                leftSection={
+                  <IconBook {...iconProps}/>
+                }
+              >Open Access</Badge>
+            }
+            {
+              pub.is_oa && pub.pdf_url ? 
+              <Badge 
+                tt='none' 
+                bg='indigo.0' 
+                c='indigo.9' 
+                fw='500'
+                fz='0.75rem'
+                lh='1rem'
+                leftSection={
+                  <IconPdf {...iconProps}/>
+                }
+              >PDF Available</Badge>
+              : undefined
+            }
+          </Group>
+
+          {/* Make Featured */}
           {
-            pub.is_oa && 
-            <Badge 
-              tt='none' 
-              bg='indigo.0' 
-              c='indigo.9' 
-              fw='500'
-              fz='0.75rem'
-              lh='1rem'
-              leftSection={
-                <IconBook {...iconProps}/>
+            isOwner && 
+            <ActionIcon variant="subtle" onClick={onFeaturedClick}>
+              {
+                pub.is_featured ?
+                <IconPinFilled stroke='1.25' color='var(--mantine-color-yellow-7)'/>
+                :
+                <IconPin stroke='1.25'/>
               }
-            >Open Access</Badge>
-          }
-          {
-            pub.is_oa && pub.pdf_url ? 
-            <Badge 
-              tt='none' 
-              bg='indigo.0' 
-              c='indigo.9' 
-              fw='500'
-              fz='0.75rem'
-              lh='1rem'
-              leftSection={
-                <IconPdf {...iconProps}/>
-              }
-            >PDF Available</Badge>
-            : undefined
+            </ActionIcon>
           }
         </Group>
-        
         {/* Title */}
         <Box>
           <Anchor 
