@@ -6,17 +6,19 @@ export type PublicationType = keyof typeof PUBLICATION_TYPE_LABELS;
 export interface OpenAlexWork {
   title: string | null;
   doi: string | null;
-  primary_location: { source: { display_name: string } | null } | null;
+  best_oa_location: { pdf_url: string | null };
+  primary_location: { source: { display_name: string } | null, pdf_url: string | null } | null;
   publication_date: string | null;
-  authorships: Array<{author: { display_name: string }}>;
+  authorships: {author: { display_name: string }}[];
   type: string | null;
   open_access: { is_oa: boolean, oa_url: string | null } | null;
-  topics: Array<{id: string; display_name: string; score: number}>;
+  locations: { pdf_url: string | null }[];
+  topics: {id: string; display_name: string; score: number}[];
 }
 
 export interface ParsedOpenAlexWork {
   title: string;
-  doi: string;
+  doi: string | null; 
   journal: string | null;
   publicationDate: string | null;
   authors: string[];

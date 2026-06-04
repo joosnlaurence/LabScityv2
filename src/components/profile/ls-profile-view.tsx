@@ -1,19 +1,15 @@
 "use client";
 
 import { 
-  Text, 
   Box, 
   Button, 
   Divider, 
   Flex, 
   Group, 
-  Popover, 
   Stack, 
   Tabs, 
-  UnstyledButton, 
-  Anchor, 
   TextInput, 
-  Collapse, 
+  Collapse,
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -77,13 +73,14 @@ import type {
   updateProfileAction,
 } from "@/lib/actions/profile";
 import LSPublication from "./publications/ls-publication";
-import { useAuthContext } from "../auth/auth-provider";
-import { IconHelp, IconPlus } from "@tabler/icons-react";
+import { IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./publications/use-publications";
 import { useForm } from "@mantine/form";
 import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
+import OrcidLinker from "./publications/ls-orcid-link-modal";
+import OrcidInfo from "./publications/ls-orcid-info";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -459,6 +456,7 @@ const LSProfileDesktopLayout = ({
     }
   });  
   const handleDoiSubmit = doiForm.onSubmit((vals) => {
+    if (!vals.doi.trim()) return;
     addPubByDoi.mutate(vals.doi);
   })
 
@@ -466,6 +464,7 @@ const LSProfileDesktopLayout = ({
 
   const setFeaturedPub = useSetFeaturedPublication(userId);
   const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
+
 
   if (profileQuery.status === "pending") {
     return (
@@ -587,7 +586,7 @@ const LSProfileDesktopLayout = ({
             {
               isOwnProfile && 
               <Group wrap='nowrap' justify='space-between'>
-                <Group wrap='nowrap'>
+                <Group flex='1' wrap='nowrap'>
                   <Button 
                     onClick={toggleDoiInput} 
                     rightSection={
@@ -615,38 +614,8 @@ const LSProfileDesktopLayout = ({
                   </Collapse>
                 </Group>
                 <Group wrap='nowrap'>
-                  <Button variant='outline'>
-                    Link With ORCID iD
-                  </Button>
-                  <Popover width='200' position='top' shadow='xs'>
-                    <Popover.Target>
-                      <UnstyledButton variant='none' bdrs='100'>
-                        <Flex>
-                          <IconHelp size='2rem' stroke='1' color='var(--mantine-color-dimmed)'/>  
-                        </Flex>
-                      </UnstyledButton>  
-                    </Popover.Target>  
-                    <Popover.Dropdown 
-                      bdrs='md' 
-                      bd='1px solid navy.2'
-                      styles={{
-                        arrow: {
-                          border: '1px solid var(--mantine-color-navy-2)'
-                        }
-                      }}
-                    >
-                      <Text fz='xs'>
-                        An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
-                        is a unique identifier researchers can use to link all of your 
-                        research with you. Linking your account with an ORCID iD will
-                        enable LabScity to automatically fetch data about your 
-                        publications. 
-                      </Text>
-                      <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
-                        Learn more at orcid.org
-                      </Anchor>
-                    </Popover.Dropdown>
-                  </Popover>
+                  <OrcidLinker userId={userId}/>
+                  <OrcidInfo size='2rem' />
                 </Group>
               </Group>
             }

@@ -13,6 +13,7 @@ import {
 import type { DataResponse, Publication } from "@/lib/types/data";
 import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
 import { MAX_FEATURED_PUBLICATIONS, OPENALEX_TYPE_MAP } from "../constants/publications";
+import { parseOpenAlexWork } from "../utils/openalex";
 
 export async function addPublicationByDoi(
   doi: string
@@ -30,21 +31,7 @@ export async function addPublicationByDoi(
     if(!res.ok) throw new Error(`OpenAlex Error: ${res.status}`);
     const data: OpenAlexWork = await res.json();
 
-    const pubType = OPENALEX_TYPE_MAP[data.type ?? ''] ?? 'other';
-
-    const parsed: ParsedOpenAlexWork = {
-      doi: parsedDoi,
-      title: data.title ?? '',
-      authors: data.authorships.map((a) => a.author.display_name),
-      type: pubType,
-      journal: data.primary_location?.source?.display_name ?? null,
-      publicationDate: data.publication_date,
-      isOA: data.open_access?.is_oa ?? false,
-      pdfUrl: data.open_access?.oa_url ?? null,
-      openAlexTopicIds: (data.topics ?? []).map((t) =>
-        t.id.replace("https://openalex.org/", "")
-      ),
-    }
+    const parsed: ParsedOpenAlexWork = parseOpenAlexWork(data);
 
     const { data: existing } = await supabase
       .from("user_publications")
@@ -59,7 +46,7 @@ export async function addPublicationByDoi(
 
     const createPubResult = await createPublication({
       title: parsed.title,
-      doi: parsed.doi,
+      doi: parsed.doi!,
       journal: parsed.journal,
       datePublished: parsed.publicationDate,
       authors: parsed.authors,

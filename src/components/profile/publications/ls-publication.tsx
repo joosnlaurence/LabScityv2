@@ -60,8 +60,8 @@ export default function LSPublication(
     isOwner: boolean, 
     onDeleteClick?: () => void, 
     isDeleting?: boolean,
-    onFeaturedClick: () => void,
-    featureBtnDisabled: boolean,
+    onFeaturedClick?: () => void,
+    featureBtnDisabled?: boolean,
   } 
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
@@ -403,37 +403,27 @@ export default function LSPublication(
 
           {/* Update Buttons */}
           {
-            isOwner && 
-            // <Group gap='6'>
-            //   <ActionIcon size='lg' variant='outline' bdrs='md'>
-            //     <IconEdit size='1rem' />
-            //   </ActionIcon>
-            //   <Divider />
-            //   <ActionIcon size='lg' bg='red.6' bdrs='md'>
-            //     <IconTrash size='1rem' />
-            //   </ActionIcon>
-            // </Group>
-            
-          <Menu position="top-end" shadow="md">
-            <Menu.Target>
-              <ActionIcon bdrs='md' variant='outline' size='lg'>
-                <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item leftSection={<IconEdit size='1rem' />}>
-                Edit
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                color="red"
-                leftSection={<IconTrash size='1rem' />}
-                onClick={openConfirm}
-              >
-                Delete
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+            isOwner &&             
+            <Menu position="top-end" shadow="md">
+              <Menu.Target>
+                <ActionIcon bdrs='md' variant='outline' size='lg'>
+                  <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconEdit size='1rem' />}>
+                  Edit
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  color="red"
+                  leftSection={<IconTrash size='1rem' />}
+                  onClick={openConfirm}
+                >
+                  Delete
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           }
         </Group>
       </Stack>
