@@ -6,24 +6,32 @@ import {
   TextInput,
   Text,
   Stack,
-  Anchor
+  Anchor,
+  Center,
+  Loader,
+  Pagination,
+  SimpleGrid,
+  Checkbox,
+  Chip
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import OrcidInfo from "./ls-orcid-info";
 import { useForm } from "@mantine/form";
 import { orcidSchema } from "@/lib/validations/publication";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ParsedOpenAlexWork } from "@/lib/types/publication";
 import { OpenAlexFetchResponse } from "@/app/api/openalex/route";
 import { ApiResponse } from "@/lib/types/api";
 import { Publication } from "@/lib/types/data";
-import LSPublication from "./ls-publication";
+import { useQuery } from "@tanstack/react-query";
+import LSPublicationReviewItem from "./ls-publication-review-item";
+import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
 
 function workToPublication(work: ParsedOpenAlexWork): Publication {
   return {
     publication_id: -1,
     title: work.title,
-    doi: work.doi,
+    doi: work!.doi,
     journal: work.journal,
     date_published: work.publicationDate,
     authors: work.authors,
@@ -36,12 +44,12 @@ function workToPublication(work: ParsedOpenAlexWork): Publication {
   };
 }
 
-export default function OrcidLinker({userId}: {userId: string}) {
+export default function LSOrcidLinker({userId}: {userId: string}) {
   const [orcidInputOpened, { open: openOrcidInput, close: closeOrcidInput }] = useDisclosure(false);
-  const [publications, setPublications] = useState<Publication[] | null>(null);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
-  const [error, setError] = useState<string | null>(null);
-
+  const [orcid, setOrcid] = useState<string | null>(null);
+  const [activePage, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const orcidForm = useForm({
     mode: 'uncontrolled',
     initialValues: { orcid: '' },
@@ -55,27 +63,92 @@ export default function OrcidLinker({userId}: {userId: string}) {
     validateInputOnBlur: true,
   })
 
-  const handleOrcidSubmit = orcidForm.onSubmit(async (vals) => {
-    if (!vals.orcid.trim()) return;
-    
-    const normalized = orcidSchema.parse(vals.orcid);
-    
-    setStatus('loading');
-    setError(null);
-    try {
-      const res = await fetch(`/api/openalex?orcid=${normalized}`);
-      const json: ApiResponse<OpenAlexFetchResponse> = await res.json();
-      if(!json.success) throw new Error(json.error);
-      
-      console.log(json.data.works);
-      setPublications(json.data.works.map((work) => workToPublication(work)))
-      setStatus('idle');
-    } catch (err) {
-      console.error('openalex fetch failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch');
-      setStatus('error');
+  function chunk<T>(array: T[], size: number): T[][] {
+    if (!array.length) {
+      return [];
     }
+    const head = array.slice(0, size);
+    const tail = array.slice(size);
+    return [head, ...chunk(tail, size)];
+  }  
+
+  const { data: publications, isFetching, isError, error } = 
+    useQuery({
+      queryKey: ["openalex", orcid],
+      queryFn: async () => {
+        const res = await fetch(`/api/openalex?orcid=${orcid}`);
+        const json: ApiResponse<OpenAlexFetchResponse> = await res.json();
+        if(!json.success) throw new Error(json.error);
+        return json.data;
+      },
+      enabled: !!orcid,
+      select: (data) => data.works.map(workToPublication)
+    });
+
+  useEffect(() => {
+    if(publications) {
+      setSelected(new Set(publications.map((p) => p.doi!)))
+    }
+  }, [publications])
+
+  const handleOrcidSubmit = orcidForm.onSubmit(async (vals) => {
+    if(!vals.orcid.trim()) return;
+    setOrcid(orcidSchema.parse(vals.orcid));
+    setPage(1);
   })
+
+  const chunkedPubs = publications ? chunk(publications, 20) : [];
+
+  const toggleSelected = (doi: string, checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(doi);
+      } else {
+        next.delete(doi);
+      }
+      return next;
+    });
+  };
+
+  const allChecked = 
+    !!publications && publications.length > 0 && selected.size === publications.length;
+  const someChecked = selected.size > 0 && !allChecked;
+
+  const toggleSelectAll = (checked: boolean) => {
+    setSelected(checked && publications 
+      ? 
+      new Set(publications.map((pub) => pub.doi!))
+      : 
+      new Set()
+    );
+  }
+
+  type PubType = keyof typeof PUBLICATION_TYPE_LABELS;
+
+  const groups = useMemo(() => {
+    const m = new Map<PubType, string[]>();
+    for(const pub of publications ?? []) {
+      const key = pub.type ?? 'other'
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(pub?.doi ?? '');
+    }
+    return m;
+  }, [publications])
+
+  const toggleGroup = (key: PubType) => {
+    const dois = groups.get(key);
+    const allOn = dois?.every((d) => selected.has(d));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      dois!.forEach((d) => (allOn ? next.delete(d) : next.add(d)));
+      return next;
+    });
+  }
+
+  const PUB_TYPE_ORDER = Object.keys(PUBLICATION_TYPE_LABELS) as PubType[];
+
+  console.log(publications);
 
   return (
     <>
@@ -89,9 +162,9 @@ export default function OrcidLinker({userId}: {userId: string}) {
                     placeholder="https://orcid.org/0000-0001-2345-6789"
                     key={orcidForm.key("orcid")}
                     {...orcidForm.getInputProps("orcid")}
-                    disabled={status === 'loading'}
+                    disabled={isFetching}
                   />
-                <Button type='submit' disabled={status === 'loading'}>
+                <Button type='submit' disabled={isFetching}>
                   Link
                 </Button>
               </Group>
@@ -104,22 +177,85 @@ export default function OrcidLinker({userId}: {userId: string}) {
             </Group>
           </Stack>
           <Divider />
-          {
-            !publications ?
+          { 
+            isFetching ? 
+            
+            <Center py='100'>
+              <Loader />
+            </Center>
+            
+            : isError ?
+            
+            <Text ta='center' size='sm' c='red' py='100'>
+              {error instanceof Error ? error.message : "Failed to fetch publications"}
+            </Text> 
+            
+            : !publications ?
+            
             <Text ta='center' size='sm' c='dimmed' py='100'>
               Once you link your account with your ORCID iD, your publications will appear here
             </Text>
+            
             : publications.length === 0 ?
-              <Text ta='center' size='sm' c='dimmed' py='100'>
-                No publications found for this ORCID iD. Are you sure it is correct?
+            
+            <Text ta='center' size='sm' c='dimmed' py='100'>
+              No publications found for this ORCID iD. Are you sure it is correct?
+            </Text>
+            
+            : 
+            
+            <Stack>
+              <Text size="sm" c="dimmed">
+                {publications.length} publications found ·{" "}
+                <Text span c="navy.7">
+                  {selected.size} selected
+                </Text>
               </Text>
-              : <Stack>
-                
+              <Checkbox 
+                  checked={allChecked} 
+                  indeterminate={someChecked} 
+                  label='Select all'
+                  onChange={(e) => toggleSelectAll(e.currentTarget.checked)}
+                />
+              <Chip.Group multiple>
+                <Group gap='4'>
                 {
-                  publications.map((pub) => 
-                  <LSPublication key={pub.doi} pub={pub} isOwner={false}/>)
+                  [...groups]
+                  .sort((a, b) => PUB_TYPE_ORDER.indexOf(a[0]) - PUB_TYPE_ORDER.indexOf(b[0]))
+                  .map(([type, dois]) => {
+                    const selectedInGroup = dois.filter((d) => selected.has(d)).length
+                    const allOfGroup = selectedInGroup === dois.length;
+                    const someOfGroup = selectedInGroup > 0 && !allOfGroup;
+
+                    return (
+                      <Chip 
+                        key={type}
+                        checked={allOfGroup}
+                        onChange={() => toggleGroup(type)}
+                        size='xs'
+                      >
+                        {PUBLICATION_TYPE_LABELS[type]} ({selectedInGroup}/{dois.length})
+                      </Chip>
+                    )
+                  })
                 }
-                </Stack>
+                </Group>
+              </Chip.Group>
+              <Pagination total={chunkedPubs!.length} value={activePage} onChange={setPage}/>
+              <SimpleGrid cols={2}>
+              {
+                chunkedPubs[activePage - 1]?.map((pub) => 
+                  <LSPublicationReviewItem 
+                    key={pub.doi} 
+                    pub={pub} 
+                    selected={selected.has(pub.doi!)} 
+                    onSelectChange={(checked) => toggleSelected(pub.doi!, checked)}
+                  />
+                )
+              }
+              </SimpleGrid>
+              <Pagination total={chunkedPubs!.length} value={activePage} onChange={setPage}/>
+            </Stack>
           }
         </Stack>
       </Modal>

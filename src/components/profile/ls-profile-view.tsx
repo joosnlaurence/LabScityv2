@@ -79,7 +79,7 @@ import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPu
 import { useForm } from "@mantine/form";
 import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
-import OrcidLinker from "./publications/ls-orcid-link-modal";
+import LSOrcidLinker from "./publications/ls-orcid-link-modal";
 import OrcidInfo from "./publications/ls-orcid-info";
 
 type UpdateProfileAction = typeof updateProfileAction;
@@ -614,7 +614,7 @@ const LSProfileDesktopLayout = ({
                   </Collapse>
                 </Group>
                 <Group wrap='nowrap'>
-                  <OrcidLinker userId={userId}/>
+                  <LSOrcidLinker userId={userId}/>
                   <OrcidInfo size='2rem' />
                 </Group>
               </Group>

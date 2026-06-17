@@ -108,27 +108,30 @@ export default function LSPublication(
   const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
   return (
     <>
-    <Modal
-      opened={confirmOpen}
-      onClose={closeConfirm}
-      title="Delete publication"
-      centered
-      closeOnClickOutside={!isDeleting}
-      closeOnEscape={!isDeleting}
-      withCloseButton={!isDeleting}
-    >
-      <Text size="sm" mb="md">
-        Remove "{pub.title}" from your profile? This can't be undone.
-      </Text>
-      <Group justify="flex-end" gap="xs">
-        <Button variant="subtle" onClick={closeConfirm} disabled={isDeleting}>
-          Cancel
-        </Button>
-        <Button color="red" onClick={onDeleteClick} disabled={isDeleting} loading={isDeleting}>
-          Delete
-        </Button>
-      </Group>
-    </Modal>
+    {
+      isOwner &&
+      <Modal
+        opened={confirmOpen}
+        onClose={closeConfirm}
+        title="Delete publication"
+        centered
+        closeOnClickOutside={!isDeleting}
+        closeOnEscape={!isDeleting}
+        withCloseButton={!isDeleting}
+      >
+        <Text size="sm" mb="md">
+          Remove "{pub.title}" from your profile? This can't be undone.
+        </Text>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="subtle" onClick={closeConfirm} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={onDeleteClick} disabled={isDeleting} loading={isDeleting}>
+            Delete
+          </Button>
+        </Group>
+      </Modal>
+    }
     <Card
       w='100%'
       p='0'
