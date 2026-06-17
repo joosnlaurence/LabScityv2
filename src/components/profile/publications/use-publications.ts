@@ -1,7 +1,8 @@
-import { addPublicationByDoi, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
+import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
 import { Publication } from "@/lib/types/data";
+import { ParsedOpenAlexWork } from "@/lib/types/publication";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -77,6 +78,34 @@ export function useAddPubByDoi ({
     onSuccess: () => {
       onSuccess?.();
       notifications.show({color: 'green', message: 'Publication Added!'});
+    }
+  })
+}
+
+export function useBulkInsertPublications(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (publications: ParsedOpenAlexWork[]) => {
+      const res = await bulkInsertPublications(publications);
+      if(!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      notifications.show({
+          color: 'green', 
+          message: `${data!.inserted} pubs inserted, ${data!.skipped} skipped`
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        color: "red",
+        title: "Error pinning publication",
+        message: error.message
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
     }
   })
 }

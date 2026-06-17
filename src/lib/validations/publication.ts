@@ -50,6 +50,32 @@ export const doiSchema = z
     )  
   );
 
+export const parsedOpenAlexWorkSchema = z.object({
+  title: z
+      .string()
+      .min(1),
+  doi: z.string(),
+  journal: z
+      .string()
+      .nullable(),
+  publicationDate: z
+      .iso.date()
+      .nullable(),
+  authors:  z
+      .array(z.string().min(1))
+      .min(1),
+  type: z
+      .enum(PUBLICATION_TYPE_VALUES),
+  isOA: z
+      .boolean(),
+  pdfUrl: z
+      .string()
+      .nullable(),
+  openAlexTopicIds: z
+      .array(z.string())
+      .nullable()
+})
+
 export const updatePublicationSchema = createPublicationSchema.partial();
 
 export const orcidSchema = z

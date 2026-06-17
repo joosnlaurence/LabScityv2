@@ -100,17 +100,12 @@ export async function POST(request: Request) {
   });
 }
 
-export type OpenAlexFetchResponse = {
-  works: ParsedOpenAlexWork[];
-  count: number;
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const orcid = searchParams.get("orcid");
 
   if(!orcid) {
-    return NextResponse.json<ApiResponse<OpenAlexFetchResponse>>(
+    return NextResponse.json<ApiResponse<ParsedOpenAlexWork[]>>(
       { success: false, error: "ORCID iD required" },
       { status: 400 }
     );
@@ -119,7 +114,7 @@ export async function GET(request: Request) {
   const parsed = orcidSchema.safeParse(orcid);
   
   if(!parsed.success) {
-    return NextResponse.json<ApiResponse<OpenAlexFetchResponse>>(
+    return NextResponse.json<ApiResponse<ParsedOpenAlexWork[]>>(
       {success: false, error: "Invalid ORCID iD"},
       {status: 400}
     );
@@ -132,7 +127,7 @@ export async function GET(request: Request) {
     const res = await fetch(url);
     if(!res.ok) {
       const errorBody = await res.json().catch(() => null);
-      return NextResponse.json<ApiResponse<OpenAlexFetchResponse>>(
+      return NextResponse.json<ApiResponse<ParsedOpenAlexWork[]>>(
         {success:false, error: errorBody?.message ?? `OpenAlex request failed with status ${res.status}`},
         {status: 502}
       )
@@ -143,16 +138,13 @@ export async function GET(request: Request) {
       .map((raw: OpenAlexWork) => parseOpenAlexWork(raw))
       .filter((work: ParsedOpenAlexWork) => work.doi !== null);
 
-    return NextResponse.json<ApiResponse<OpenAlexFetchResponse>>({
+    return NextResponse.json<ApiResponse<ParsedOpenAlexWork[]>>({
       success: true,
-      data: {
-        count: data.meta?.count ?? 0,
-        works: parsedWorks
-      }
+      data: parsedWorks
     })
   } catch(err) {
     console.error('OpenAlex fetch failed', err);
-    return NextResponse.json<ApiResponse<OpenAlexFetchResponse>>(
+    return NextResponse.json<ApiResponse<ParsedOpenAlexWork[]>>(
       {success: false, error: 'OpenAlex fetch failed'},
       {status: 502}
     )

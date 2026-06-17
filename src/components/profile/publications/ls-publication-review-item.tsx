@@ -19,7 +19,7 @@ import {
 } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
-import { Publication } from "@/lib/types/data";
+import { ParsedOpenAlexWork } from "@/lib/types/publication";
 
 const PUB_DATE_FMT = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
@@ -39,14 +39,14 @@ const TYPE_ICONS: Record<string, ReactNode> = {
   other: <IconFile {...TYPE_ICON_PROPS} />,
 };
 
-const MAX_VISIBLE_TOPICS = 4;
+// const MAX_VISIBLE_TOPICS = 4;
 
 export default function LSPublicationReviewItem({
   pub,
   selected,
   onSelectChange,
 }: {
-  pub: Publication;
+  pub: ParsedOpenAlexWork;
   selected: boolean;
   onSelectChange: (checked: boolean) => void;
 }) {
@@ -55,13 +55,13 @@ export default function LSPublicationReviewItem({
 
   const authorLine = (pub.authors ?? []).join(" · ");
 
-  const date = pub.date_published
-    ? PUB_DATE_FMT.format(new Date(pub.date_published))
+  const date = pub.publicationDate
+    ? PUB_DATE_FMT.format(new Date(pub.publicationDate))
     : undefined;
 
-  const topics = pub.topics ?? [];
-  const visibleTopics = topics.slice(0, MAX_VISIBLE_TOPICS);
-  const topicOverflow = topics.length - visibleTopics.length;
+  // const topics = pub.topics ?? [];
+  // const visibleTopics = topics.slice(0, MAX_VISIBLE_TOPICS);
+  // const topicOverflow = topics.length - visibleTopics.length;
 
   const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
 
@@ -110,7 +110,7 @@ export default function LSPublicationReviewItem({
             </Text>
           )}
 
-          {/* Journal · date */}
+          {/* Journal + date */}
           {(pub.journal || date) && (
             <Text fz="xs" c="dimmed">
               {pub.journal ?? undefined}
@@ -136,7 +136,7 @@ export default function LSPublicationReviewItem({
           )}
 
           {/* Topics */}
-          {visibleTopics.length > 0 && (
+          {/* {visibleTopics.length > 0 && (
             <Group gap="6" mt={2}>
               {visibleTopics.map((topic) => (
                 <Badge
@@ -156,7 +156,7 @@ export default function LSPublicationReviewItem({
                 </Text>
               )}
             </Group>
-          )}
+          )} */}
         </Stack>
       </Group>
     </Checkbox.Card>

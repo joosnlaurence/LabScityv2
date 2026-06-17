@@ -5,6 +5,7 @@ import { createClient } from "@/supabase/server";
 import {
     createPublicationSchema,
     doiSchema,
+    parsedOpenAlexWorkSchema,
     updatePublicationSchema,
     type CreatePublicationValues,
     type UpdatePublicationValues
@@ -12,7 +13,7 @@ import {
 
 import type { DataResponse, Publication } from "@/lib/types/data";
 import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
-import { MAX_FEATURED_PUBLICATIONS, OPENALEX_TYPE_MAP } from "../constants/publications";
+import { MAX_FEATURED_PUBLICATIONS } from "../constants/publications";
 import { parseOpenAlexWork } from "../utils/openalex";
 
 export async function addPublicationByDoi(
@@ -67,10 +68,57 @@ export async function addPublicationByDoi(
     return createPubResult;
   } catch(err) {
     if (err instanceof z.ZodError) {
-      return { success: false, error: err.issues[0]?.message ?? "Invalid DOI"};
+      return { success: false, error: err.issues[0]?.message ?? "Malformed publication shape"};
     }
     return { success: false, error: 'Failed to add publication'};
   }
+}
+
+export interface BulkInsertPublicationsResponse {
+  inserted: number;
+  skipped: number;
+}
+
+export async function bulkInsertPublications(
+  publications: ParsedOpenAlexWork[]
+): Promise<DataResponse<BulkInsertPublicationsResponse>> {
+  try {
+    const supabase = await createClient(); 
+    const { data: authData } = await supabase.auth.getUser();
+
+    if(!authData.user) { 
+      return { success: false, error: "Authentication required" }
+    }
+
+    const parsedPubs = publications.map((pub) => parsedOpenAlexWorkSchema.parse(pub));
+
+    const { data, error } = await supabase
+    .rpc('bulk_import_user_publications',
+      { p_publications: parsedPubs, p_user_id: authData.user.id }
+    );
+
+    if(error){ 
+      console.error(error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
+    console.log(data);
+
+    return {
+      success: true,
+      data
+    }
+
+  } catch(err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message ?? "Invalid DOI"};
+    }
+    return { success: false, error: 'Failed to add publications'};
+  }
+
 }
 
 async function linkPublicationTopics(
@@ -308,18 +356,6 @@ export async function deletePublication(
             return {
                 success: false,
                 error: "Publication not found or unauthorized",
-            };
-        }
-
-        const { error: deleteError } = await supabase
-            .from("publications")
-            .delete()
-            .eq("publication_id", publicationId);
-
-        if (deleteError) {
-            return {
-                success: false,
-                error: deleteError.message,
             };
         }
 

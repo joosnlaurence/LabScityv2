@@ -20,29 +20,11 @@ import { useForm } from "@mantine/form";
 import { orcidSchema } from "@/lib/validations/publication";
 import { useEffect, useMemo, useState } from "react";
 import { ParsedOpenAlexWork } from "@/lib/types/publication";
-import { OpenAlexFetchResponse } from "@/app/api/openalex/route";
 import { ApiResponse } from "@/lib/types/api";
-import { Publication } from "@/lib/types/data";
 import { useQuery } from "@tanstack/react-query";
 import LSPublicationReviewItem from "./ls-publication-review-item";
 import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
-
-function workToPublication(work: ParsedOpenAlexWork): Publication {
-  return {
-    publication_id: -1,
-    title: work.title,
-    doi: work!.doi,
-    journal: work.journal,
-    date_published: work.publicationDate,
-    authors: work.authors,
-    preview_path: null,
-    is_oa: work.isOA,
-    pdf_url: work.pdfUrl,
-    type: work.type,
-    is_featured: false,
-    topics: [],
-  };
-}
+import { useBulkInsertPublications } from "./use-publications";
 
 export default function LSOrcidLinker({userId}: {userId: string}) {
   const [orcidInputOpened, { open: openOrcidInput, close: closeOrcidInput }] = useDisclosure(false);
@@ -77,12 +59,11 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
       queryKey: ["openalex", orcid],
       queryFn: async () => {
         const res = await fetch(`/api/openalex?orcid=${orcid}`);
-        const json: ApiResponse<OpenAlexFetchResponse> = await res.json();
+        const json: ApiResponse<ParsedOpenAlexWork[]> = await res.json();
         if(!json.success) throw new Error(json.error);
         return json.data;
       },
       enabled: !!orcid,
-      select: (data) => data.works.map(workToPublication)
     });
 
   useEffect(() => {
@@ -96,6 +77,14 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
     setOrcid(orcidSchema.parse(vals.orcid));
     setPage(1);
   })
+
+  const bulkInsertPublications = useBulkInsertPublications(userId);
+
+  const handleImportPublications = () => {
+    bulkInsertPublications.mutate(
+      publications!.filter((w) => selected.has(w.doi!))
+    )
+  };
 
   const chunkedPubs = publications ? chunk(publications, 20) : [];
 
@@ -157,18 +146,24 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
           <Stack gap='xs'>
             <form onSubmit={handleOrcidSubmit} style={{flex: 1}}>
               <Group>
-                  <TextInput 
-                    flex='1' 
-                    placeholder="https://orcid.org/0000-0001-2345-6789"
-                    key={orcidForm.key("orcid")}
-                    {...orcidForm.getInputProps("orcid")}
-                    disabled={isFetching}
-                  />
-                <Button type='submit' disabled={isFetching}>
-                  Link
+                <TextInput 
+                  flex='1' 
+                  placeholder="https://orcid.org/0000-0001-2345-6789"
+                  key={orcidForm.key("orcid")}
+                  {...orcidForm.getInputProps("orcid")}
+                  disabled={isFetching || bulkInsertPublications.isPending}
+                />
+                <Button type='submit' disabled={isFetching || bulkInsertPublications.isPending}>
+                  Find Publications
                 </Button>
               </Group>
             </form>
+            {
+              !!publications &&
+              <Button onClick={handleImportPublications} disabled={bulkInsertPublications.isPending}>
+                Import
+              </Button>
+            }
             <Group justify='flex-end' gap='4'>
               <Anchor underline='always' w='fit-content' href='https://info.orcid.org/what-is-my-id/' size='sm'>
                 Get your iD
