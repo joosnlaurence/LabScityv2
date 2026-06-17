@@ -62,6 +62,18 @@ export interface Publication {
   topics: Array<string> | null;
 }
 
+export interface JobTag {
+  job_id: number;
+  tag_id: number;
+  is_required: boolean;
+}
+
+export interface JobSkill {
+  job_id: number;
+  skill_id: number;
+  is_required: boolean;
+}
+
 export interface TagSearchResult {
   id: number;
   name: string;

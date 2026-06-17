@@ -6,8 +6,8 @@ import type { TagSearchResult  } from "@/lib/types/data";
 export async function GET(request: Request){
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q");
-    const limit = parseInt(searchParams.get("limit") ?? "10");
-    const offset = parseInt(searchParams.get("offset") ?? "0");
+    const limit = parseInt(searchParams.get("limit") ?? "10"); // how many rows to return per page
+    const offset = parseInt(searchParams.get("offset") ?? "0"); // how many rows to skip
 
     if(!q) {
         return NextResponse.json<InfiniteScrollResponse<TagSearchResult[]>>(
@@ -28,7 +28,8 @@ export async function GET(request: Request){
         .select("id, name")
         .eq("level", 3)
         .ilike("name", `%${q}%`)
-        .range(offset, offset + limit - 1);
+        .range(offset, offset + limit - 1); // offset = rows to skip, start point
+                                            // limit = how many rows to return per page (default is 10)
 
     if (error) {
         return NextResponse.json<InfiniteScrollResponse<TagSearchResult[]>>(
