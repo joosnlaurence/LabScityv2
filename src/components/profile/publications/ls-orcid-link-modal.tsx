@@ -12,7 +12,8 @@ import {
   Pagination,
   SimpleGrid,
   Checkbox,
-  Chip
+  Chip,
+  LoadingOverlay
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import OrcidInfo from "./ls-orcid-info";
@@ -78,7 +79,10 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
     setPage(1);
   })
 
-  const bulkInsertPublications = useBulkInsertPublications(userId);
+  const bulkInsertPublications = useBulkInsertPublications({
+    userId,
+    onSuccess: () => closeOrcidInput()
+  });
 
   const handleImportPublications = () => {
     bulkInsertPublications.mutate(
@@ -142,7 +146,8 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
   return (
     <>
       <Modal size='800' title='Link Account With ORCID iD' centered opened={orcidInputOpened} onClose={closeOrcidInput}>
-        <Stack gap='sm'>
+        <Stack gap='sm' pos='relative'>
+          <LoadingOverlay visible={bulkInsertPublications.isPending}/>
           <Stack gap='xs'>
             <form onSubmit={handleOrcidSubmit} style={{flex: 1}}>
               <Group>

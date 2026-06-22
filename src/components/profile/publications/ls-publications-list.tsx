@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput } from "@mantine/core";
+import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay } from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
@@ -93,7 +93,8 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   }
 
   return (
-    <Stack w='700'>
+    <Stack w='700' pos='relative'>
+      <LoadingOverlay visible={addPubByDoi.isPending}/>
       {
         isOwner && 
         <Group wrap='nowrap' justify='space-between'>

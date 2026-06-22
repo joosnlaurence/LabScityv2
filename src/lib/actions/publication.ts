@@ -166,7 +166,18 @@ export async function createPublication(
             return { success: false, error: "Authentication required"}
         }
 
-        const { data: publication, error: publicationError } = await supabase
+        let publication = null;
+        if(parsed.doi) {
+          const { data: existing } = await supabase
+            .from("publications")
+            .select("publication_id")
+            .eq("doi", input.doi)
+            .maybeSingle();
+          publication = existing;
+        }
+
+        if (!publication) {
+          const { data, error: publicationError } = await supabase
             .from("publications")
             .insert({
                 title: parsed.title,
@@ -182,8 +193,11 @@ export async function createPublication(
             .select()
             .single();
 
-        if(publicationError){
-            return { success: false, error: publicationError.message}
+          if(publicationError){
+              return { success: false, error: publicationError.message}
+          } 
+
+          publication = data;
         }
 
         const { error: linkError } = await supabase

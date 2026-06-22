@@ -41,35 +41,7 @@ export function useAddPubByDoi ({
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    onMutate: async (doi) => {
-      await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
-      const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
-
-      const optimisticPub: Publication = {
-        publication_id: -Date.now(),
-        title: 'Loading...',
-        doi: doi,
-        journal: null,
-        date_published: null,
-        authors: null,
-        preview_path: null,
-        is_oa: false,
-        pdf_url: null,
-        type: 'other',
-        is_featured: false,
-        topics: []
-      };
-
-      queryClient.setQueryData<Publication[]>(
-        publicationKeys.list(userId),
-        (old) => [optimisticPub, ...(old ?? [])]
-      );
-
-      return { snapshot };
-    },
     onError: (error, _doi, context) => {
-      if(context?.snapshot) 
-        queryClient.setQueryData(publicationKeys.list(userId), context.snapshot);
       notifications.show({
         color: "red",
         title: "Error adding publication",
@@ -88,7 +60,13 @@ export function useAddPubByDoi ({
   })
 }
 
-export function useBulkInsertPublications(userId: string) {
+export function useBulkInsertPublications({
+  userId, 
+  onSuccess,
+}: {
+  userId: string,
+  onSuccess: () => void
+}) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -98,6 +76,7 @@ export function useBulkInsertPublications(userId: string) {
       return res.data;
     },
     onSuccess: (data) => {
+      onSuccess?.();
       notifications.show({
           color: 'green', 
           message: `${data!.inserted} pubs inserted, ${data!.skipped} skipped`
@@ -151,33 +130,10 @@ export function useSetFeaturedPublication(userId: string) {
       if(!res.success) throw new Error(res.error);
       return res.success;
     },
-    // onMutate: async ({ publicationId, isFeatured}) => {
-    //   await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
-    //   const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
-
-    //   queryClient.setQueryData<Publication[]>(
-    //     publicationKeys.list(userId),
-    //     (old) => {
-    //       if(!old) return old;
-    //       return {
-    //         ...old,
-    //         pages: old.pages.map((pub) => 
-    //           pub.publication_id === publicationId 
-    //             ? { ...pub, is_featured: isFeatured}
-    //             : pub
-    //         )
-    //       }
-    //     }
-    //   );
-
-    //   return { snapshot };
-    // },
     onSuccess: (_data, {publicationId, isFeatured}) => {
       notifications.show({color: 'green', message: `Publication ${isFeatured ? 'pinned' : 'unpinned'}!`});
     },
     onError: (error, _vars, context) => {
-      if(context?.snapshot) 
-        queryClient.setQueryData(publicationKeys.list(userId), context.snapshot);
       notifications.show({
         color: "red",
         title: "Error pinning publication",
