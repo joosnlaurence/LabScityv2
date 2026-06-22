@@ -141,8 +141,6 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
 
   const PUB_TYPE_ORDER = Object.keys(PUBLICATION_TYPE_LABELS) as PubType[];
 
-  console.log(publications);
-
   return (
     <>
       <Modal size='800' title='Link Account With ORCID iD' centered opened={orcidInputOpened} onClose={closeOrcidInput}>

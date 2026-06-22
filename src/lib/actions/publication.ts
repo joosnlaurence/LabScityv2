@@ -33,7 +33,7 @@ export async function addPublicationByDoi(
     const data: OpenAlexWork = await res.json();
 
     const parsed: ParsedOpenAlexWork = parseOpenAlexWork(data);
-
+    
     const { data: existing } = await supabase
       .from("user_publications")
       .select("publication_id, publications!inner(doi)")
@@ -371,6 +371,20 @@ export async function deletePublication(
                 success: false,
                 error: "Publication not found or unauthorized",
             };
+        }
+
+        const { data, error: deleteError } = 
+          await supabase
+            .from('user_publications')
+            .delete()
+            .eq('user_id', authData.user.id)
+            .eq('publication_id', publicationId);
+        
+        if(deleteError) {
+          return {
+            success: false,
+            error: deleteError.message
+          };
         }
 
         return {
