@@ -1,4 +1,5 @@
 import { PUBLICATION_TYPE_LABELS } from "../constants/publications";
+import { Publication } from "./data";
 
 // publication_type enum values from supabase
 export type PublicationType = keyof typeof PUBLICATION_TYPE_LABELS;
@@ -26,4 +27,12 @@ export interface ParsedOpenAlexWork {
   isOA: boolean;
   pdfUrl: string | null;
   openAlexTopicIds: string[];
+}
+
+export type InfinitePublications = {
+  publications: Publication[],
+  nextCursor: {
+    date_published: string | null
+    publication_id: number
+  } | null
 }

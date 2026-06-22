@@ -74,13 +74,13 @@ export default function LSPublicationReviewItem({
       p="sm"
       style={{
         borderColor: selected
-          ? "var(--mantine-color-indigo-5)"
+          ? "var(--mantine-color-navy-5)"
           : "var(--mantine-color-gray-3)",
-        background: selected ? "var(--mantine-color-indigo-0)" : undefined,
+        background: selected ? "var(--mantine-color-blue-0)" : undefined,
       }}
     >
       <Group wrap="nowrap" align="flex-start" gap="sm">
-        <Checkbox.Indicator checked={selected} mt={2} />
+        <Checkbox.Indicator checked={selected} mt={2} color='navy.6' />
 
         <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
           {/* Type + title */}

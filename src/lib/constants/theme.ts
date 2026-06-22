@@ -37,6 +37,7 @@ export const theme = createTheme({
     ],
   },
   primaryColor: "navy",  
+  primaryShade: 7,
   components: {
     Button: Button.extend({
       defaultProps: {

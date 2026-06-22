@@ -5,11 +5,8 @@ import {
   Button, 
   Divider, 
   Flex, 
-  Group, 
   Stack, 
   Tabs, 
-  TextInput, 
-  Collapse,
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -72,15 +69,7 @@ import type {
   updateOwnProfilePicture,
   updateProfileAction,
 } from "@/lib/actions/profile";
-import LSPublication from "./publications/ls-publication";
-import { IconPlus } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
-import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./publications/use-publications";
-import { useForm } from "@mantine/form";
-import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
-import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
-import LSOrcidLinker from "./publications/ls-orcid-link-modal";
-import OrcidInfo from "./publications/ls-orcid-info";
+import LSPublicationsList from "./publications/ls-publications-list";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -355,7 +344,6 @@ const LSProfileDesktopLayout = ({
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
     null,
   );
-  const [doiInputExpanded, { toggle: toggleDoiInput }] = useDisclosure(false);
 
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
@@ -432,39 +420,6 @@ const LSProfileDesktopLayout = ({
       </li>
     );
   });
-  const pubsQuery = usePublications(userId);
-  const publications = pubsQuery.data;
-  
-  const doiForm = useForm<DoiFormValues>({
-    mode: 'uncontrolled',
-    initialValues: { doi: ''},
-    validate: {
-      doi: (val) => {
-        if(!val.trim()) return null;
-        const res = doiSchema.safeParse(val);
-        return res.success ? null : res.error.issues[0].message;
-      }
-    },
-    validateInputOnBlur: true
-  });
-
-  const addPubByDoi = useAddPubByDoi({ 
-    userId,
-    onSuccess: () => {
-      doiForm.reset();
-      toggleDoiInput();
-    }
-  });  
-  const handleDoiSubmit = doiForm.onSubmit((vals) => {
-    if (!vals.doi.trim()) return;
-    addPubByDoi.mutate(vals.doi);
-  })
-
-  const deletePub = useDeletePublication(userId);
-
-  const setFeaturedPub = useSetFeaturedPublication(userId);
-  const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
-
 
   if (profileQuery.status === "pending") {
     return (
@@ -582,69 +537,7 @@ const LSProfileDesktopLayout = ({
         </Tabs.Panel>
 
         <Tabs.Panel value='publications'>
-          <Stack w='700'>
-            {
-              isOwnProfile && 
-              <Group wrap='nowrap' justify='space-between'>
-                <Group flex='1' wrap='nowrap'>
-                  <Button 
-                    onClick={toggleDoiInput} 
-                    rightSection={
-                      <IconPlus 
-                        size='1rem'
-                        style={{
-                          transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
-                          transition: 'transform 200ms ease',
-                        }}
-                      />
-                    }
-                  >
-                    Add Research
-                  </Button>
-                  <Collapse in={doiInputExpanded} flex='1'>
-                    <form onSubmit={handleDoiSubmit}>
-                      <TextInput 
-                        placeholder="doi.org/..." 
-                        bdrs='md' 
-                        disabled={addPubByDoi.isPending}
-                        key={doiForm.key('doi')}
-                        {...doiForm.getInputProps("doi")}
-                      />
-                    </form>
-                  </Collapse>
-                </Group>
-                <Group wrap='nowrap'>
-                  <LSOrcidLinker userId={userId}/>
-                  <OrcidInfo size='2rem' />
-                </Group>
-              </Group>
-            }
-            
-            <Stack maw='800'>
-            {
-              (publications && publications.length > 0)
-              ? 
-              publications.map((pub, i) => 
-                <LSPublication 
-                  key={pub.publication_id}
-                  pub={pub}
-                  isOwner={isOwnProfile}
-                  onDeleteClick={() => deletePub.mutate(pub.publication_id)}
-                  isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
-                  onFeaturedClick={() => setFeaturedPub.mutate({ 
-                    publicationId: pub.publication_id, 
-                    isFeatured: !pub.is_featured
-                  })}
-                  featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
-                />
-              )
-              :
-              <>
-                No Publications found
-              </>
-            }
-            </Stack>
-          </Stack>
+          <LSPublicationsList userId={userId}/>
         </Tabs.Panel>
 
         <Tabs.Panel value='products'>

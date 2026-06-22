@@ -2,22 +2,28 @@ import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeat
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
 import { Publication } from "@/lib/types/data";
-import { ParsedOpenAlexWork } from "@/lib/types/publication";
+import { InfinitePublications, ParsedOpenAlexWork } from "@/lib/types/publication";
 import { notifications } from "@mantine/notifications";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function usePublications(userId: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: publicationKeys.list(userId),
-    queryFn: async () => {
-      const res = await fetch(`/api/publications?userId=${userId}`);
+    initialPageParam: null as { date_published: string | null, publication_id: number } | null,
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({ userId });
+      if(pageParam) {
+        const cursor = { date_published: pageParam.date_published, publication_id: pageParam.publication_id }
+        params.set("cursor", btoa(JSON.stringify(cursor)));  
+      }
+      const res = await fetch(`/api/publications?${params}`);
       if(!res.ok) throw new Error("Failed to fetch publications");
-      const apiResponse: ApiResponse<Publication[]> = await res.json();
+      const apiResponse: ApiResponse<InfinitePublications> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error)
-
-      return apiResponse.data
-    }
-  });
+      return apiResponse.data;
+    },
+    getNextPageParam: (last) => last.nextCursor ?? undefined
+  })
 }
 
 export function useAddPubByDoi ({
@@ -145,24 +151,27 @@ export function useSetFeaturedPublication(userId: string) {
       if(!res.success) throw new Error(res.error);
       return res.success;
     },
-    onMutate: async ({ publicationId, isFeatured}) => {
-      await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
-      const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
+    // onMutate: async ({ publicationId, isFeatured}) => {
+    //   await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
+    //   const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
 
-      queryClient.setQueryData<Publication[]>(
-        publicationKeys.list(userId),
-        (old) => {
-          if(!old) return old;
-          return old.map((pub) => 
-            pub.publication_id === publicationId 
-              ? { ...pub, is_featured: isFeatured}
-              : pub
-          );
-        }
-      );
+    //   queryClient.setQueryData<Publication[]>(
+    //     publicationKeys.list(userId),
+    //     (old) => {
+    //       if(!old) return old;
+    //       return {
+    //         ...old,
+    //         pages: old.pages.map((pub) => 
+    //           pub.publication_id === publicationId 
+    //             ? { ...pub, is_featured: isFeatured}
+    //             : pub
+    //         )
+    //       }
+    //     }
+    //   );
 
-      return { snapshot };
-    },
+    //   return { snapshot };
+    // },
     onSuccess: (_data, {publicationId, isFeatured}) => {
       notifications.show({color: 'green', message: `Publication ${isFeatured ? 'pinned' : 'unpinned'}!`});
     },

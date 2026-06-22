@@ -165,7 +165,7 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
               </Button>
             }
             <Group justify='flex-end' gap='4'>
-              <Anchor underline='always' w='fit-content' href='https://info.orcid.org/what-is-my-id/' size='sm'>
+              <Anchor c='navy.6' underline='always' w='fit-content' href='https://info.orcid.org/what-is-my-id/' size='sm'>
                 Get your iD
               </Anchor>
               <OrcidInfo size='1.5rem' />
@@ -207,11 +207,12 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
                 </Text>
               </Text>
               <Checkbox 
-                  checked={allChecked} 
-                  indeterminate={someChecked} 
-                  label='Select all'
-                  onChange={(e) => toggleSelectAll(e.currentTarget.checked)}
-                />
+                checked={allChecked} 
+                indeterminate={someChecked} 
+                label='Select all'
+                onChange={(e) => toggleSelectAll(e.currentTarget.checked)}
+                color='navy.6'
+              />
               <Chip.Group multiple>
                 <Group gap='4'>
                 {
@@ -227,6 +228,7 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
                         key={type}
                         checked={allOfGroup}
                         onChange={() => toggleGroup(type)}
+                        color='navy.6'
                         size='xs'
                       >
                         {PUBLICATION_TYPE_LABELS[type]} ({selectedInGroup}/{dois.length})
