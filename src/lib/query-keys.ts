@@ -74,5 +74,6 @@ export const dataKeys = {
 
 export const publicationKeys = {
   all: ["publications"] as const,
-  list: (userId: string) => [...publicationKeys.all, 'list', userId] as const
+  list: (userId: string) => [...publicationKeys.all, 'list', userId] as const,
+  facets: (userId: string) => [...publicationKeys.all, 'facets', userId] as const
 }

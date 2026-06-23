@@ -1,10 +1,9 @@
 import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
-import { Publication } from "@/lib/types/data";
-import { InfinitePublications, ParsedOpenAlexWork } from "@/lib/types/publication";
+import { InfinitePublications, ParsedOpenAlexWork, PublicationFacets } from "@/lib/types/publication";
 import { notifications } from "@mantine/notifications";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function usePublications(userId: string) {
   return useInfiniteQuery({
@@ -144,4 +143,19 @@ export function useSetFeaturedPublication(userId: string) {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
     }
   });
+}
+
+export function useGetPublicationFacets(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: publicationKeys.facets(userId),
+    queryFn: async () => {
+      const res = await fetch(`/api/publications/facets?userId=${userId}`);
+      if(!res.ok) throw new Error('Failed to fetch publication facets');
+      const apiResponse: ApiResponse<PublicationFacets> = await res.json();
+      if(!apiResponse.success) throw new Error(apiResponse.error);
+      return apiResponse.data;
+    }
+  })
 }

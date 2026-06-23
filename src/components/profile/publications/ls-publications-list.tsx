@@ -1,16 +1,16 @@
 'use client';
 
-import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay, Divider, RangeSlider, Select, Menu } from "@mantine/core";
-import { IconAdjustmentsHorizontal, IconList, IconListFilled, IconPlus, IconSelect } from "@tabler/icons-react";
+import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay, Divider, RangeSlider, Select, Menu, OptionsFilter, ComboboxItem } from "@mantine/core";
+import { IconAdjustmentsHorizontal, IconList, IconListFilled, IconPlus, IconSearch, IconSelect } from "@tabler/icons-react";
 import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useDisclosure, useIntersection } from "@mantine/hooks";
-import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./use-publications";
+import { useAddPubByDoi, useDeletePublication, useGetPublicationFacets, usePublications, useSetFeaturedPublication } from "./use-publications";
 import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { useForm } from "@mantine/form";
-import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
+import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
 import { useEffect, useRef } from "react";
 
 export default function LSPublicationsList({userId}: {userId: string}) {  
@@ -19,15 +19,29 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   
   const [doiInputExpanded, { toggle: toggleDoiInput }] = useDisclosure(false);
 
+  const { 
+    data: pubFacets, 
+    isFetching: isFetchingFacets, 
+    isLoading: isLoadingFacets, 
+    isError: isErrorFacets
+  } = useGetPublicationFacets(userId);
+  const optionsFilter: OptionsFilter = ({ options, search }) => {
+    const splittedSearch = search.toLowerCase().trim().split(' ');
+    return (options as ComboboxItem[]).filter((option) => {
+      const words = option.label.toLowerCase().trim().split(' ');
+      return splittedSearch.every((searchWord) => words.some((word) => word.includes(searchWord)));
+    });
+  };
+
   const {
-    data,
+    data: userPubs,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
-    isError
+    isLoading: isLoadingUserPubs,
+    isError: isErrorUserPubs
   } = usePublications(userId); 
-  const publications = data?.pages.flatMap((p) => p.publications) ?? [];
+  const publications = userPubs?.pages.flatMap((p) => p.publications) ?? [];
 
   const { ref: scrollRef, entry } = useIntersection({
     rootMargin: "200px",
@@ -75,8 +89,8 @@ export default function LSPublicationsList({userId}: {userId: string}) {
 
   const setFeaturedPub = useSetFeaturedPublication(userId);
   const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
-
-  if(isLoading || userLoading) {
+  
+  if(isLoadingUserPubs || isLoadingFacets || userLoading) {
     return (
       <Center py='xl'>
         <Loader />
@@ -84,7 +98,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
     )
   }
 
-  if(isError) {
+  if(isErrorUserPubs) {
     return (
       <Text ta='center' c='red' py='xl'>
         Failed to load publications...
@@ -131,45 +145,67 @@ export default function LSPublicationsList({userId}: {userId: string}) {
               <OrcidInfo size='2rem' />
             </Group>
           </Group>
-          <Stack mb='lg'>
-            <TextInput 
-              placeholder='Search by publication title'
-              styles={{
-                input: {
-                  background: 'var(--mantine-color-gray-1)'
-                }
-              }}
-            />
-            <Group justify='space-between'>
-              <Group>
-                <Select
-                  placeholder='Year'
-                  data={['2008','2021','2026']}
-                  w='100'
-                />
-                <Select 
-                  placeholder='Research Topic' 
-                  data={['Short topic', 'Looooooooooooooooooooong topic']}
-                  w='160'
-                />
-                <Select 
-                  placeholder='Publication Type'
-                  data={['Short type', 'Looooooooooooooooooooong ']}
-                  w='175'
-                />
-              </Group>
-              <Select 
-                w='125' 
-                placeholder='Sort by' 
-                data={['Newest', 'Oldest']}
-                leftSection={<IconAdjustmentsHorizontal stroke='1' color='var(--mantine-color-gray-5)'/>}
-              />
-            </Group>
-          </Stack>
-          <Divider />
         </Stack>
       }
       
+      {
+        isErrorFacets ?
+        <Text c='red' ta='center'>Failed to load user publication metadata</Text>
+        :
+        <Stack>
+          <TextInput 
+            placeholder='Search by publication title'
+            styles={{
+              input: {
+                background: 'var(--mantine-color-gray-1)'
+              }
+            }}
+            leftSection={<IconSearch stroke='1.75' size='1rem' color='var(--mantine-color-gray-5)'/>}
+          />
+          <Group justify='space-between' wrap='nowrap'>
+            <Group>
+              <Select
+                placeholder='Year'
+                data={pubFacets?.years.map(
+                  (y) => ({ 
+                    value: String(y.year), label: `${y.year} (${y.count})`
+                  })) ?? []
+                }
+                w='125'
+              />
+              <Select 
+                placeholder='Research Topic' 
+                data={pubFacets?.tags.map(
+                  (tag) => ({ 
+                    value: String(tag.id), label: `${tag.name} (${tag.count})`
+                  })) ?? []
+                }
+                searchable
+                filter={optionsFilter}
+                nothingFoundMessage='No Matching Topics...'
+                w='200'
+              />
+              <Select 
+                placeholder='Publication Type'
+                data={pubFacets?.types.map(
+                  (t) => ({ 
+                    value: String(t.type), label: `${PUBLICATION_TYPE_LABELS[t.type]} (${t.count})`
+                  })) ?? []
+                }
+                w='175'
+              />
+            </Group>
+            <Select 
+              w='125' 
+              placeholder='Sort by' 
+              data={['Newest', 'Oldest']}
+              leftSection={<IconAdjustmentsHorizontal stroke='1' color='var(--mantine-color-gray-5)'/>}
+            />
+          </Group>
+        </Stack> 
+      }
+      <Divider />
+
       <Stack>
       {
         (publications && publications.length > 0)
