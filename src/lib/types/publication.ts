@@ -36,3 +36,9 @@ export type InfinitePublications = {
     publication_id: number
   } | null
 }
+
+export interface PublicationFacets {
+  years: { year: number, count: number }[],
+  types: { type: PublicationType, count: number }[]
+  tags: { id: number, name: string, count: number }[]
+}

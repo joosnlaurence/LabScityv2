@@ -45,7 +45,8 @@ export const theme = createTheme({
         bdrs: 'md'
       }
     })
-  }
+  },
+  defaultRadius: 'md'
 });
 
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
