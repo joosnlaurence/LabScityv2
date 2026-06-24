@@ -21,6 +21,11 @@ export default function NotificationProvider({
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     const initializeNotifications = async () => {
@@ -37,6 +42,11 @@ export default function NotificationProvider({
 
       if (data) setNotifications(data);
 
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
       channelRef.current = supabase
         .channel(`notifications_${user.id}`)
         .on(
@@ -50,17 +60,15 @@ export default function NotificationProvider({
           (payload) => {
             const notification = payload.new as Notification;
 
-            // Handle new_message notifications specially
             if (notification.type === "new_message" && notification.link) {
               const conversationId = notification.link.split("/").pop();
-              const isActiveChat = pathname === `/chat/${conversationId}`;
+              const isActiveChat =
+                pathnameRef.current === `/chat/${conversationId}`;
 
-              // Don't add to notification store if user is viewing this chat
               if (!isActiveChat) {
                 addNotification(notification);
               }
 
-              // Update chat sidebar cache
               if (conversationId) {
                 queryClient.setQueryData<{ data: ChatPreview[] } | undefined>(
                   chatKeys.chatsWithPreview(),
@@ -70,17 +78,17 @@ export default function NotificationProvider({
                     return {
                       ...old,
                       data: old.data.map((chat) => {
-                        if (chat.conversation_id + "" === conversationId) {
+                        if (`${chat.conversation_id}` === conversationId) {
                           return {
                             ...chat,
                             last_message: notification.content || "",
                             last_message_at: notification.created_at,
-                            // Don't increment unread count if user is viewing this chat
                             unread_count: isActiveChat
                               ? chat.unread_count
                               : (chat.unread_count || 0) + 1,
                           };
                         }
+
                         return chat;
                       }),
                     };
@@ -88,7 +96,6 @@ export default function NotificationProvider({
                 );
               }
             } else {
-              // Non-message notifications always get added
               addNotification(notification);
             }
           },
@@ -96,14 +103,15 @@ export default function NotificationProvider({
         .subscribe();
     };
 
-    initializeNotifications();
+    void initializeNotifications();
 
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
-  }, [supabase, setNotifications, addNotification, queryClient, pathname]);
+  }, [supabase, setNotifications, addNotification, queryClient]);
 
   return <>{children}</>;
 }

@@ -1,19 +1,19 @@
 "use client";
 
-import { 
-  Text, 
-  Box, 
-  Button, 
-  Divider, 
-  Flex, 
-  Group, 
-  Popover, 
-  Stack, 
-  Tabs, 
-  UnstyledButton, 
-  Anchor, 
-  TextInput, 
-  Collapse, 
+import {
+  Anchor,
+  Box,
+  Button,
+  Collapse,
+  Divider,
+  Flex,
+  Group,
+  Popover,
+  Stack,
+  Tabs,
+  Text,
+  TextInput,
+  UnstyledButton,
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -24,9 +24,9 @@ import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
 import { LSProfileGroupsWidget } from "@/components/profile/ls-profile-groups-widget";
 import LSProfileHero from "@/components/profile/ls-profile-hero";
-import { LSSpinner } from "@/components/ui/ls-spinner";
 import { LSUserReportOverlay } from "@/components/profile/ls-user-report-overlay";
-import { createUserReport } from "@/lib/actions/profile";
+import { LSSpinner } from "@/components/ui/ls-spinner";
+import type { createUserReport } from "@/lib/actions/profile";
 
 /**
  * Formats a date string as a relative time for post/comment display.
@@ -46,6 +46,9 @@ function getTimeAgo(date: string): string {
   return postDate.toLocaleDateString();
 }
 
+import { useForm } from "@mantine/form";
+import { useDisclosure } from "@mantine/hooks";
+import { IconHelp, IconPlus } from "@tabler/icons-react";
 import type {
   CreateCommentAction,
   CreatePostAction,
@@ -76,14 +79,15 @@ import type {
   updateOwnProfilePicture,
   updateProfileAction,
 } from "@/lib/actions/profile";
-import LSPublication from "./publications/ls-publication";
-import { useAuthContext } from "../auth/auth-provider";
-import { IconHelp, IconPlus } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
-import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./publications/use-publications";
-import { useForm } from "@mantine/form";
-import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
+import { type DoiFormValues, doiSchema } from "@/lib/validations/publication";
+import LSPublication from "./publications/ls-publication";
+import {
+  useAddPubByDoi,
+  useDeletePublication,
+  usePublications,
+  useSetFeaturedPublication,
+} from "./publications/use-publications";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -164,7 +168,7 @@ const LSProfileMobileLayout = ({
   const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
-  const username = profile?.first_name + " " + profile?.last_name;
+  const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const followingQuery = useUserFollowing(userId);
@@ -235,7 +239,10 @@ const LSProfileMobileLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike({postId, commentId: comment.id})
+                      actions.handleToggleCommentLike({
+                        postId,
+                        commentId: comment.id,
+                      })
                     }
                     showMenu={false}
                   />
@@ -347,7 +354,7 @@ const LSProfileDesktopLayout = ({
   const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
-  const username = profile?.first_name + " " + profile?.last_name;
+  const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const friendsQuery = useUserFriends(userId);
@@ -423,7 +430,10 @@ const LSProfileDesktopLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike({postId, commentId: comment.id})
+                      actions.handleToggleCommentLike({
+                        postId,
+                        commentId: comment.id,
+                      })
                     }
                     showMenu={false}
                   />
@@ -437,30 +447,30 @@ const LSProfileDesktopLayout = ({
   });
   const pubsQuery = usePublications(userId);
   const publications = pubsQuery.data;
-  
+
   const doiForm = useForm<DoiFormValues>({
-    mode: 'uncontrolled',
-    initialValues: { doi: ''},
+    mode: "uncontrolled",
+    initialValues: { doi: "" },
     validate: {
       doi: (val) => {
-        if(!val.trim()) return null;
+        if (!val.trim()) return null;
         const res = doiSchema.safeParse(val);
         return res.success ? null : res.error.issues[0].message;
-      }
+      },
     },
-    validateInputOnBlur: true
+    validateInputOnBlur: true,
   });
 
-  const addPubByDoi = useAddPubByDoi({ 
+  const addPubByDoi = useAddPubByDoi({
     userId,
     onSuccess: () => {
       doiForm.reset();
       toggleDoiInput();
-    }
-  });  
+    },
+  });
   const handleDoiSubmit = doiForm.onSubmit((vals) => {
     addPubByDoi.mutate(vals.doi);
-  })
+  });
 
   const deletePub = useDeletePublication(userId);
 
@@ -479,8 +489,8 @@ const LSProfileDesktopLayout = ({
   }
 
   return (
-    <Box pt={24} pb={300} px={80}>
-      <Flex p={8} direction="row" w="100%" gap={28} align="flex-start">
+    <Box maw={1660} mx="auto" pt={24} pb={300} px={{ base: 16, lg: 32 }}>
+      <Flex p={0} direction="row" w="100%" gap={24} align="flex-start">
         <Box flex={5}>
           <LSProfileHero
             profileName={username ?? "Unknown User"}
@@ -534,31 +544,26 @@ const LSProfileDesktopLayout = ({
           </Box>
         </Flex>
       </Flex>
-      
+
       <Divider mt={20} color="navy.1" />
-      <Tabs defaultValue='posts' activateTabWithKeyboard={false}
+      <Tabs
+        defaultValue="posts"
+        activateTabWithKeyboard={false}
         styles={{
           panel: {
-            display: 'flex',
-            justifyContent: 'center'
-          }
+            display: "flex",
+            justifyContent: "center",
+          },
         }}
       >
-
-        <Tabs.List mb={20} grow justify='center'>
-          <Tabs.Tab value='posts'>
-            Posts
-          </Tabs.Tab>
-          <Tabs.Tab value='publications'>
-            Publications
-          </Tabs.Tab>
-          <Tabs.Tab value='products'>
-            Research Products
-          </Tabs.Tab>
+        <Tabs.List mb={20} grow justify="center">
+          <Tabs.Tab value="posts">Posts</Tabs.Tab>
+          <Tabs.Tab value="publications">Publications</Tabs.Tab>
+          <Tabs.Tab value="products">Research Products</Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value='posts'>
-          <Stack w='100%' maw='600'>
+        <Tabs.Panel value="posts">
+          <Stack w="100%" maw="600">
             <Stack
               component="ul"
               gap="lg"
@@ -582,106 +587,118 @@ const LSProfileDesktopLayout = ({
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value='publications'>
-          <Stack w='700'>
-            {
-              isOwnProfile && 
-              <Group wrap='nowrap' justify='space-between'>
-                <Group wrap='nowrap'>
-                  <Button 
-                    onClick={toggleDoiInput} 
+        <Tabs.Panel value="publications">
+          <Stack w="700">
+            {isOwnProfile && (
+              <Group wrap="nowrap" justify="space-between">
+                <Group wrap="nowrap">
+                  <Button
+                    onClick={toggleDoiInput}
                     rightSection={
-                      <IconPlus 
-                        size='1rem'
+                      <IconPlus
+                        size="1rem"
                         style={{
-                          transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
-                          transition: 'transform 200ms ease',
+                          transform: doiInputExpanded
+                            ? "rotate(45deg)"
+                            : "rotate(0deg)",
+                          transition: "transform 200ms ease",
                         }}
                       />
                     }
                   >
                     Add Research
                   </Button>
-                  <Collapse in={doiInputExpanded} flex='1'>
+                  <Collapse in={doiInputExpanded} flex="1">
                     <form onSubmit={handleDoiSubmit}>
-                      <TextInput 
-                        placeholder="doi.org/..." 
-                        bdrs='md' 
+                      <TextInput
+                        placeholder="doi.org/..."
+                        bdrs="md"
                         disabled={addPubByDoi.isPending}
-                        key={doiForm.key('doi')}
+                        key={doiForm.key("doi")}
                         {...doiForm.getInputProps("doi")}
                       />
                     </form>
                   </Collapse>
                 </Group>
-                <Group wrap='nowrap'>
-                  <Button variant='outline'>
-                    Link With ORCID iD
-                  </Button>
-                  <Popover width='200' position='top' shadow='xs'>
+                <Group wrap="nowrap">
+                  <Button variant="outline">Link With ORCID iD</Button>
+                  <Popover width="200" position="top" shadow="xs">
                     <Popover.Target>
-                      <UnstyledButton variant='none' bdrs='100'>
+                      <UnstyledButton variant="none" bdrs="100">
                         <Flex>
-                          <IconHelp size='2rem' stroke='1' color='var(--mantine-color-dimmed)'/>  
+                          <IconHelp
+                            size="2rem"
+                            stroke="1"
+                            color="var(--mantine-color-dimmed)"
+                          />
                         </Flex>
-                      </UnstyledButton>  
-                    </Popover.Target>  
-                    <Popover.Dropdown 
-                      bdrs='md' 
-                      bd='1px solid navy.2'
+                      </UnstyledButton>
+                    </Popover.Target>
+                    <Popover.Dropdown
+                      bdrs="md"
+                      bd="1px solid navy.2"
                       styles={{
                         arrow: {
-                          border: '1px solid var(--mantine-color-navy-2)'
-                        }
+                          border: "1px solid var(--mantine-color-navy-2)",
+                        },
                       }}
                     >
-                      <Text fz='xs'>
-                        An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
-                        is a unique identifier researchers can use to link all of your 
-                        research with you. Linking your account with an ORCID iD will
-                        enable LabScity to automatically fetch data about your 
-                        publications. 
+                      <Text fz="xs">
+                        An{" "}
+                        <Text component="span" fz="xs" fw="600">
+                          ORCID iD{" "}
+                        </Text>
+                        is a unique identifier researchers can use to link all
+                        of your research with you. Linking your account with an
+                        ORCID iD will enable LabScity to automatically fetch
+                        data about your publications.
                       </Text>
-                      <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
+                      <Anchor
+                        fz="xs"
+                        href="https://info.orcid.org/researchers/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         Learn more at orcid.org
                       </Anchor>
                     </Popover.Dropdown>
                   </Popover>
                 </Group>
               </Group>
-            }
-            
-            <Stack maw='800'>
-            {
-              (publications && publications.length > 0)
-              ? 
-              publications.map((pub, i) => 
-                <LSPublication 
-                  key={pub.publication_id}
-                  pub={pub}
-                  isOwner={isOwnProfile}
-                  onDeleteClick={() => deletePub.mutate(pub.publication_id)}
-                  isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
-                  onFeaturedClick={() => setFeaturedPub.mutate({ 
-                    publicationId: pub.publication_id, 
-                    isFeatured: !pub.is_featured
-                  })}
-                  featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
-                />
-              )
-              :
-              <>
-                No Publications found
-              </>
-            }
+            )}
+
+            <Stack maw="800">
+              {publications && publications.length > 0 ? (
+                publications.map((pub) => (
+                  <LSPublication
+                    key={pub.publication_id}
+                    pub={pub}
+                    isOwner={isOwnProfile}
+                    onDeleteClick={() => deletePub.mutate(pub.publication_id)}
+                    isDeleting={
+                      deletePub.isPending &&
+                      deletePub.variables === pub.publication_id
+                    }
+                    onFeaturedClick={() =>
+                      setFeaturedPub.mutate({
+                        publicationId: pub.publication_id,
+                        isFeatured: !pub.is_featured,
+                      })
+                    }
+                    featureBtnDisabled={
+                      !pub.is_featured &&
+                      featuredCount >= MAX_FEATURED_PUBLICATIONS
+                    }
+                  />
+                ))
+              ) : (
+                <>No Publications found</>
+              )}
             </Stack>
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value='products'>
-          Products
-        </Tabs.Panel>
-
+        <Tabs.Panel value="products">Products</Tabs.Panel>
       </Tabs>
     </Box>
   );
@@ -702,11 +719,11 @@ export function LSProfileView(props: LSProfileViewProps) {
   const profileQuery = useUserProfile(props.userId);
   const profile = profileQuery.data;
   const profileName = profile
-    ? profile.first_name + " " + profile.last_name
+    ? `${profile.first_name} ${profile.last_name}`
     : "Unknown User";
 
   return (
-    <Box bg="gray.0" mih="100vh">
+    <Box bg="gray.0" mih="calc(100vh - 56px)">
       {!props.isOwnProfile && (
         <LSUserReportOverlay
           open={reportOverlayOpen}

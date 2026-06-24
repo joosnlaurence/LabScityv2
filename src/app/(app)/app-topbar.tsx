@@ -3,7 +3,9 @@
 import {
   ActionIcon,
   Avatar,
+  Badge,
   Box,
+  Burger,
   Button,
   Divider,
   Flex,
@@ -17,17 +19,23 @@ import {
   TextInput,
   UnstyledButton,
 } from "@mantine/core";
-import Image from 'next/image';
-import { useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import {
   IconBell,
   IconBellFilled,
+  IconBriefcase,
+  IconFlaskFilled,
+  IconGavel,
   IconLogout,
+  IconMessageCircle,
   IconSearch,
   IconSettings,
   IconSettingsFilled,
+  IconUser,
+  IconUsers,
   IconX,
 } from "@tabler/icons-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -59,26 +67,39 @@ const notificationOptions: Array<{ key: NotificationType; label: string }> = [
   { key: "new_message", label: "Messages" },
   { key: "group_invite", label: "Group Invites" },
 ];
+
 const LAST_VISITED_NOTIFICATIONS_KEY = "labscity:last-visited-notifications-at";
 
-const LSAppTopBar = () => {
+interface LSAppTopBarProps {
+  userId: string;
+  isModerator: boolean;
+}
+
+const baseNavigation = [
+  { href: "/home", icon: IconFlaskFilled, label: "Home" },
+  { href: "/jobs", icon: IconBriefcase, label: "Jobs" },
+  { href: "/groups", icon: IconUsers, label: "Groups" },
+  { href: "/chat", icon: IconMessageCircle, label: "Messages" },
+];
+
+const moderatorNavItem = {
+  href: "/moderation",
+  icon: IconGavel,
+  label: "Moderation",
+};
+
+export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
   const router = useRouter();
-
-  const handleSignOut = async () => {
-    const supabase = createClient(); // TODO: why dont we pass down the client?
-
-    await supabase.auth.signOut(); // call signout
-
-    router.push("/login"); // go to login screen
-  };
-
-  const isMobile = useIsMobile();
-
   const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const [mobileMenuOpen, mobileMenu] = useDisclosure(false);
+
+  const navigation = isModerator
+    ? [...baseNavigation, moderatorNavItem]
+    : baseNavigation;
   const inNotificationsPage = pathname.startsWith("/notifications");
   const notifications = useNotificationStore((state) => state.notifications);
 
-  // Options menu state + local notification preference values
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
@@ -90,7 +111,6 @@ const LSAppTopBar = () => {
     useState<NotificationPreferenceMap>(defaultNotificationPreferences);
   const setPreferenceMutation = useSetNotificationPreference();
 
-  // Search state
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debounced] = useDebouncedValue(query, 300);
@@ -121,6 +141,7 @@ const LSAppTopBar = () => {
       setResults([]);
       return;
     }
+
     setSearching(true);
     searchUserContent({ query: debounced }).then((res) => {
       setResults(res.success ? (res.data ?? []) : []);
@@ -128,19 +149,6 @@ const LSAppTopBar = () => {
     });
   }, [debounced]);
 
-  const newNotificationsCount = notifications.reduce((count, notification) => {
-    if (lastVisitedNotificationsAtMs === null) return count + 1;
-
-    const createdAtMs = Date.parse(notification.created_at);
-    if (!Number.isFinite(createdAtMs)) return count;
-
-    return createdAtMs > lastVisitedNotificationsAtMs ? count + 1 : count;
-  }, 0);
-  const hasNewNotifications = newNotificationsCount > 0;
-  const displayedNewNotificationsCount =
-    newNotificationsCount > 99 ? "99+" : String(newNotificationsCount);
-
-  // Load saved preferences when the user opens the Options modal
   useEffect(() => {
     const loadPreferences = async () => {
       if (!optionsOpen) return;
@@ -183,7 +191,32 @@ const LSAppTopBar = () => {
     void loadPreferences();
   }, [optionsOpen]);
 
-  // Save one preference at a time
+  const newNotificationsCount = notifications.reduce((count, notification) => {
+    if (lastVisitedNotificationsAtMs === null) return count + 1;
+
+    const createdAtMs = Date.parse(notification.created_at);
+    if (!Number.isFinite(createdAtMs)) return count;
+
+    return createdAtMs > lastVisitedNotificationsAtMs ? count + 1 : count;
+  }, 0);
+  const hasNewNotifications = newNotificationsCount > 0;
+  const displayedNewNotificationsCount =
+    newNotificationsCount > 99 ? "99+" : String(newNotificationsCount);
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setQuery("");
+    setResults([]);
+  };
+
+  const submitSearch = () => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+
+    router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+    closeSearch();
+  };
+
   const updateNotificationPreference = async (
     notificationType: NotificationType,
     newValue: boolean,
@@ -203,209 +236,208 @@ const LSAppTopBar = () => {
     }
   };
 
-  const closeSearch = () => {
-    setSearchOpen(false);
-    setQuery("");
-    setResults([]);
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
-  const submitSearch = () => {
-    const trimmedQuery = query.trim();
-
-    if (!trimmedQuery) {
-      return;
-    }
-
-    router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-    closeSearch();
-  };
+  const getHref = (href: string) =>
+    href === "/profile" ? `/profile/${userId}` : href;
+  const isActive = (href: string) =>
+    href === "/home"
+      ? pathname === "/home"
+      : pathname === href || pathname.startsWith(`${href}/`);
 
   const groupedUsers = results.filter((r) => r.content_type === "user");
   const groupedPosts = results.filter((r) => r.content_type === "post");
   const groupedGroups = results.filter((r) => r.content_type === "group");
-
   const showDropdown = searchOpen && query.trim().length > 0;
 
-  useEffect(() => {
-    document.body.style.overflow = showDropdown && isMobile ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isMobile, showDropdown]);
-
-  /* to fix layout stuff */
-
-  const topBarHeight = 60 // honestly im not sure what to name this but whatever
-  const desktopSearchDropdownSize = 512
-
-  /*---------------------*/
+  const navItems = [
+    ...navigation,
+    { href: "/profile", icon: IconUser, label: "Profile" },
+  ];
 
   return (
-    <Flex
-      pos="sticky"
-      bg="gray.0"
-      top={0}
-      left={isMobile ? 0 : topBarHeight}
-      h={topBarHeight}
-      w={"100%"}
-      justify="center"
-      align="center"
-      style={{
-        borderBottom: "1px solid var(--mantine-color-gray-3)",
-        zIndex: 10 /* keeps topbar above profile hero banner when scrolling */,
-      }}
-    >
-      {searchOpen ? (
-        /* Search mode: full-width input */
-        <Flex h={topBarHeight} w="100%" align="center" gap="xs" px="md">
-          {/* search input field */}
-          <TextInput
-            ref={inputRef}
-            flex={1}
-            variant="unstyled"
-            placeholder="Search..."
-            value={query}
-            onChange={(e) => setQuery(e.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                submitSearch();
-              }
-            }}
-            styles={{
-              input: { color: "var(--mantine-color-navy-7)" },
-            }}
-          />
-
-          <ActionIcon
-            variant="transparent"
-            c="gray.5"
-            onClick={submitSearch}
-            aria-label="Search"
-          >
-            <IconSearch size={24} />
-          </ActionIcon>
-
-          {/* search close*/}
-          <ActionIcon variant="transparent" c="gray.5" onClick={closeSearch}>
-            <IconX size={24} />
-          </ActionIcon>
-        </Flex>
-      ) : (
-        /* Normal mode: logo + right controls */
-        <>
-          {/* anchored to left of topbar */}
-          <Flex direction="row" pos="absolute" left={8} align="center">
-            {/* search icon */}
-            <Button
-              leftSection={<IconSearch />}
-              size="compact-sm"
-              variant="transparent"
-              c="gray.5"
-              onClick={() => {
-                setSearchOpen(true);
-                setTimeout(() => inputRef.current?.focus(), 0);
-              }}
-            ></Button>
-          </Flex>
-
-          {/* logo */}
+    <>
+      <Box
+        component="header"
+        pos="sticky"
+        top={0}
+        bg="white"
+        style={{
+          borderBottom: "1px solid var(--mantine-color-gray-3)",
+          zIndex: 30,
+        }}
+      >
+        <Flex h={56} align="center" px={{ base: "sm", md: "lg" }} gap="md">
           <UnstyledButton
             component={Link}
             href="/home"
             aria-label="LabScity home"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              height: topBarHeight,
-              lineHeight: 0,
-            }}
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
           >
-            <Image 
+            <Box
+              w={34}
+              h={34}
+              bg="navy.7"
+              c="white"
+              style={{
+                borderRadius: 8,
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 800,
+              }}
+            >
+              L
+            </Box>
+            <Image
               src="/logo-lightgray.png"
               width={500}
               height={60}
-              style={{width: 'auto', height: '38px', margin: '11px'}}
-              alt='LabScity Logo'
-              priority={true}
+              style={{ width: "auto", height: 34 }}
+              alt="LabScity"
+              priority
             />
           </UnstyledButton>
 
-          {/* anchored to right of topbar */}
-          <Flex direction="row" pos="absolute" right={0} align="center">
-            {/* notifications link */}
+          {!isMobile && (
+            <Box pos="relative" flex={1} maw={560}>
+              <TextInput
+                ref={inputRef}
+                value={query}
+                onFocus={() => setSearchOpen(true)}
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitSearch();
+                  }
+                }}
+                leftSection={<IconSearch size={16} />}
+                placeholder="Search people, publications, posts, groups..."
+                radius="md"
+                styles={{
+                  input: {
+                    background: "var(--mantine-color-gray-1)",
+                    borderColor: "transparent",
+                  },
+                }}
+              />
+              {showDropdown && (
+                <SearchResultsDropdown
+                  searching={searching}
+                  groupedUsers={groupedUsers}
+                  groupedPosts={groupedPosts}
+                  groupedGroups={groupedGroups}
+                  closeSearch={closeSearch}
+                />
+              )}
+            </Box>
+          )}
+
+          {!isMobile && (
+            <Group gap={4} ml="auto">
+              {navItems.map((item) => {
+                const active = isActive(item.href);
+                const href = getHref(item.href);
+
+                return (
+                  <Button
+                    key={item.href}
+                    component={Link}
+                    href={href}
+                    variant="subtle"
+                    color={active ? "navy" : "gray"}
+                    radius="md"
+                    size="compact-sm"
+                    leftSection={<item.icon size={18} />}
+                    fw={active ? 700 : 500}
+                    styles={{
+                      root: {
+                        borderBottom: active
+                          ? "2px solid var(--mantine-color-navy-7)"
+                          : "2px solid transparent",
+                      },
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </Group>
+          )}
+
+          <Group gap={4} ml={isMobile ? "auto" : 4}>
+            {isMobile && (
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                onClick={() => {
+                  setSearchOpen(true);
+                  setTimeout(() => inputRef.current?.focus(), 0);
+                }}
+                aria-label="Search"
+              >
+                <IconSearch size={20} />
+              </ActionIcon>
+            )}
+
             <Button
-              href={"/notifications"}
               component={Link}
-              variant="transparent"
+              href="/notifications"
+              variant="subtle"
+              color={
+                hasNewNotifications
+                  ? "blue"
+                  : inNotificationsPage
+                    ? "navy"
+                    : "gray"
+              }
               size="compact-sm"
-              styles={{
-                root: { overflow: "visible" },
-                inner: { overflow: "visible" },
-                section: { overflow: "visible" },
-              }}
-              // fill icons if they are active; also shade them darker
+              px={8}
+              styles={{ root: { overflow: "visible" } }}
               leftSection={
-                <Box
-                  pos="relative"
-                  w={28}
-                  h={24}
-                  style={{ display: "inline-flex", alignItems: "center" }}
-                >
-                  {hasNewNotifications ? (
-                    <IconBell color="var(--mantine-color-blue-6)" />
-                  ) : inNotificationsPage ? (
-                    <IconBellFilled />
+                <Box pos="relative" style={{ display: "inline-flex" }}>
+                  {inNotificationsPage ? (
+                    <IconBellFilled size={20} />
                   ) : (
-                    <IconBell />
+                    <IconBell size={20} />
                   )}
                   {hasNewNotifications && (
-                    <Box
+                    <Badge
+                      size="xs"
+                      color="blue"
+                      variant="filled"
                       pos="absolute"
-                      bottom={0}
-                      right={0}
-                      bg="blue.6"
-                      c="white"
+                      top={-8}
+                      right={-10}
                       px={4}
-                      h={14}
-                      miw={14}
-                      style={{
-                        borderRadius: 999,
-                        fontSize: "10px",
-                        lineHeight: "14px",
-                        textAlign: "center",
-                        fontWeight: 700,
-                      }}
                     >
                       {displayedNewNotificationsCount}
-                    </Box>
+                    </Badge>
                   )}
                 </Box>
               }
-              c={
-                hasNewNotifications
-                  ? "blue.6"
-                  : inNotificationsPage
-                    ? "gray.7"
-                    : "gray.5"
-              }
             />
 
-            {/* settings menu */}
             <Menu opened={settingsOpen} onChange={setSettingsOpen}>
               <Menu.Target>
-                <Button
-                  variant="transparent"
-                  size="compact-sm"
-                  c={settingsOpen ? "gray.7" : "gray.5"}
-                  leftSection={
-                    settingsOpen ? <IconSettingsFilled /> : <IconSettings />
-                  }
-                />
+                <ActionIcon
+                  variant="subtle"
+                  color={settingsOpen ? "navy" : "gray"}
+                  aria-label="Settings"
+                >
+                  {settingsOpen ? (
+                    <IconSettingsFilled size={20} />
+                  ) : (
+                    <IconSettings size={20} />
+                  )}
+                </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item
-                  c="navy.6"
                   onClick={() => {
                     setOptionsOpen(true);
                     setSettingsOpen(false);
@@ -413,7 +445,6 @@ const LSAppTopBar = () => {
                 >
                   Options
                 </Menu.Item>
-
                 <Menu.Item
                   c="red"
                   leftSection={<IconLogout size={14} />}
@@ -423,119 +454,78 @@ const LSAppTopBar = () => {
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
-          </Flex>
-        </>
-      )}
 
-      {/* Search results dropdown */}
-      {
-        showDropdown && (
-          <Paper
-            pos="absolute"
-            top={topBarHeight}
-            shadow="xl"
-            w={isMobile ? "100%" : desktopSearchDropdownSize}
-            mah="60vh"
-            p="sm"
-            style={{ zIndex: 9, overflowY: "auto" }}
-          >
-            {searching && (
-              <Flex justify="center" py="sm">
-                <LSSpinner />
-              </Flex>
+            {!isMobile && (
+              <UnstyledButton component={Link} href={`/profile/${userId}`}>
+                <Avatar size={34} radius="xl" color="navy.7">
+                  {userId.slice(0, 2).toUpperCase()}
+                </Avatar>
+              </UnstyledButton>
             )}
 
-          {!searching && results.length === 0 && (
-            <Text size="sm" c="dimmed" ta="center" py="sm">
-              No results
-            </Text>
-          )}
+            {isMobile && (
+              <Burger
+                opened={mobileMenuOpen}
+                onClick={mobileMenu.toggle}
+                size="sm"
+                color="var(--mantine-color-gray-6)"
+              />
+            )}
+          </Group>
+        </Flex>
 
-          {!searching && groupedUsers.length > 0 && (
-            <>
-              <Text size="xs" fw={700} c="gray.5" tt="uppercase" mb={4}>
-                Users
-              </Text>
-              {groupedUsers.map((r) => (
-                <UnstyledButton
-                  key={r.id}
-                  w="100%"
-                  px="xs"
-                  py={6}
-                  style={{ borderRadius: 4 }}
-                  onClick={() => {
-                    router.push(`/profile/${r.id}`);
-                    closeSearch();
-                  }}
-                >
-                  <Group gap="sm">
-                    <Avatar size="sm" radius="xl" color="navy.7" bg="navy.7">
-                      {r.names?.[0]}
-                    </Avatar>
-                    <Text size="sm" fw={500} c="navy.7">
-                      {r.names}
-                    </Text>
-                  </Group>
-                </UnstyledButton>
-              ))}
-            </>
-          )}
+        {isMobile && searchOpen && (
+          <Box px="sm" pb="sm" pos="relative">
+            <TextInput
+              ref={inputRef}
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  submitSearch();
+                }
+              }}
+              leftSection={<IconSearch size={16} />}
+              rightSection={
+                <ActionIcon variant="transparent" onClick={closeSearch}>
+                  <IconX size={16} />
+                </ActionIcon>
+              }
+              placeholder="Search LabScity..."
+              radius="md"
+            />
+            {showDropdown && (
+              <SearchResultsDropdown
+                searching={searching}
+                groupedUsers={groupedUsers}
+                groupedPosts={groupedPosts}
+                groupedGroups={groupedGroups}
+                closeSearch={closeSearch}
+              />
+            )}
+          </Box>
+        )}
 
-          {!searching && groupedPosts.length > 0 && (
-            <>
-              {groupedUsers.length > 0 && <Divider my="xs" />}
-              <Text size="xs" fw={700} c="gray.5" tt="uppercase" mb={4}>
-                Posts
-              </Text>
-              {groupedPosts.map((r) => (
-                <UnstyledButton
-                  key={r.id}
-                  w="100%"
-                  px="xs"
-                  py={6}
-                  style={{ borderRadius: 4 }}
-                  onClick={() => {
-                    router.push(`/posts/${r.id}`);
-                    closeSearch();
-                  }}
-                >
-                  <Text size="sm" c="navy.7" lineClamp={2}>
-                    {r.content}
-                  </Text>
-                </UnstyledButton>
-              ))}
-            </>
-          )}
-
-          {!searching && groupedGroups.length > 0 && (
-            <>
-              {(groupedUsers.length > 0 || groupedPosts.length > 0) && (
-                <Divider my="xs" />
-              )}
-              <Text size="xs" fw={700} c="gray.5" tt="uppercase" mb={4}>
-                Groups
-              </Text>
-              {groupedGroups.map((r) => (
-                <UnstyledButton
-                  key={r.id}
-                  w="100%"
-                  px="xs"
-                  py={6}
-                  style={{ borderRadius: 4 }}
-                  onClick={() => {
-                    router.push(`/groups/${r.id}`);
-                    closeSearch();
-                  }}
-                >
-                  <Text size="sm" c="navy.7">
-                    {r.names}
-                  </Text>
-                </UnstyledButton>
-              ))}
-            </>
-          )}
-        </Paper>
-      )}
+        {isMobile && mobileMenuOpen && (
+          <Stack gap={4} px="sm" pb="sm">
+            {navItems.map((item) => (
+              <Button
+                key={item.href}
+                component={Link}
+                href={getHref(item.href)}
+                variant={isActive(item.href) ? "light" : "subtle"}
+                color={isActive(item.href) ? "navy" : "gray"}
+                leftSection={<item.icon size={18} />}
+                justify="flex-start"
+                onClick={mobileMenu.close}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Stack>
+        )}
+      </Box>
 
       <Modal
         opened={optionsOpen}
@@ -547,8 +537,6 @@ const LSAppTopBar = () => {
           <Text size="sm" c="dimmed">
             Choose which notifications you want to receive.
           </Text>
-
-          {/* Render one switch per notification type from a simple config list */}
           {notificationOptions.map((option) => (
             <Switch
               key={option.key}
@@ -565,8 +553,135 @@ const LSAppTopBar = () => {
           ))}
         </Stack>
       </Modal>
-    </Flex>
+    </>
   );
-};
+}
 
-export default LSAppTopBar;
+function SearchResultsDropdown({
+  searching,
+  groupedUsers,
+  groupedPosts,
+  groupedGroups,
+  closeSearch,
+}: {
+  searching: boolean;
+  groupedUsers: searchResult[];
+  groupedPosts: searchResult[];
+  groupedGroups: searchResult[];
+  closeSearch: () => void;
+}) {
+  const router = useRouter();
+  const hasResults =
+    groupedUsers.length > 0 ||
+    groupedPosts.length > 0 ||
+    groupedGroups.length > 0;
+
+  const goTo = (href: string) => {
+    router.push(href);
+    closeSearch();
+  };
+
+  return (
+    <Paper
+      pos="absolute"
+      top="calc(100% + 8px)"
+      left={0}
+      right={0}
+      shadow="xl"
+      p="sm"
+      mah="60vh"
+      style={{ zIndex: 40, overflowY: "auto" }}
+    >
+      {searching && (
+        <Flex justify="center" py="sm">
+          <LSSpinner />
+        </Flex>
+      )}
+
+      {!searching && !hasResults && (
+        <Text size="sm" c="dimmed" ta="center" py="sm">
+          No results
+        </Text>
+      )}
+
+      {!searching && groupedUsers.length > 0 && (
+        <ResultGroup
+          title="Users"
+          rows={groupedUsers}
+          getHref={(row) => `/profile/${row.id}`}
+          onSelect={goTo}
+        />
+      )}
+      {!searching && groupedPosts.length > 0 && (
+        <>
+          {groupedUsers.length > 0 && <Divider my="xs" />}
+          <ResultGroup
+            title="Posts"
+            rows={groupedPosts}
+            getHref={(row) => `/posts/${row.id}`}
+            onSelect={goTo}
+          />
+        </>
+      )}
+      {!searching && groupedGroups.length > 0 && (
+        <>
+          {(groupedUsers.length > 0 || groupedPosts.length > 0) && (
+            <Divider my="xs" />
+          )}
+          <ResultGroup
+            title="Groups"
+            rows={groupedGroups}
+            getHref={(row) => `/groups/${row.id}`}
+            onSelect={goTo}
+          />
+        </>
+      )}
+    </Paper>
+  );
+}
+
+function ResultGroup({
+  title,
+  rows,
+  getHref,
+  onSelect,
+}: {
+  title: string;
+  rows: searchResult[];
+  getHref: (row: searchResult) => string;
+  onSelect: (href: string) => void;
+}) {
+  return (
+    <Stack gap={2}>
+      <Text size="xs" fw={700} c="gray.5" tt="uppercase" px={6}>
+        {title}
+      </Text>
+      {rows.map((row) => (
+        <UnstyledButton
+          key={`${title}-${row.id}`}
+          w="100%"
+          px="xs"
+          py={6}
+          style={{ borderRadius: 6 }}
+          onClick={() => onSelect(getHref(row))}
+        >
+          <Group gap="sm" wrap="nowrap">
+            <Avatar size="sm" radius="xl" color="navy.7">
+              {(row.names || row.content || title).slice(0, 1)}
+            </Avatar>
+            <Box miw={0}>
+              <Text size="sm" fw={500} c="navy.7" truncate>
+                {row.names || row.content}
+              </Text>
+              {row.content && row.names && (
+                <Text size="xs" c="dimmed" truncate>
+                  {row.content}
+                </Text>
+              )}
+            </Box>
+          </Group>
+        </UnstyledButton>
+      ))}
+    </Stack>
+  );
+}
