@@ -38,12 +38,13 @@ export interface Product {
   short_summary: string | null;
   website_link: string | null;
   publication_id: number | null;
-  image_path: string | null;
+  images: string[] | null;
   github_link: string | null;
   other_links: string[] | null;
   contributors: string[] | null;
   is_featured: boolean | null;
   product_type: string | null;
+  topics: string[] | null;
 }
 
 export interface Publication {
@@ -61,6 +62,23 @@ export interface Publication {
   topics: Array<string> | null;
 }
 
+export interface JobTag {
+  job_id: number;
+  tag_id: number;
+  is_required: boolean;
+}
+
+export interface JobSkill {
+  job_id: number;
+  skill_id: number;
+  is_required: boolean;
+}
+
+export interface TagSearchResult {
+  id: number;
+  name: string;
+}
+
 export interface Job {
   id: number;
   title: string;
@@ -76,6 +94,7 @@ export interface Job {
   academia_role: "Postdoc" | "Faculty" | "PhD" | "Grad Student"  | null;
   application_link: string | null;
 }
+
 /** Extended post with optional author information */
 export interface PostWithAuthor extends Post {
   author?: {

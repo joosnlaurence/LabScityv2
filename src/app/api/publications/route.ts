@@ -22,7 +22,7 @@ function decodeCursor(raw: string | null) {
  * query params = userId 
  */
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url); // searchParams = everything after ?
     const userId = searchParams.get("userId");
     const search = searchParams.get('search');
     const year = searchParams.get('year');

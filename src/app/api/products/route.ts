@@ -20,9 +20,12 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
         .from("user_products")
-        .select("products(*)")
+        .select("products(*, product_tags(tags(name)), product_images(image_path))")
         .eq("user_id", userId)
-        .returns<{ products: Product }[]>();
+        .returns<{ products: Product & { 
+            product_tags: { tags: { name: string } }[],
+            product_images: { image_path: string } [] } 
+        }[]>();
 
     if (error) return NextResponse.json<ApiResponse<Product[]>>(
         { 
@@ -34,7 +37,11 @@ export async function GET(request: Request) {
     return NextResponse.json<ApiResponse<Product[]>>(
         { 
             success: true, 
-            data: data.map((row) => row.products) 
+            data: data.map((row) => ({
+                ...row.products,
+                topics: row.products.product_tags?.map((pt) => pt.tags.name) ?? [],
+                images: row.products.product_images?.map((pi) => pi.image_path) ?? []
+            }))
         }
     );
 }
