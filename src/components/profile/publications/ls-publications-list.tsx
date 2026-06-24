@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay, Divider, RangeSlider, Select, Menu, OptionsFilter, ComboboxItem } from "@mantine/core";
-import { IconAdjustmentsHorizontal, IconList, IconListFilled, IconPlus, IconSearch, IconSelect } from "@tabler/icons-react";
+import { IconAdjustmentsHorizontal, IconPlus, IconSearch } from "@tabler/icons-react";
 import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
@@ -21,7 +21,6 @@ export default function LSPublicationsList({userId}: {userId: string}) {
 
   const { 
     data: pubFacets, 
-    isFetching: isFetchingFacets, 
     isLoading: isLoadingFacets, 
     isError: isErrorFacets
   } = useGetPublicationFacets(userId);
