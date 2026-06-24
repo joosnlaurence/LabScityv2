@@ -2,11 +2,11 @@ import type { PublicationType } from "../types/publication";
 
 export const PUBLICATION_TYPE_LABELS = {
   journal_article: "Journal Article",
+  review_article: "Review Article",
   book_chapter: "Book Chapter",
   conference_paper: "Conference Paper",
   preprint: "Preprint",
   dissertation: "Thesis / Dissertation",
-  review_article: "Review Article",
   technical_report: "Report / Working Paper",
   other: "Other",
 } as const;
@@ -34,3 +34,5 @@ export const OPENALEX_TYPE_MAP: Record<string, PublicationType> = {
 }
 
 export const PUBLICATION_TYPE_VALUES = Object.keys(PUBLICATION_TYPE_LABELS) as PublicationType[]
+
+export const MAX_FEATURED_PUBLICATIONS = 3

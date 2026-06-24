@@ -10,8 +10,11 @@ import {
   Group, 
   Menu, 
   Modal, 
+  Popover, 
   Stack, 
-  Text, 
+  Text,
+  Tooltip,
+  UnstyledButton, 
 } from "@mantine/core"
 import { 
   IconBook, 
@@ -26,12 +29,14 @@ import {
   IconLink, 
   IconNotebook, 
   IconPdf, 
+  IconPin, 
+  IconPinFilled, 
   IconPresentation, 
   IconSchool, 
   IconStarFilled,
   IconTrash, 
 } from "@tabler/icons-react"
-import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications"
+import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications"
 import { Fragment } from "react/jsx-runtime"
 // import NextLink from 'next/link';
 import classes from './ls-publications.module.css';
@@ -41,9 +46,23 @@ import { useDisclosure } from "@mantine/hooks";
 const ICON_SIZE = "0.85rem";
 
 export default function LSPublication(
-  { pub, isOwner, onDeleteClick, isDeleting }
+  { 
+    pub, 
+    isOwner, 
+    onDeleteClick, 
+    isDeleting, 
+    onFeaturedClick,
+    featureBtnDisabled
+  }
   : 
-  { pub: Publication, isOwner: boolean, onDeleteClick?: () => void, isDeleting?: boolean } 
+  { 
+    pub: Publication, 
+    isOwner: boolean, 
+    onDeleteClick?: () => void, 
+    isDeleting?: boolean,
+    onFeaturedClick?: () => void,
+    featureBtnDisabled?: boolean,
+  } 
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
@@ -87,30 +106,32 @@ export default function LSPublication(
   : undefined;
 
   const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
-  // pub.is_featured = true;
   return (
     <>
-    <Modal
-      opened={confirmOpen}
-      onClose={closeConfirm}
-      title="Delete publication"
-      centered
-      closeOnClickOutside={!isDeleting}
-      closeOnEscape={!isDeleting}
-      withCloseButton={!isDeleting}
-    >
-      <Text size="sm" mb="md">
-        Remove "{pub.title}" from your profile? This can't be undone.
-      </Text>
-      <Group justify="flex-end" gap="xs">
-        <Button variant="subtle" onClick={closeConfirm} disabled={isDeleting}>
-          Cancel
-        </Button>
-        <Button color="red" onClick={onDeleteClick} disabled={isDeleting} loading={isDeleting}>
-          Delete
-        </Button>
-      </Group>
-    </Modal>
+    {
+      isOwner &&
+      <Modal
+        opened={confirmOpen}
+        onClose={closeConfirm}
+        title="Delete publication"
+        centered
+        closeOnClickOutside={!isDeleting}
+        closeOnEscape={!isDeleting}
+        withCloseButton={!isDeleting}
+      >
+        <Text size="sm" mb="md">
+          Remove "{pub.title}" from your profile? This can't be undone.
+        </Text>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="subtle" onClick={closeConfirm} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={onDeleteClick} disabled={isDeleting} loading={isDeleting}>
+            Delete
+          </Button>
+        </Group>
+      </Modal>
+    }
     <Card
       w='100%'
       p='0'
@@ -138,65 +159,82 @@ export default function LSPublication(
         bdrs='12 12 0 0' 
         p='21'
       >
-        {/* Badges */}
-        <Group>
-          {
-            pub.is_featured &&
+        {/* Badges + Pin Icon */}
+        <Group justify="space-between" wrap='nowrap'>
+          {/* Badges */}
+          <Group>
+            {
+              pub.is_featured &&
+              <Badge 
+                tt='none' 
+                bg='yellow.1' 
+                bd='1px solid yellow.4'
+                fz='0.75rem'
+                fw='600'
+                lh='1rem'
+                c='orange.9'
+                leftSection={<IconStarFilled size={ICON_SIZE} color="var(--mantine-color-yellow-7)"/>}
+              >
+                Featured
+              </Badge>
+            }
             <Badge 
               tt='none' 
-              bg='yellow.1' 
-              bd='1px solid yellow.4'
+              bg='indigo.0' 
+              c='indigo.9' 
+              fw='500'
               fz='0.75rem'
-              fw='600'
               lh='1rem'
-              c='orange.9'
-              leftSection={<IconStarFilled size={ICON_SIZE} color="var(--mantine-color-yellow-7)"/>}
-             >
-              Featured
+              leftSection={typeIcon}
+            >
+              {PUBLICATION_TYPE_LABELS[pub.type ?? 'other']}
             </Badge>
-          }
-          <Badge 
-            tt='none' 
-            bg='indigo.0' 
-            c='indigo.9' 
-            fw='500'
-            fz='0.75rem'
-            lh='1rem'
-            leftSection={typeIcon}
-          >
-            {PUBLICATION_TYPE_LABELS[pub.type ?? 'other']}
-          </Badge>
+            {
+              pub.is_oa && 
+              <Badge 
+                tt='none' 
+                bg='indigo.0' 
+                c='indigo.9' 
+                fw='500'
+                fz='0.75rem'
+                lh='1rem'
+                leftSection={
+                  <IconBook {...iconProps}/>
+                }
+              >Open Access</Badge>
+            }
+            {
+              pub.is_oa && pub.pdf_url ? 
+              <Badge 
+                tt='none' 
+                bg='indigo.0' 
+                c='indigo.9' 
+                fw='500'
+                fz='0.75rem'
+                lh='1rem'
+                leftSection={
+                  <IconPdf {...iconProps}/>
+                }
+              >PDF Available</Badge>
+              : undefined
+            }
+          </Group>
+
+          {/* Make Featured */}
           {
-            pub.is_oa && 
-            <Badge 
-              tt='none' 
-              bg='indigo.0' 
-              c='indigo.9' 
-              fw='500'
-              fz='0.75rem'
-              lh='1rem'
-              leftSection={
-                <IconBook {...iconProps}/>
-              }
-            >Open Access</Badge>
-          }
-          {
-            pub.is_oa && pub.pdf_url ? 
-            <Badge 
-              tt='none' 
-              bg='indigo.0' 
-              c='indigo.9' 
-              fw='500'
-              fz='0.75rem'
-              lh='1rem'
-              leftSection={
-                <IconPdf {...iconProps}/>
-              }
-            >PDF Available</Badge>
-            : undefined
+            isOwner &&
+            <Tooltip label={`You can feature up to ${MAX_FEATURED_PUBLICATIONS} publications`} disabled={!featureBtnDisabled}> 
+              <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
+                {
+                  pub.is_featured ?
+                  <IconPinFilled stroke='1.25' color='var(--mantine-color-yellow-7)'/>
+                  :
+                  <IconPin stroke='1.25'/>
+                }
+              </ActionIcon>
+            </Tooltip>
           }
         </Group>
-        
         {/* Title */}
         <Box>
           <Anchor 
@@ -244,14 +282,31 @@ export default function LSPublication(
                 <Fragment key={`${name}-${i}`}>
                   {i > 0 && " · "}
                   {name}
+                  {i === visibleAuthors.length-1 ? " " : undefined}
                 </Fragment>
               ))
             }
             {
               authorOverflow > 0 && (
-                <Text component="span" c="dimmed" fz='sm'>
-                  {` +${authorOverflow} more`}
-                </Text>
+                <Popover shadow='xs'>
+                  <Popover.Target>
+                    <UnstyledButton className={classes.authorOverflow} component="span" c="dimmed" fz='sm'>
+                      {`+${authorOverflow} more`}
+                    </UnstyledButton>
+                  </Popover.Target>
+                  <Popover.Dropdown
+                    bdrs='md' 
+                    bd='1px solid navy.2'
+                  >
+                    <Stack gap='2'>
+                      {
+                        (pub.authors ?? []).map((name, i) => 
+                          <Text key={`${pub.publication_id}-${name}-${i}`} size='sm'>{name}</Text>
+                        )
+                      }
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
               )
             }
           </Box>
@@ -351,37 +406,27 @@ export default function LSPublication(
 
           {/* Update Buttons */}
           {
-            isOwner && 
-            // <Group gap='6'>
-            //   <ActionIcon size='lg' variant='outline' bdrs='md'>
-            //     <IconEdit size='1rem' />
-            //   </ActionIcon>
-            //   <Divider />
-            //   <ActionIcon size='lg' bg='red.6' bdrs='md'>
-            //     <IconTrash size='1rem' />
-            //   </ActionIcon>
-            // </Group>
-            
-          <Menu position="top-end" shadow="md">
-            <Menu.Target>
-              <ActionIcon bdrs='md' variant='outline' size='lg'>
-                <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item leftSection={<IconEdit size='1rem' />}>
-                Edit
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                color="red"
-                leftSection={<IconTrash size='1rem' />}
-                onClick={openConfirm}
-              >
-                Delete
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+            isOwner &&             
+            <Menu position="top-end" shadow="md">
+              <Menu.Target>
+                <ActionIcon bdrs='md' variant='outline' size='lg'>
+                  <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconEdit size='1rem' />}>
+                  Edit
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  color="red"
+                  leftSection={<IconTrash size='1rem' />}
+                  onClick={openConfirm}
+                >
+                  Delete
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           }
         </Group>
       </Stack>

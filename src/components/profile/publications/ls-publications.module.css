@@ -4,3 +4,11 @@
 .featuredViewBtn:hover {
     background: var(--mantine-color-blue-6) !important;
 }
+
+.authorOverflow {
+    text-decoration: none;
+    cursor: pointer;
+}
+.authorOverflow:hover {
+    text-decoration: underline;
+}
