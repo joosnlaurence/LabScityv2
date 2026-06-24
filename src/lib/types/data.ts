@@ -79,6 +79,13 @@ export interface TagSearchResult {
   name: string;
 }
 
+export interface LocationResult {
+    place_id: number;
+    display_name: string;
+    lat: string;
+    lon: string;
+}
+
 export interface Job {
   id: number;
   title: string;
