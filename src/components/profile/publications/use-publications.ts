@@ -1,19 +1,24 @@
 import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
-import { InfinitePublications, ParsedOpenAlexWork, PublicationFacets } from "@/lib/types/publication";
+import { InfinitePublications, ParsedOpenAlexWork, PubFilters, PublicationFacets } from "@/lib/types/publication";
 import { notifications } from "@mantine/notifications";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function usePublications(userId: string) {
+export function usePublications(userId: string, filters: PubFilters) {
   return useInfiniteQuery({
-    queryKey: publicationKeys.list(userId),
+    queryKey: publicationKeys.list(userId, filters),
     initialPageParam: null as { date_published: string | null, publication_id: number } | null,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams({ userId });
+      if(filters.search) params.set('search', filters.search);
+      if(filters.year) params.set('year', filters.year);
+      if(filters.tagId) params.set('tagId', filters.tagId);
+      if(filters.type) params.set('type', filters.type);
+      if(filters.sort) params.set('sort', filters.sort);
+
       if(pageParam) {
-        const cursor = { date_published: pageParam.date_published, publication_id: pageParam.publication_id }
-        params.set("cursor", btoa(JSON.stringify(cursor)));  
+        params.set("cursor", btoa(JSON.stringify(pageParam)));  
       }
       const res = await fetch(`/api/publications?${params}`);
       if(!res.ok) throw new Error("Failed to fetch publications");
@@ -21,7 +26,8 @@ export function usePublications(userId: string) {
       if(!apiResponse.success) throw new Error(apiResponse.error)
       return apiResponse.data;
     },
-    getNextPageParam: (last) => last.nextCursor ?? undefined
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    placeholderData: keepPreviousData
   })
 }
 

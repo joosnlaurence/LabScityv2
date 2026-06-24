@@ -1,4 +1,5 @@
 import type { FeedFilterValues } from "@/lib/validations/post";
+import { PubFilters } from "./types/publication";
 
 /**
  * Query key factory for the feed.
@@ -74,6 +75,8 @@ export const dataKeys = {
 
 export const publicationKeys = {
   all: ["publications"] as const,
-  list: (userId: string) => [...publicationKeys.all, 'list', userId] as const,
+  lists: () => [...publicationKeys.all, 'list'] as const,
+  list: (userId: string, filters?: PubFilters) =>
+    [...publicationKeys.lists(), userId, filters ?? {}] as const,
   facets: (userId: string) => [...publicationKeys.all, 'facets', userId] as const
 }

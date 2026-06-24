@@ -42,3 +42,11 @@ export interface PublicationFacets {
   types: { type: PublicationType, count: number }[]
   tags: { id: number, name: string, count: number }[]
 }
+
+export interface PubFilters {
+  search: string;
+  year: string | null;
+  tagId: string | null;
+  type: string | null;
+  sort: 'newest' | 'oldest';
+}

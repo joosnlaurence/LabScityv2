@@ -6,12 +6,13 @@ import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
 import { useAuthContext } from "@/components/auth/auth-provider";
-import { useDisclosure, useIntersection } from "@mantine/hooks";
+import { useDebouncedValue, useDisclosure, useIntersection } from "@mantine/hooks";
 import { useAddPubByDoi, useDeletePublication, useGetPublicationFacets, usePublications, useSetFeaturedPublication } from "./use-publications";
 import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { useForm } from "@mantine/form";
 import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { PubFilters } from "@/lib/types/publication";
 
 export default function LSPublicationsList({userId}: {userId: string}) {  
   const { user, loading: userLoading } = useAuthContext();
@@ -32,14 +33,27 @@ export default function LSPublicationsList({userId}: {userId: string}) {
     });
   };
 
+  const [filters, setFilters] = useState<PubFilters>({
+    search: '',
+    year: null,
+    tagId: null,
+    type: null,
+    sort: 'newest'
+  });
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedInput] = useDebouncedValue(searchInput, 300);
+
+  const activeFilters: PubFilters = { ...filters, search: debouncedInput.trim() };
+
   const {
     data: userPubs,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isLoading: isLoadingUserPubs,
-    isError: isErrorUserPubs
-  } = usePublications(userId); 
+    isError: isErrorUserPubs,
+    isFetching: isFetchingPubs
+  } = usePublications(userId, activeFilters); 
   const publications = userPubs?.pages.flatMap((p) => p.publications) ?? [];
 
   const { ref: scrollRef, entry } = useIntersection({
@@ -106,8 +120,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   }
 
   return (
-    <Stack w='800' pos='relative'>
-      <LoadingOverlay visible={addPubByDoi.isPending}/>
+    <Stack w='800'>
       {
         isOwner && 
         <Stack>
@@ -154,12 +167,9 @@ export default function LSPublicationsList({userId}: {userId: string}) {
         <Stack>
           <TextInput 
             placeholder='Search by publication title'
-            styles={{
-              input: {
-                background: 'var(--mantine-color-gray-1)'
-              }
-            }}
+            styles={{ input: { background: 'var(--mantine-color-gray-1)' } }}
             leftSection={<IconSearch stroke='1.75' size='1rem' color='var(--mantine-color-gray-5)'/>}
+            onChange={(e) => setSearchInput(e.currentTarget.value)}
           />
           <Group justify='space-between' wrap='nowrap'>
             <Group>
@@ -170,6 +180,8 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                     value: String(y.year), label: `${y.year} (${y.count})`
                   })) ?? []
                 }
+                clearable
+                onChange={(y) => setFilters((prev) => ({ ...prev, year: y }))}
                 w='125'
               />
               <Select 
@@ -179,9 +191,11 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                     value: String(tag.id), label: `${tag.name} (${tag.count})`
                   })) ?? []
                 }
+                clearable
                 searchable
                 filter={optionsFilter}
                 nothingFoundMessage='No Matching Topics...'
+                onChange={(t) => setFilters((prev) => ({ ...prev, tagId: t }))}
                 w='200'
               />
               <Select 
@@ -191,13 +205,21 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                     value: String(t.type), label: `${PUBLICATION_TYPE_LABELS[t.type]} (${t.count})`
                   })) ?? []
                 }
+                clearable
+                onChange={(type) => setFilters((prev) => ({ ...prev, type }))}
                 w='175'
               />
             </Group>
             <Select 
               w='125' 
               placeholder='Sort by' 
-              data={['Newest', 'Oldest']}
+              data={[
+                {value: 'newest', label: 'Newest'}, 
+                {value: 'oldest', label: 'Oldest'}
+              ]}
+              allowDeselect={false}
+              onChange={(sort) => setFilters((prev) => ({ ...prev, sort: (sort as 'newest' | 'oldest') ?? 'newest' }))}
+              defaultValue='newest'
               leftSection={<IconAdjustmentsHorizontal stroke='1' color='var(--mantine-color-gray-5)'/>}
             />
           </Group>
@@ -205,7 +227,15 @@ export default function LSPublicationsList({userId}: {userId: string}) {
       }
       <Divider />
 
-      <Stack>
+      <Stack pos='relative'>
+        {
+          (addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)) &&
+          <Loader mx='auto' />
+        }
+        {/* <LoadingOverlay
+          visible={addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)}
+          loaderProps={{ children: '' }}
+        /> */}
       {
         (publications && publications.length > 0)
         ? 

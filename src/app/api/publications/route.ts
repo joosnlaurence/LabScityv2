@@ -24,6 +24,11 @@ function decodeCursor(raw: string | null) {
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
+    const search = searchParams.get('search');
+    const year = searchParams.get('year');
+    const tagId = searchParams.get('tagId');
+    const type = searchParams.get('type');
+    const sort = searchParams.get('sort');
     
     const cursor = decodeCursor(searchParams.get('cursor'));
 
@@ -35,21 +40,53 @@ export async function GET(request: Request) {
 
     const supabase = await createClient();
 
+    const hasFilters = !!(search || year || tagId || type);
+    const descending = sort !== 'oldest';
+
+    let tagPubIds: number[] | null = null;
+    if(tagId) {
+      const { data: tagRows, error: tagErr } = await supabase
+        .from("publication_tags")
+        .select("publication_id")
+        .eq("tag_id", Number(tagId));
+      
+      if(tagErr) {
+        return NextResponse.json<ApiResponse<Publication[]>>({
+          success: false,
+          error: tagErr.message
+        }, { status: 500 });
+      }
+      tagPubIds = (tagRows ?? []).map((r) => r.publication_id);
+    }
+
     let query = supabase
         .from("user_publications_full")
         .select("*, publication_tags(tags(name))")
         .eq("user_id", userId)
-        .eq("is_featured", false);
     
+    if(!hasFilters) {
+      query = query.eq("is_featured", false);
+    }
+    
+    if(search) query = query.ilike("title", `%${search}%`);
+    if(type) query = query.eq("type", type);
+    if(tagPubIds) query = query.in("publication_id", tagPubIds);
+    if(year && !Number.isNaN(Number(year))) {
+      query = query
+        .gte('date_published', `${year}-01-01`)
+        .lt('date_published', `${Number(year) + 1}-01-01`);
+    }
+
     if (cursor) {
+      const op = descending ? 'lt' : 'gt';
       query = query.or(
-        `date_published.lt.${cursor.date_published},and(date_published.eq.${cursor.date_published},publication_id.lt.${cursor.publication_id})`
+        `date_published.${op}.${cursor.date_published},and(date_published.eq.${cursor.date_published},publication_id.${op}.${cursor.publication_id})`
       )
     }
     
     const { data, error } = await query
-      .order("date_published", { ascending: false, nullsFirst: false })
-      .order("publication_id", { ascending: false })
+      .order("date_published", { ascending: !descending, nullsFirst: false })
+      .order("publication_id", { ascending: !descending })
       .limit(PAGE_SIZE + 1)
       .returns<(Publication & { 
         user_id: string;
@@ -79,14 +116,14 @@ export async function GET(request: Request) {
       : null;
 
     let featuredPubs = []; 
-    if (!cursor) {
+    if (!cursor && !hasFilters) {
       const { data: featuredData, error: featuredError } = await supabase
         .from("user_publications_full")
         .select("*, publication_tags(tags(name))")
         .eq("user_id", userId)
         .eq("is_featured", true)
-        .order("date_published", { ascending: false, nullsFirst: false })
-        .order("publication_id", { ascending: false })
+        .order("date_published", { ascending: !descending, nullsFirst: false })
+        .order("publication_id", { ascending: !descending })
         .returns<(Publication & { 
           user_id: string;
           publication_tags: { tags: { name: string } }[]
