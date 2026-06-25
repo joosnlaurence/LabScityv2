@@ -70,6 +70,7 @@ import type {
   updateProfileAction,
 } from "@/lib/actions/profile";
 import LSPublicationsList from "./publications/ls-publications-list";
+import LSProductsList from "./products/ls-products-list";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -541,7 +542,7 @@ const LSProfileDesktopLayout = ({
         </Tabs.Panel>
 
         <Tabs.Panel value='products'>
-          Products
+          <LSProductsList userId={userId}/>
         </Tabs.Panel>
 
       </Tabs>

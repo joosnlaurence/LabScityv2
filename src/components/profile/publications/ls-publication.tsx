@@ -25,6 +25,7 @@ import {
   IconClock, 
   IconDots, 
   IconEdit, 
+  IconExternalLink, 
   IconFile, 
   IconLink, 
   IconNotebook, 
@@ -137,9 +138,11 @@ export default function LSPublication(
       p='0'
       bdrs='0.75rem'
       style={{
-        border: '1px solid var(--mantine-color-gray-3)',
-        borderTop: pub.is_featured ? '0px' : '1px solid var(--mantine-color-gray-3)'
+        border: pub.is_featured ? '1px solid var(--mantine-color-blue-3)'  : '1px solid var(--mantine-color-gray-3)',
+        borderTop: pub.is_featured ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-gray-3)',
       }}
+      shadow={pub.is_featured ? '0 2px 12px 0 rgba(37, 99, 235, 0.08)' : 'xs'}
+      bg={pub.is_featured ? '#F8FBFF' : undefined}
     >
       {/* Is Featured? top strip */}
       { pub.is_featured && 
@@ -376,7 +379,7 @@ export default function LSPublication(
             <Button 
               bg={pub.is_featured ? 'indigo.7' : 'navy.7'} 
               bdrs='md' 
-              rightSection={<IconChevronRight size='1rem'/>}
+              leftSection={<IconExternalLink size='1rem'/>}
               className={pub.is_featured ? classes.featuredViewBtn : classes.viewBtn}
               component="a"
               href={doiUrl ?? ''}
