@@ -25,6 +25,7 @@ import {
   IconExternalLink, 
   IconFile, 
   IconFlask,  
+  IconLink,  
   IconPin, 
   IconPinFilled, 
   IconStarFilled,
@@ -71,10 +72,15 @@ export default function LSProduct(
     onFeaturedClick?: () => void,
     featureBtnDisabled?: boolean,
   } 
-) {
+)  {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
   const typeIcon = TYPE_ICONS[product.product_type ?? 'other'];
+  const websiteLink = product.links.find((link) => link.kind === 'website');
+  const githubLink = product.links.find((link) => link.kind === 'github');
+  const otherLinks = product.links.filter((link) => link.kind === 'other');
+  const viewLink = websiteLink?.url ?? githubLink?.url ?? null;
+
 
   return (
     <>
@@ -83,14 +89,14 @@ export default function LSProduct(
       <Modal
         opened={confirmOpen}
         onClose={closeConfirm}
-        title="Delete publication"
+        title="Delete product"
         centered
         closeOnClickOutside={!isDeleting}
         closeOnEscape={!isDeleting}
         withCloseButton={!isDeleting}
       >
         <Text size="sm" mb="md">
-          Remove "{product.title}" from your profile? This can't be undone.
+          Remove <b>{product.title}</b> from your profile? This can't be undone.
         </Text>
         <Group justify="flex-end" gap="xs">
           <Button variant="subtle" onClick={closeConfirm} disabled={isDeleting}>
@@ -188,7 +194,7 @@ export default function LSProduct(
           >
             {product.title}
           </Text>
-          {/* Authors */}
+          {/* Contributors */}
           <Group fz='sm'>
             {
               product.contributors ?
@@ -232,32 +238,47 @@ export default function LSProduct(
           {/* Links */}
           <Group>
             {
-              product.website_link ? 
+              websiteLink ? 
               <Anchor
-                href={product.website_link}
+                href={websiteLink.url}
               >
                 <Group align="center" gap='4'>
                   <IconWorld color='var(--mantine-color-indigo-5)' size='1rem'/>
                   <Text component='span' c='indigo.5' fz='xs'>
-                    {product.website_link}  
+                    {websiteLink.label}  
                   </Text> 
                 </Group>
               </Anchor> 
               : undefined
             }
             {
-              product.github_link ? 
+              githubLink ? 
               <Anchor
-                href={product.github_link}
+                href={githubLink.url}
               >
                 <Group align="center" gap='4'>
                   <IconBrandGithub size='1rem'/>
                   <Text component='span' fz='xs'>
-                    {product.github_link}  
+                    {githubLink.label}  
                   </Text> 
                 </Group>
               </Anchor> 
               : undefined
+            }
+            {
+              otherLinks.map((link, i) => 
+                <Anchor
+                  href={link.url}
+                  key={`${link.url}-${i}`}
+                >
+                  <Group align="center" gap='4'>
+                    <IconLink size='1rem'/>
+                    <Text component='span' fz='xs'>
+                      {link.label}  
+                    </Text> 
+                  </Group>
+                </Anchor> 
+              )
             }
           </Group>
 
@@ -289,18 +310,21 @@ export default function LSProduct(
         {/* View Button */}
         <Group justify='space-between'>
           <Group>
-            <Button 
-              bg={product.is_featured ? 'indigo.7' : 'navy.7'} 
-              bdrs='md' 
-              leftSection={<IconExternalLink size='1rem'/>}
-              className={product.is_featured ? classes.featuredViewBtn : classes.viewBtn}
-              component="a"
-              target='_blank'
-              rel='noopener noreferrer'
-              href={product.website_link ?? product.github_link ?? ''}
-            >
-              View
-            </Button>
+            {
+              !!viewLink &&
+              <Button 
+                bg={product.is_featured ? 'indigo.7' : 'navy.7'} 
+                bdrs='md' 
+                leftSection={<IconExternalLink size='1rem'/>}
+                className={product.is_featured ? classes.featuredViewBtn : classes.viewBtn}
+                component="a"
+                target='_blank'
+                rel='noopener noreferrer'
+                href={viewLink}
+              >
+                View
+              </Button>
+            }
           </Group>
 
           {/* Update Buttons */}

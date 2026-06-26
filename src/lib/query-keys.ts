@@ -80,3 +80,8 @@ export const publicationKeys = {
     [...publicationKeys.lists(), userId, filters ?? {}] as const,
   facets: (userId: string) => [...publicationKeys.all, 'facets', userId] as const
 }
+
+export const productKeys = {
+  all: ["products"] as const,
+  list: (userId: string) => [...productKeys.all, userId] as const,
+}

@@ -10,6 +10,8 @@ import { ProductFilters } from "@/lib/types/products";
 import { sampleProducts } from "./products-data";
 import LSProduct from "./ls-product";
 import LSAddProductModal from "./ls-add-product-modal";
+import { useDeleteProduct, useProducts, useSetFeaturedProduct } from "./use-products";
+import { MAX_FEATURED_PRODUCTS } from "@/lib/constants/product";
 
 export default function LSPublicationsList({userId}: {userId: string}) {  
   const { user, loading: userLoading } = useAuthContext();
@@ -40,18 +42,17 @@ export default function LSPublicationsList({userId}: {userId: string}) {
 
   const activeFilters: ProductFilters = { ...filters, search: debouncedInput.trim() };
 
-  // const {
-  //   data: userPubs,
-  //   fetchNextPage,
-  //   hasNextPage,
-  //   isFetchingNextPage,
-  //   isLoading: isLoadingUserPubs,
-  //   isError: isErrorUserPubs,
-  //   isFetching: isFetchingPubs
-  // } = useProducts(userId, activeFilters); 
+  const {
+    data: userProducts,
+    // fetchNextPage,
+    // hasNextPage,
+    // isFetchingNextPage,
+    isLoading: isLoadingUserPubs,
+    isError: isErrorUserPubs,
+    isFetching: isFetchingPubs
+  } = useProducts(userId); 
+  const products = userProducts ?? [];
   // const products = userProducts?.pages.flatMap((p) => p.products) ?? [];
-
-  const products = sampleProducts;
 
   // const { ref: scrollRef, entry } = useIntersection({
   //   rootMargin: "200px",
@@ -69,26 +70,27 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   //   wasIntersecting.current = isIntersecting;
   // }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
   
-  // const deleteProduct = useDeleteProduct(userId);
+  const deleteProduct = useDeleteProduct(userId);
 
-  // const setFeaturedProduct = useSetFeaturedProduct(userId);
-  // const featuredCount = products?.filter((p) => p.is_featured).length ?? 0;
+  const setFeaturedProduct = useSetFeaturedProduct(userId);
+  const featuredCount = products?.filter((p) => p.is_featured).length ?? 0;
   
+  if(isLoadingUserPubs || userLoading) {
   // if(isLoadingUserPubs || isLoadingFacets || userLoading) {
-  //   return (
-  //     <Center py='xl'>
-  //       <Loader />
-  //     </Center>
-  //   )
-  // }
+    return (
+      <Center py='xl'>
+        <Loader />
+      </Center>
+    )
+  }
 
-  // if(isErrorUserPubs) {
-  //   return (
-  //     <Text ta='center' c='red' py='xl'>
-  //       Failed to load publications...
-  //     </Text>
-  //   )
-  // }
+  if(isErrorUserPubs) {
+    return (
+      <Text ta='center' c='red' py='xl'>
+        Failed to load products...
+      </Text>
+    )
+  }
 
   return (
     <Stack w='800'>
@@ -178,7 +180,15 @@ export default function LSPublicationsList({userId}: {userId: string}) {
         <Stack>
           {
             products.map((p) => 
-              <LSProduct key={p.product_id} product={p} isOwner={isOwner}/>
+              <LSProduct 
+                key={p.product_id} 
+                product={p} 
+                isOwner={isOwner}
+                onDeleteClick={() => deleteProduct.mutate(p.product_id)}
+                isDeleting={deleteProduct.isPending}
+                onFeaturedClick={() => setFeaturedProduct.mutate({productId: p.product_id, isFeatured: !p.is_featured})}
+                featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS}
+              />
             )
           }
         </Stack>

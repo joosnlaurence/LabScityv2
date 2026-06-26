@@ -24,29 +24,39 @@ export const createProductSchema = z.object({
         .string()
         .min(1, {
             message: "Description is required" }),
-    website_link: z
-        .string()
-        .optional(),
     publication_id: z
         .number()
         .int()
         .positive()
         .optional(),
 
-    github_link: z
-        .string()
+    links: z
+        .array(z.object({
+          kind: z.enum(["website", "github", "other"], { message: "Invalid link type"}),
+          label: z.string(),
+          url: z.url({ message: "Enter a valid URL" })
+        }))
+        .refine(
+          (links) => links.filter((l) => l.kind === 'website').length <= 1,
+          { message: "Only one website link allowed" }
+        )
+        .refine(
+          (links) => links.filter((l) => l.kind === 'github').length <= 1,
+          { message: "Only one GitHub link allowed" }
+        )
+        .refine(
+          (links) => links.filter((l) => l.kind === 'other').length <= 3,
+          { message: "At most three additional links allowed" }
+        )
         .optional(),
 
-    other_links: z
+    images: z
         .array(z.string())
+        .max(5, { message: "Up to 5 images allowed" })
         .optional(),
 
     contributors: z
         .array(z.string())
-        .optional(),
-
-    is_featured: z
-        .boolean()
         .optional(),
 
     product_type: z
@@ -56,6 +66,10 @@ export const createProductSchema = z.object({
     tag_ids: z
         .array(z.number().int().positive())
         .max(3, { message: "Maximum of 3 tags allowed" }) // this number can change
+        .optional(),
+      
+    is_featured: z
+        .boolean()
         .optional(),
 });  
 
