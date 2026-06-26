@@ -7,7 +7,6 @@ import { useDebouncedValue, useDisclosure, useIntersection } from "@mantine/hook
 import { useForm } from "@mantine/form";
 import { useEffect, useRef, useState } from "react";
 import { ProductFilters } from "@/lib/types/products";
-import { sampleProducts } from "./products-data";
 import LSProduct from "./ls-product";
 import LSAddProductModal from "./ls-add-product-modal";
 import { useDeleteProduct, useProducts, useSetFeaturedProduct } from "./use-products";
