@@ -15,6 +15,7 @@ import type { DataResponse, Publication } from "@/lib/types/data";
 import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
 import { MAX_FEATURED_PUBLICATIONS } from "../constants/publications";
 import { parseOpenAlexWork } from "../utils/openalex";
+import { syncOpenAlexTopics } from "./openalex";
 
 export async function addPublicationByDoi(
   doi: string
@@ -63,6 +64,18 @@ export async function addPublicationByDoi(
         createPubResult.data!.publication_id,
         parsed.openAlexTopicIds
       )
+    }
+
+    const { data: profile } = await supabase
+      .from('profile')
+      .select('orcid')
+      .eq('user_id', authData.user.id)
+      .single();
+
+    // sql trigger will skip users with an orchid id and call syncOpenAlexTopics directly
+    // otherwise, trigger will call recompute_profile_tags supabsae function to calculate works count manually
+    if (profile?.orcid) {
+      await syncOpenAlexTopics(profile.orcid, authData.user.id);
     }
 
     return createPubResult;
