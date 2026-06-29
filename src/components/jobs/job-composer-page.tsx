@@ -12,9 +12,9 @@ import {
   Stack,
   TagsInput,
   Text,
-  Textarea,
   TextInput,
 } from "@mantine/core";
+import { RichTextEditor } from "@mantine/tiptap";
 import {
   IconBriefcase,
   IconCalendar,
@@ -26,9 +26,11 @@ import {
   IconSend,
   IconTag,
 } from "@tabler/icons-react";
+import { useEditor } from "@tiptap/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
 import type { createJob } from "@/lib/actions/job";
 
 export interface JobDraft {
@@ -48,10 +50,7 @@ export interface JobDraft {
   remote: "On-site" | "Hybrid" | "Remote";
   contactEmail: string;
   applyUrl: string;
-  summary: string;
   description: string;
-  responsibilities: string;
-  qualifications: string;
   tags: string[];
 }
 
@@ -71,15 +70,31 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
     remote: "On-site",
     contactEmail: "",
     applyUrl: "",
-    summary: "",
     description: "",
-    responsibilities: "",
-    qualifications: "",
     tags: ["Optics", "Computer Vision"],
   });
+
   const [publishNow, setPublishNow] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const updateDraft = <K extends keyof JobDraft>(
+    key: K,
+    value: JobDraft[K],
+  ) => {
+    setDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const descriptionEditor = useEditor({
+    immediatelyRender: false,
+    extensions: createPostEditorExtensions(
+      "Describe the research context, team, goals, responsibilities, and qualifications...",
+    ),
+    content: "",
+    onUpdate: ({ editor }) => {
+      updateDraft("description", editor.getHTML());
+    },
+  });
 
   const tips = useMemo(
     () => [
@@ -95,18 +110,11 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
       },
       {
         text: "Write 2-3 sentences of description",
-        done: draft.description.length > 80 || draft.summary.length > 40,
+        done: draft.description.length > 80,
       },
     ],
     [draft],
   );
-
-  const updateDraft = <K extends keyof JobDraft>(
-    key: K,
-    value: JobDraft[K],
-  ) => {
-    setDraft((current) => ({ ...current, [key]: value }));
-  };
 
   const handlePublish = () => {
     setErrorMessage(null);
@@ -135,22 +143,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
 
       const result = await createJobAction({
         title: draft.title,
-        description: [
-          draft.description.trim(),
-          draft.responsibilities.trim()
-            ? `Responsibilities:\n${draft.responsibilities.trim()}`
-            : "",
-          draft.qualifications.trim()
-            ? `Qualifications:\n${draft.qualifications.trim()}`
-            : "",
-          draft.contactEmail.trim()
-            ? `Contact: ${draft.contactEmail.trim()}`
-            : "",
-          draft.tags.length > 0 ? `Tags: ${draft.tags.join(", ")}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-        summary: draft.summary || undefined,
+        description: draft.description,
         location: draft.location || undefined,
         department: draft.department || undefined,
         organization: draft.organization || undefined,
@@ -285,47 +278,38 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
             </FormSection>
 
             <FormSection title="Description" icon={<IconTag size={18} />}>
-              <Textarea
-                label="Short Summary"
-                autosize
-                minRows={2}
-                placeholder="2-3 sentence overview of the role..."
-                value={draft.summary}
-                onChange={(event) =>
-                  updateDraft("summary", event.currentTarget.value)
-                }
-              />
-              <Textarea
-                label="Full Description"
-                withAsterisk
-                autosize
-                minRows={4}
-                placeholder="Describe the research context, team, and goals..."
-                value={draft.description}
-                onChange={(event) =>
-                  updateDraft("description", event.currentTarget.value)
-                }
-              />
-              <Textarea
-                label="Responsibilities"
-                autosize
-                minRows={3}
-                placeholder="List key responsibilities, one per line..."
-                value={draft.responsibilities}
-                onChange={(event) =>
-                  updateDraft("responsibilities", event.currentTarget.value)
-                }
-              />
-              <Textarea
-                label="Qualifications"
-                autosize
-                minRows={3}
-                placeholder="Required and preferred qualifications..."
-                value={draft.qualifications}
-                onChange={(event) =>
-                  updateDraft("qualifications", event.currentTarget.value)
-                }
-              />
+              <Box>
+                <Text size="sm" fw={500} mb={6}>
+                  Full Description <Text span c="red">*</Text>
+                </Text>
+                <RichTextEditor
+                  editor={descriptionEditor}
+                  styles={{
+                    root: { borderColor: "#E5E7EB", borderRadius: 8 },
+                    content: { minHeight: 160 },
+                  }}
+                >
+                  <RichTextEditor.Toolbar sticky={false}>
+                    <RichTextEditor.ControlsGroup>
+                      <RichTextEditor.Bold />
+                      <RichTextEditor.Italic />
+                      <RichTextEditor.Strikethrough />
+                      <RichTextEditor.ClearFormatting />
+                    </RichTextEditor.ControlsGroup>
+                    <RichTextEditor.ControlsGroup>
+                      <RichTextEditor.BulletList />
+                      <RichTextEditor.OrderedList />
+                      <RichTextEditor.Blockquote />
+                    </RichTextEditor.ControlsGroup>
+                    <RichTextEditor.ControlsGroup>
+                      <RichTextEditor.AlignLeft />
+                      <RichTextEditor.AlignCenter />
+                      <RichTextEditor.AlignRight />
+                    </RichTextEditor.ControlsGroup>
+                  </RichTextEditor.Toolbar>
+                  <RichTextEditor.Content />
+                </RichTextEditor>
+              </Box>
             </FormSection>
 
             <FormSection title="Research Fit" icon={<IconTag size={18} />}>
@@ -433,11 +417,12 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
             <Alert
               color="blue"
               icon={<IconInfoCircle size={16} />}
-              title="Current backend support"
+              title="What gets saved"
             >
-              The live publish flow stores the main job fields. Featured status,
-              saved jobs, and application tracking do not have backing endpoints
-              yet.
+              Title, description, organization, location, department, job type,
+              work mode, and application link are stored on publish. Tags,
+              contact email, and featured status are not yet backed and will be
+              discarded.
             </Alert>
 
             <Card radius="md" shadow="xs" padding="md" withBorder>
@@ -458,7 +443,8 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   disabled={
                     !publishNow ||
                     draft.title.trim().length === 0 ||
-                    draft.description.trim().length === 0
+                    !descriptionEditor ||
+                    descriptionEditor.isEmpty
                   }
                 >
                   Publish Job

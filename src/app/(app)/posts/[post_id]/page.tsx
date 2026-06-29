@@ -21,11 +21,13 @@ import {
   updatePost,
 } from "@/lib/actions/feed";
 import { feedKeys, postKeys } from "@/lib/query-keys";
-import { feedFilterSchema, type CreateReportValues, type UpdatePostValues } from "@/lib/validations/post";
-import { FeedPostItem, GetFeedPaginatedResult, GetFeedResult, GetPostDetailResult } from "@/lib/types/feed";
-import { keyof } from "zod";
-
-const defaultFeedFilter = feedFilterSchema.parse({});
+import type {
+  FeedPostItem,
+  GetFeedPaginatedResult,
+  GetPostDetailResult,
+} from "@/lib/types/feed";
+import { getLegacyPostText } from "@/lib/utils/post-content";
+import type { CreateReportValues, UpdatePostValues } from "@/lib/validations/post";
 
 /**
  * Post detail page: single post with comments, like/comment/report actions, and ReportOverlay.
@@ -91,9 +93,9 @@ export default function PostDetailPage() {
         context.detailSnapshot
       );
     }
-    context.feedSnapshots?.forEach(([key, data]) => 
-      queryClient.setQueryData<GetFeedPaginatedResult>(key, data)
-    )
+    context.feedSnapshots?.forEach(([key, data]) => {
+      queryClient.setQueryData<GetFeedPaginatedResult>(key, data);
+    });
   }
 
   const createCommentMutation = useMutation({
@@ -324,7 +326,7 @@ export default function PostDetailPage() {
                 avatarUrl={post.avatarUrl ?? null}
                 field={post.scientificField}
                 timeAgo={post.timeAgo}
-                content={post.content}
+                content={getLegacyPostText(post.content)}
                 mediaUrl={post.mediaUrl ?? null}
                 mediaHeight={post.mediaHeight}
                 mediaWidth={post.mediaWidth}
@@ -353,7 +355,7 @@ export default function PostDetailPage() {
         avatarUrl={post.avatarUrl ?? null}
         field={post.scientificField}
         timeAgo={post.timeAgo}
-        content={post.content}
+        content={getLegacyPostText(post.content)}
         mediaUrl={post.mediaUrl ?? null}
         isLiked={post.isLiked ?? false}
         onLikeClick={() => likePostMutation.mutate(post.id)}

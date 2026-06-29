@@ -276,22 +276,8 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
             component={Link}
             href="/home"
             aria-label="LabScity home"
-            style={{ display: "flex", alignItems: "center", gap: 10 }}
+            style={{ display: "flex", alignItems: "center" }}
           >
-            <Box
-              w={34}
-              h={34}
-              bg="navy.7"
-              c="white"
-              style={{
-                borderRadius: 8,
-                display: "grid",
-                placeItems: "center",
-                fontWeight: 800,
-              }}
-            >
-              L
-            </Box>
             <Image
               src="/logo-lightgray.png"
               width={500}

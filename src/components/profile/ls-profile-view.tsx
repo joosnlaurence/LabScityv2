@@ -80,6 +80,7 @@ import type {
   updateProfileAction,
 } from "@/lib/actions/profile";
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
+import { getLegacyPostText } from "@/lib/utils/post-content";
 import { type DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import LSPublication from "./publications/ls-publication";
 import {
@@ -198,7 +199,7 @@ const LSProfileMobileLayout = ({
           avatarUrl={profile?.avatar_url ?? undefined}
           field={post.scientific_field ?? post.category ?? "—"}
           timeAgo={getTimeAgo(post.created_at)}
-          content={post.text ?? ""}
+          content={getLegacyPostText(post.text)}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
@@ -387,7 +388,7 @@ const LSProfileDesktopLayout = ({
           avatarUrl={profile?.avatar_url ?? undefined}
           field={post.scientific_field ?? post.category ?? "—"}
           timeAgo={getTimeAgo(post.created_at)}
-          content={post.text ?? ""}
+          content={getLegacyPostText(post.text)}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>

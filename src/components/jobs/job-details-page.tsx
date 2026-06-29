@@ -25,6 +25,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
+import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import type { JobViewModel } from "./job-view-model";
 
 interface JobDetailsPageProps {
@@ -165,17 +166,8 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
             </Card>
 
             <Card radius="md" shadow="xs" padding="xl" withBorder>
-              <JobSection title="Summary">
-                <Text size="sm" c="gray.7" lh={1.7}>
-                  {job.summary?.trim() ||
-                    "No summary was provided for this job."}
-                </Text>
-              </JobSection>
-
               <JobSection title="Full Description">
-                <Text size="sm" c="gray.7" lh={1.7}>
-                  {job.description}
-                </Text>
+                <PostRichTextContent html={job.description} />
               </JobSection>
 
               <JobSection title="How to Apply">
