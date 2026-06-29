@@ -12,3 +12,22 @@
 .authorOverflow:hover {
     text-decoration: underline;
 }
+
+.indicator {
+    width: 8px;
+    height: 8px;
+    transition: width 250ms ease;
+
+    &[data-active] {
+        width: 30px;
+        background: var(--mantine-color-navy-6);
+    }
+}
+
+.slide {
+    background: none;
+}
+
+.root {
+    background: linear-gradient(90deg, var(--mantine-color-navy-3) 0%, var(--mantine-color-navy-4) 100%)
+}

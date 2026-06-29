@@ -33,6 +33,25 @@ export interface Group {
   rules: string | null;
 }
 
+export interface UploadProductPreview { 
+  file: File, 
+  url: string, 
+  width: number, 
+  height: number 
+}
+
+export interface ProductImageDraft {
+  file: File,
+  height: number,
+  width: number
+}
+
+export interface ProductImage {
+  url: string;
+  width: number;
+  height: number;
+}
+
 export interface Product {
   product_id: number;
   title: string;
@@ -43,7 +62,7 @@ export interface Product {
     label: string | null 
   }[];
   publication_id: number | null;
-  images: string[] | null;
+  images: ProductImage[];
   contributors: string[] | null;
   is_featured: boolean | null;
   product_type: ProductType | null;

@@ -10,6 +10,7 @@ import { Metadata } from "next"
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ReactQueryDevtools, ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { AuthProvider } from "@/components/auth/auth-provider";
+import '@mantine/carousel/styles.css';
 
 const inter = Inter({ subsets: ["latin"] }); // due to bundler ordering, globals.css doesnt import font; this does
 

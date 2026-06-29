@@ -1,7 +1,6 @@
 import { 
   ActionIcon,
   Anchor,
-  Avatar,
   Badge, 
   Box, 
   Button, 
@@ -13,12 +12,13 @@ import {
   Stack, 
   Text,
   Tooltip,
+  Image
 } from "@mantine/core"
+import { Carousel } from "@mantine/carousel"
+import NextImage from "next/image";
 import { 
   IconAppWindow,
-  IconBrandGit,
   IconBrandGithub,
-  IconChevronRight,  
   IconCpu, 
   IconDots, 
   IconEdit, 
@@ -34,7 +34,6 @@ import {
   IconWorld,
   ReactNode, 
 } from "@tabler/icons-react"
-import { Fragment } from "react/jsx-runtime"
 // import NextLink from 'next/link';
 import { useDisclosure } from "@mantine/hooks";
 import { Product } from "@/lib/types/data";
@@ -132,6 +131,24 @@ export default function LSProduct(
               var(--mantine-color-navy-5) 100%)`
           }}
         />
+      }
+      {
+        product.images.length > 0 &&
+        <Carousel withIndicators height={140} emblaOptions={{ watchDrag: false, loop: true }} classNames={classes}>
+          {
+            product.images.map((img) =>
+              <Carousel.Slide key={img.url} pos='relative'>
+                <Image 
+                  component={NextImage}
+                  src={img.url}
+                  fit='contain'
+                  fill
+                  alt=''
+                />
+              </Carousel.Slide>
+            )
+          }
+        </Carousel>
       }
       <Stack 
         bdrs='12 12 0 0' 
@@ -245,7 +262,7 @@ export default function LSProduct(
                 <Group align="center" gap='4'>
                   <IconWorld color='var(--mantine-color-indigo-5)' size='1rem'/>
                   <Text component='span' c='indigo.5' fz='xs'>
-                    {websiteLink.label}  
+                    {websiteLink.label ?? new URL(websiteLink.url).hostname}  
                   </Text> 
                 </Group>
               </Anchor> 
