@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { PRODUCT_TYPE_VALUES } from "../constants/product";
+import { MAX_PRODUCT_SUMMARY_LENGTH, PRODUCT_TYPE_VALUES } from "../constants/product";
 
-const allowedProductImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+const allowedProductImageTypes = ["image/jpeg", "image/png", "image/webp"] as const;
 
 export const productImageContentTypeSchema = z
   .string()
   .refine((value) => allowedProductImageTypes.includes(value as (typeof allowedProductImageTypes)[number]), {
-    message: "Only JPG, PNG, WEBP, and GIF images are allowed",
+    message: "Only JPG, PNG, and WEBP images are allowed",
   });
 
 export const productImagePathSchema = z
@@ -22,8 +22,8 @@ export const createProductSchema = z.object({
             message: "Title must be less than 120 characters" }), 
     short_summary: z
         .string()
-        .min(1, {
-            message: "Description is required" }),
+        .min(1, {message: "Short summary is required" })
+        .max(MAX_PRODUCT_SUMMARY_LENGTH, {message: " "}),
     publication_id: z
         .number()
         .int()

@@ -20,11 +20,15 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
         .from("user_products")
-        .select("products(*, product_tags(tags(name)), product_images(image_path))")
+        .select("created_at, products(*, product_tags(tags(name)), product_images(image_path, width, height))")
         .eq("user_id", userId)
-        .returns<{ products: Product & { 
+        .order("created_at", { ascending: false })
+        .returns<
+        { created_at: string;
+          products: Product & { 
             product_tags: { tags: { name: string } }[],
-            product_images: { image_path: string } [] } 
+            product_images: { image_path: string; width: number; height: number }[]
+          } 
         }[]>();
 
     if (error) return NextResponse.json<ApiResponse<Product[]>>(
@@ -37,11 +41,18 @@ export async function GET(request: Request) {
     return NextResponse.json<ApiResponse<Product[]>>(
         { 
             success: true, 
-            data: data.map((row) => ({
-                ...row.products,
-                topics: row.products.product_tags?.map((pt) => pt.tags.name) ?? [],
-                images: row.products.product_images?.map((pi) => pi.image_path) ?? []
-            }))
+            data: data.map((row) => {
+              const { product_tags, product_images, ...product } = row.products;
+              return {
+                ...product,
+                topics: product_tags?.map((pt) => pt.tags.name) ?? [],
+                images: product_images?.map((pi) => ({
+                  path: pi.image_path,
+                  width: pi.width,
+                  height: pi.height
+                })) ?? []
+              }  
+            })
         }
     );
 }

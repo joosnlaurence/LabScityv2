@@ -85,3 +85,8 @@ export const productKeys = {
   all: ["products"] as const,
   list: (userId: string) => [...productKeys.all, userId] as const,
 }
+
+export const tagKeys = {
+  all: ["tags"] as const,
+  search: (q: string) => [...tagKeys.all, 'search', q] as const,
+}
