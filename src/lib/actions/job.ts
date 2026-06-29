@@ -1,6 +1,6 @@
 "use server";
 
-import { z } from "zod";
+import { promise, success, z } from "zod";
 import { createClient } from "@/supabase/server";
 import {
     createJobSchema,
@@ -60,5 +60,74 @@ export async function createJob(
             }
         }
         return {success: false, error: "Failed to create job"};
+    }
+}
+
+export async function saveJob(jobID:number): Promise<DataResponse<void>>
+{
+    try {
+        const supabase = await createClient();
+
+        const { data: authData } = await supabase.auth.getUser();
+
+        if (!authData.user){
+            return { success: false, error: "Authenication required"}
+        }
+        
+        const { error: jobError } = await supabase.from("saved_jobs").insert({
+            profile_user_id: authData.user.id,
+            jobs_id: jobID
+        });
+
+        if (jobError) {
+            return{
+                success: false,
+                error: jobError.message
+            }
+        }
+
+        return {
+            success: true
+        }
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return{
+                success: false,
+                error: error.issues[0]?.message ?? "Validation failed",
+            }
+        }
+        return {success: false, error: "Failed to save job"};
+    }
+}
+
+export async function unsaveJob(jobID: number): Promise<DataResponse<void>> {
+    try {
+        const supabase = await createClient();
+
+        const { data: authData } = await supabase.auth.getUser();
+
+        if (!authData.user) {
+            return { success: false, error: "Authentication required" };
+        }
+
+        const { error } = await supabase
+            .from("saved_jobs")
+            .delete()
+            .eq("profile_user_id", authData.user.id)
+            .eq("jobs_id", jobID);
+
+        if (error) {
+            return { success: false, error: error.message };
+        }
+
+        return { success: true };
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return{
+                success: false,
+                error: error.issues[0]?.message ?? "Validation failed",
+            }
+        }
+        return { success: false, error: "Failed to unsave job" };
     }
 }
