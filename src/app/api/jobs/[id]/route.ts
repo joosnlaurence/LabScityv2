@@ -5,9 +5,10 @@ import type { Job } from "@/lib/types/data";
 
 // GET /api/jobs/[id]
 // returns a single job by id
-export async function GET(request: Request, { params }: { params: { id: string } })
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> })
 {
-    const id = Number(params.id);
+    const { id: rawId } = await params;
+    const id = Number(rawId);
 
     if (isNaN(id)) 
         return NextResponse.json<ApiResponse<Job>>({ success: false, error: "Invalid job id" }, { status: 400 });
