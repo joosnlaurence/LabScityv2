@@ -13,7 +13,7 @@ export const productImagePathSchema = z
   .string()
   .min(1, { message: "Image path is required" });
 
-export const createProductSchema = z.object({
+export const  createProductSchema = z.object({
     title: z
         .string()
         .min(1, {
@@ -33,7 +33,7 @@ export const createProductSchema = z.object({
     links: z
         .array(z.object({
           kind: z.enum(["website", "github", "other"], { message: "Invalid link type"}),
-          label: z.string(),
+          label: z.string().nullable(),
           url: z.url({ message: "Enter a valid URL" })
         }))
         .refine(

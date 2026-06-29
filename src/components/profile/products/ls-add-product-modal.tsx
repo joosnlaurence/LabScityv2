@@ -44,16 +44,25 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
   const summary = form.getValues().short_summary ?? '';
     
   
-  const createProduct = useCreateProduct({userId, onSuccess: () => {
-    images.forEach((img) => URL.revokeObjectURL(img.url));
-    setImages([]);
-    closeModal();
-  }});
+  const createProduct = useCreateProduct({
+    userId, 
+    onSuccess: () => {
+      images.forEach((img) => URL.revokeObjectURL(img.url));
+      setImages([]);
+      form.reset();
+      closeModal();
+    }
+  });
 
   const handleProductSubmit = form.onSubmit((product) => {
     product = {
       ...product,
-      links: product.links?.filter((l) => l.url.trim() !== ""),
+      links: product.links?.filter((l) => l.url.trim() !== "")
+        .map((link) => ({
+          ...link,
+          url: /^https?:\/\//i.test(link.url) ? link.url : `https://${link.url}`,
+          label: link.label?.trim() || null
+        })),
       tag_ids: product.tag_ids?.map(Number)
     }
     const parsed = createProductSchema.safeParse(product);

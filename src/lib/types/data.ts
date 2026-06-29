@@ -47,7 +47,7 @@ export interface ProductImageDraft {
 }
 
 export interface ProductImage {
-  path: string;
+  url: string;
   width: number;
   height: number;
 }
@@ -62,7 +62,7 @@ export interface Product {
     label: string | null 
   }[];
   publication_id: number | null;
-  images: ProductImage[] | null;
+  images: ProductImage[];
   contributors: string[] | null;
   is_featured: boolean | null;
   product_type: ProductType | null;

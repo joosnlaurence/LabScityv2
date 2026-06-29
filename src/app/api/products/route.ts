@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/supabase/server";
 import type { ApiResponse } from "@/lib/types/api";
 import type { Product } from "@/lib/types/data";
+import { PRODUCT_IMAGE_BUCKET } from "@/lib/constants/product";
 
 // GET /api/products?userId={userId}
 // returns all products that belong to the specified user 
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
                 ...product,
                 topics: product_tags?.map((pt) => pt.tags.name) ?? [],
                 images: product_images?.map((pi) => ({
-                  path: pi.image_path,
+                  url: supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(pi.image_path).data.publicUrl,
                   width: pi.width,
                   height: pi.height
                 })) ?? []
