@@ -152,8 +152,6 @@ export function useSetFeaturedPublication(userId: string) {
 }
 
 export function useGetPublicationFacets(userId: string) {
-  const queryClient = useQueryClient();
-
   return useQuery({
     queryKey: publicationKeys.facets(userId),
     queryFn: async () => {

@@ -18,7 +18,7 @@ function decodeCursor(raw: string | null) {
 
 /**
  * GET /api/publications?userId=...&cursorDatePublished=...&cursorPubId=...
- * Returns the next 15 publications for a user after the specified cursor
+ * Returns the next 10 publications for a user after the specified cursor
  * query params = userId 
  */
 export async function GET(request: Request) {

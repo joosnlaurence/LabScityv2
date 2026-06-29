@@ -3,18 +3,44 @@ import { TAGS_PAGE_SIZE } from "@/lib/constants/product";
 import { productKeys, tagKeys } from "@/lib/query-keys";
 import { ApiResponse, InfiniteScrollResponse } from "@/lib/types/api";
 import { Product, ProductImageDraft, TagSearchResult } from "@/lib/types/data";
+import { InfiniteProducts, ProductFacets, ProductFilters } from "@/lib/types/products";
 import { CreateProductValues } from "@/lib/validations/product";
 import { createClient } from "@/supabase/client";
 import { notifications } from "@mantine/notifications";
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-export function useProducts(userId: string) {
+export function useProducts(userId: string, filters: ProductFilters) {
+  return useInfiniteQuery({
+      queryKey: productKeys.list(userId, filters),
+      initialPageParam: null as { created_at: string, product_id: number } | null,
+      queryFn: async ({ pageParam }) => {
+        const params = new URLSearchParams({ userId });
+        if(filters.search) params.set('search', filters.search);
+        if(filters.tagId) params.set('tagId', filters.tagId);
+        if(filters.type) params.set('type', filters.type);
+        if(filters.sort) params.set('sort', filters.sort);
+  
+        if(pageParam) {
+          params.set("cursor", btoa(JSON.stringify(pageParam)));  
+        }
+        const res = await fetch(`/api/products?${params}`);
+        if(!res.ok) throw new Error("Failed to fetch publications");
+        const apiResponse: ApiResponse<InfiniteProducts> = await res.json();
+        if(!apiResponse.success) throw new Error(apiResponse.error)
+        return apiResponse.data;
+      },
+      getNextPageParam: (last) => last.nextCursor ?? undefined,
+      placeholderData: keepPreviousData
+    })
+}
+
+export function useGetProductFacets(userId: string) {
   return useQuery({
-    queryKey: productKeys.list(userId),
+    queryKey: productKeys.facets(userId),
     queryFn: async () => {
-      const res = await fetch(`/api/products?userId=${userId}`);
-      if(!res.ok) throw new Error("Failed to fetch products");
-      const apiResponse: ApiResponse<Product[]> = await res.json();
+      const res = await fetch(`/api/products/facets?userId=${userId}`);
+      if(!res.ok) throw new Error('Failed to fetch publication facets');
+      const apiResponse: ApiResponse<ProductFacets> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error);
       return apiResponse.data;
     }
