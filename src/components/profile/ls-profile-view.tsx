@@ -17,9 +17,9 @@ import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
 import { LSProfileGroupsWidget } from "@/components/profile/ls-profile-groups-widget";
 import LSProfileHero from "@/components/profile/ls-profile-hero";
-import { LSSpinner } from "@/components/ui/ls-spinner";
 import { LSUserReportOverlay } from "@/components/profile/ls-user-report-overlay";
-import { createUserReport } from "@/lib/actions/profile";
+import { LSSpinner } from "@/components/ui/ls-spinner";
+import type { createUserReport } from "@/lib/actions/profile";
 
 /**
  * Formats a date string as a relative time for post/comment display.
@@ -39,6 +39,9 @@ function getTimeAgo(date: string): string {
   return postDate.toLocaleDateString();
 }
 
+import { useForm } from "@mantine/form";
+import { useDisclosure } from "@mantine/hooks";
+import { IconHelp, IconPlus } from "@tabler/icons-react";
 import type {
   CreateCommentAction,
   CreatePostAction,
@@ -71,6 +74,7 @@ import type {
 } from "@/lib/actions/profile";
 import LSPublicationsList from "./publications/ls-publications-list";
 import LSProductsList from "./products/ls-products-list";
+import { getLegacyPostText } from "@/lib/utils/post-content";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -151,7 +155,7 @@ const LSProfileMobileLayout = ({
   const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
-  const username = profile?.first_name + " " + profile?.last_name;
+  const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const followingQuery = useUserFollowing(userId);
@@ -181,7 +185,7 @@ const LSProfileMobileLayout = ({
           avatarUrl={profile?.avatar_url ?? undefined}
           field={post.scientific_field ?? post.category ?? "—"}
           timeAgo={getTimeAgo(post.created_at)}
-          content={post.text ?? ""}
+          content={getLegacyPostText(post.text)}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
@@ -222,7 +226,10 @@ const LSProfileMobileLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike({postId, commentId: comment.id})
+                      actions.handleToggleCommentLike({
+                        postId,
+                        commentId: comment.id,
+                      })
                     }
                     showMenu={false}
                   />
@@ -334,7 +341,7 @@ const LSProfileDesktopLayout = ({
   const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
-  const username = profile?.first_name + " " + profile?.last_name;
+  const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const friendsQuery = useUserFriends(userId);
@@ -366,7 +373,7 @@ const LSProfileDesktopLayout = ({
           avatarUrl={profile?.avatar_url ?? undefined}
           field={post.scientific_field ?? post.category ?? "—"}
           timeAgo={getTimeAgo(post.created_at)}
-          content={post.text ?? ""}
+          content={getLegacyPostText(post.text)}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
@@ -409,7 +416,10 @@ const LSProfileDesktopLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike({postId, commentId: comment.id})
+                      actions.handleToggleCommentLike({
+                        postId,
+                        commentId: comment.id,
+                      })
                     }
                     showMenu={false}
                   />
@@ -434,8 +444,8 @@ const LSProfileDesktopLayout = ({
   }
 
   return (
-    <Box pt={24} pb={300} px={80}>
-      <Flex p={8} direction="row" w="100%" gap={28} align="flex-start">
+    <Box maw={1660} mx="auto" pt={24} pb={300} px={{ base: 16, lg: 32 }}>
+      <Flex p={0} direction="row" w="100%" gap={24} align="flex-start">
         <Box flex={5}>
           <LSProfileHero
             profileName={username ?? "Unknown User"}
@@ -489,31 +499,26 @@ const LSProfileDesktopLayout = ({
           </Box>
         </Flex>
       </Flex>
-      
+
       <Divider mt={20} color="navy.1" />
-      <Tabs defaultValue='posts' activateTabWithKeyboard={false}
+      <Tabs
+        defaultValue="posts"
+        activateTabWithKeyboard={false}
         styles={{
           panel: {
-            display: 'flex',
-            justifyContent: 'center'
-          }
+            display: "flex",
+            justifyContent: "center",
+          },
         }}
       >
-
-        <Tabs.List mb={20} grow justify='center'>
-          <Tabs.Tab value='posts'>
-            Posts
-          </Tabs.Tab>
-          <Tabs.Tab value='publications'>
-            Publications
-          </Tabs.Tab>
-          <Tabs.Tab value='products'>
-            Research Products
-          </Tabs.Tab>
+        <Tabs.List mb={20} grow justify="center">
+          <Tabs.Tab value="posts">Posts</Tabs.Tab>
+          <Tabs.Tab value="publications">Publications</Tabs.Tab>
+          <Tabs.Tab value="products">Research Products</Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value='posts'>
-          <Stack w='100%' maw='600'>
+        <Tabs.Panel value="posts">
+          <Stack w="100%" maw="600">
             <Stack
               component="ul"
               gap="lg"
@@ -565,11 +570,11 @@ export function LSProfileView(props: LSProfileViewProps) {
   const profileQuery = useUserProfile(props.userId);
   const profile = profileQuery.data;
   const profileName = profile
-    ? profile.first_name + " " + profile.last_name
+    ? `${profile.first_name} ${profile.last_name}`
     : "Unknown User";
 
   return (
-    <Box bg="gray.0" mih="100vh">
+    <Box bg="gray.0" mih="calc(100vh - 56px)">
       {!props.isOwnProfile && (
         <LSUserReportOverlay
           open={reportOverlayOpen}

@@ -177,7 +177,6 @@ export function useHomeFeed({
     onSuccess: (_data, { postId }) => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.detail(postId.toString()) });
-      setActiveCommentPostId(null);
     },
     onError: (error) => {
       notifications.show({
