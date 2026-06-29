@@ -19,16 +19,37 @@ export async function GET(request: Request) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-        .from("user_publications_full")
-        .select("*, publication_tags(tags(name))", { count: 'exact' })
+        .from("user_publications")
+        .select(`
+          user_id,
+          is_featured,
+          publications (
+            publication_id,
+            title,
+            doi,
+            journal,
+            date_published,
+            authors,
+            preview_path,
+            is_oa,
+            pdf_url,
+            type,
+            publication_tags (
+              tags (
+                name
+              )
+            )
+          )
+        `, { count: 'exact' })
         .eq("user_id", userId)
         .order("is_featured", { ascending: false })
-        .order("date_published", { ascending: false, nullsFirst: false })
-        .returns<(Publication & { 
+        .returns<{
           user_id: string;
           is_featured: boolean;
-          publication_tags: { tags: { name: string } }[]
-        })[]>();
+          publications: (Publication & {
+            publication_tags: { tags: { name: string } | null }[];
+          }) | null;
+        }[]>();
 
     if (error) return NextResponse.json<ApiResponse<Publication[]>>(
         { 
@@ -40,11 +61,14 @@ export async function GET(request: Request) {
     return NextResponse.json<ApiResponse<Publication[]>>(
         { 
             success: true, 
-            data: data.map(
-              ({ is_featured, publication_tags, ...pub }) => ({
-                ...pub,
-                is_featured: is_featured,
-                topics: publication_tags.map((pt) => pt.tags.name)
+            data: (data ?? [])
+              .filter((row) => row.publications !== null)
+              .map(({ is_featured, publications }) => ({
+                ...publications!,
+                is_featured,
+                topics: (publications?.publication_tags ?? [])
+                  .map((pt) => pt.tags?.name)
+                  .filter((name): name is string => Boolean(name)),
               }))
         }
     );

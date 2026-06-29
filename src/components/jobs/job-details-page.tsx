@@ -17,23 +17,23 @@ import {
   IconBriefcase,
   IconBuilding,
   IconCalendar,
-  IconCheck,
   IconChevronRight,
-  IconCurrencyDollar,
   IconExternalLink,
   IconFlag,
   IconMapPin,
   IconShare3,
-  IconStar,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
-import { type Job, SAMPLE_JOBS } from "@/components/jobs/jobs-data";
+import type { JobViewModel } from "./job-view-model";
 
-export function JobDetailsPage({ jobId }: { jobId: string }) {
-  const job = SAMPLE_JOBS.find((item) => item.id === jobId) ?? SAMPLE_JOBS[0];
-  const [saved, setSaved] = useState(job.saved);
-  const [applied, setApplied] = useState(false);
+interface JobDetailsPageProps {
+  job: JobViewModel;
+  similarJobs: JobViewModel[];
+}
+
+export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
+  const [saved, setSaved] = useState(false);
 
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
@@ -58,13 +58,10 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
                 mb="md"
               >
                 <Box flex={1} miw={0}>
-                  <Group gap="xs" mb="xs">
-                    <Text component="h1" fz={26} fw={850} c="gray.9" m={0}>
-                      {job.title}
-                    </Text>
-                    {job.badge && <JobBadge badge={job.badge} />}
-                  </Group>
-                  <Group gap={6} c="gray.7" mb={4}>
+                  <Text component="h1" fz={26} fw={850} c="gray.9" m={0}>
+                    {job.title}
+                  </Text>
+                  <Group gap={6} c="gray.7" mb={4} mt="xs">
                     <IconBuilding
                       size={16}
                       color="var(--mantine-color-gray-5)"
@@ -93,10 +90,6 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
                   icon={<IconCalendar size={15} />}
                   value={`Posted ${job.posted}`}
                 />
-                <Fact
-                  icon={<IconCurrencyDollar size={15} />}
-                  value={job.salary}
-                />
                 <Text
                   span
                   fw={700}
@@ -104,36 +97,40 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
                 >
                   {job.remote}
                 </Text>
-                <Fact
-                  icon={<IconCalendar size={15} />}
-                  value={`Deadline: ${job.deadline}`}
-                />
               </Group>
 
               <Group gap={6} mb="lg">
-                {job.tags.map((tag) => (
-                  <Badge key={tag} variant="light" color="gray" radius="xl">
-                    {tag}
-                  </Badge>
-                ))}
+                <Badge variant="light" color="gray" radius="xl">
+                  {job.remote}
+                </Badge>
+                <Badge variant="light" color="gray" radius="xl">
+                  {job.type}
+                </Badge>
               </Group>
 
               <Divider mb="md" />
 
               <Group gap="xs">
-                <Button
-                  color={applied ? "green" : "navy"}
-                  leftSection={
-                    applied ? (
-                      <IconCheck size={16} />
-                    ) : (
-                      <IconExternalLink size={16} />
-                    )
-                  }
-                  onClick={() => setApplied((current) => !current)}
-                >
-                  {applied ? "Applied" : "Apply Now"}
-                </Button>
+                {job.applyUrl ? (
+                  <Button
+                    component={Link}
+                    href={job.applyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    color="navy"
+                    leftSection={<IconExternalLink size={16} />}
+                  >
+                    Apply Now
+                  </Button>
+                ) : (
+                  <Button
+                    color="navy"
+                    leftSection={<IconExternalLink size={16} />}
+                    disabled
+                  >
+                    Apply Now
+                  </Button>
+                )}
                 <Button
                   variant={saved ? "light" : "outline"}
                   color={saved ? "navy" : "gray"}
@@ -151,6 +148,7 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
                   variant="outline"
                   color="gray"
                   leftSection={<IconShare3 size={16} />}
+                  disabled
                 >
                   Share
                 </Button>
@@ -159,6 +157,7 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
                   variant="subtle"
                   color="red"
                   leftSection={<IconFlag size={15} />}
+                  disabled
                 >
                   Report
                 </Button>
@@ -166,62 +165,45 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
             </Card>
 
             <Card radius="md" shadow="xs" padding="xl" withBorder>
-              <JobSection title="About the Role">
+              <JobSection title="Summary">
                 <Text size="sm" c="gray.7" lh={1.7}>
-                  We are seeking a highly motivated researcher to join a
-                  collaborative scientific team. The successful candidate will
-                  develop new methods, work with domain experts, contribute to
-                  peer-reviewed publications, and help turn research ideas into
-                  durable tools.
+                  {job.summary?.trim() ||
+                    "No summary was provided for this job."}
                 </Text>
               </JobSection>
-              <JobSection title="Responsibilities">
-                <BulletList
-                  items={[
-                    "Design and implement research prototypes and production-quality analysis workflows.",
-                    "Collaborate with experimental partners to acquire and validate datasets.",
-                    "Publish findings in relevant journals and conferences.",
-                    "Mentor students and contribute to lab operations.",
-                    "Support grants, reports, and community-facing research outputs.",
-                  ]}
-                />
+
+              <JobSection title="Full Description">
+                <Text size="sm" c="gray.7" lh={1.7}>
+                  {job.description}
+                </Text>
               </JobSection>
-              <JobSection title="Required Qualifications">
-                <BulletList
-                  items={[
-                    "Advanced degree or equivalent research experience in a relevant field.",
-                    "Strong background in computational methods, scientific programming, or experimental design.",
-                    "Demonstrated ability to communicate research clearly.",
-                    "Comfort working across disciplinary boundaries.",
-                  ]}
-                />
-              </JobSection>
-              <JobSection title="Research Areas & Skills">
-                <Group gap={6}>
-                  {[
-                    ...job.tags,
-                    "Python",
-                    "PyTorch",
-                    "Scientific Computing",
-                  ].map((tag) => (
-                    <Badge key={tag} variant="light" color="gray">
-                      {tag}
-                    </Badge>
-                  ))}
-                </Group>
-              </JobSection>
+
               <JobSection title="How to Apply">
                 <Text size="sm" c="gray.7" lh={1.7} mb="md">
-                  Submit a CV, a short research statement, and contact
-                  information for references through the organization
-                  application portal.
+                  {job.applyUrl
+                    ? "Use the external application link below to continue."
+                    : "No application link has been published for this listing yet."}
                 </Text>
-                <Button
-                  color="navy"
-                  leftSection={<IconExternalLink size={16} />}
-                >
-                  Apply via External Portal
-                </Button>
+                {job.applyUrl ? (
+                  <Button
+                    component={Link}
+                    href={job.applyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    color="navy"
+                    leftSection={<IconExternalLink size={16} />}
+                  >
+                    Apply via External Portal
+                  </Button>
+                ) : (
+                  <Button
+                    color="navy"
+                    leftSection={<IconExternalLink size={16} />}
+                    disabled
+                  >
+                    Apply via External Portal
+                  </Button>
+                )}
               </JobSection>
             </Card>
           </Stack>
@@ -248,13 +230,8 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
               />
               <QuickFact
                 icon={<IconCalendar size={16} />}
-                label="Deadline"
-                value={job.deadline}
-              />
-              <QuickFact
-                icon={<IconCurrencyDollar size={16} />}
-                label="Salary"
-                value={job.salary}
+                label="Posted"
+                value={job.posted}
               />
             </Card>
 
@@ -262,14 +239,23 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
               <Text size="sm" c="dimmed" mb="sm">
                 Ready to apply?
               </Text>
-              <Button
-                fullWidth
-                color={applied ? "green" : "navy"}
-                mb="xs"
-                onClick={() => setApplied((current) => !current)}
-              >
-                {applied ? "Applied" : "Apply Now"}
-              </Button>
+              {job.applyUrl ? (
+                <Button
+                  component={Link}
+                  href={job.applyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  fullWidth
+                  color="navy"
+                  mb="xs"
+                >
+                  Apply Now
+                </Button>
+              ) : (
+                <Button fullWidth color="navy" mb="xs" disabled>
+                  Apply Now
+                </Button>
+              )}
               <Button
                 fullWidth
                 variant={saved ? "light" : "outline"}
@@ -284,9 +270,8 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
               <Text size="sm" fw={800} mb="sm">
                 Similar Jobs
               </Text>
-              {SAMPLE_JOBS.filter((item) => item.id !== job.id)
-                .slice(0, 3)
-                .map((similarJob) => (
+              {similarJobs.length > 0 ? (
+                similarJobs.map((similarJob) => (
                   <Link
                     key={similarJob.id}
                     href={`/jobs/${similarJob.id}`}
@@ -307,7 +292,13 @@ export function JobDetailsPage({ jobId }: { jobId: string }) {
                       />
                     </Group>
                   </Link>
-                ))}
+                ))
+              ) : (
+                <Text size="sm" c="dimmed">
+                  More similar jobs will appear here as additional listings are
+                  posted.
+                </Text>
+              )}
             </Card>
           </Stack>
         </Flex>
@@ -348,21 +339,6 @@ function JobSection({
   );
 }
 
-function BulletList({ items }: { items: string[] }) {
-  return (
-    <Stack gap="xs">
-      {items.map((item) => (
-        <Group key={item} gap="sm" align="flex-start" wrap="nowrap">
-          <IconCheck size={16} color="var(--mantine-color-navy-7)" />
-          <Text size="sm" c="gray.7" lh={1.6}>
-            {item}
-          </Text>
-        </Group>
-      ))}
-    </Stack>
-  );
-}
-
 function QuickFact({
   icon,
   label,
@@ -392,33 +368,5 @@ function QuickFact({
         </Text>
       </Box>
     </Group>
-  );
-}
-
-function JobBadge({ badge }: { badge: NonNullable<Job["badge"]> }) {
-  if (badge === "featured") {
-    return (
-      <Badge
-        color="yellow"
-        variant="light"
-        leftSection={<IconStar size={11} fill="currentColor" />}
-      >
-        Featured
-      </Badge>
-    );
-  }
-
-  if (badge === "closing") {
-    return (
-      <Badge color="red" variant="light">
-        Closing soon
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge color="green" variant="light">
-      New
-    </Badge>
   );
 }

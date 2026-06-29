@@ -28,6 +28,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.76.0",
     "react-sticky-box": "^2.0.5",
+    "supabase": "^2.107.0",
     "tsx": "^4.22.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"

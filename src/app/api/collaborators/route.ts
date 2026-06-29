@@ -1,37 +1,26 @@
-// import { createClient } from '@/supabase/server';
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/supabase/server";
 
-export async function GET(request: NextRequest){
-    // Uncomment if you're trying to test with curl/postman
-    const supabase = await createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_SECRET_SUPABASE_KEY!
-    );
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    // const supabase = await createClient();
+  const explicitUserId = request.nextUrl.searchParams.get("user_id");
+  const currentUserId = explicitUserId ?? user?.id;
 
-    const userId = request.nextUrl.searchParams.get('user_id');
-    // const { data: { user } } = await supabase.auth.getUser();
+  if (!currentUserId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    // if(!user){
-    //   return NextResponse.json(
-    //       { error: 'Unauthorized'},
-    //       {status: 401}
-    //   );
-    // }
-        
-    const { data, error } = await supabase
-    .rpc('get_collaborators', 
-        // { current_user_id: user.id}
-        { current_user_id: userId}
-    );
+  const { data, error } = await supabase.rpc("get_collaborators", {
+    current_user_id: currentUserId,
+  });
 
-    if(error){
-        return NextResponse.json(
-            { error: error.message},
-            { status: 500 }
-        );
-    }
-    return NextResponse.json(data);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data ?? []);
 }

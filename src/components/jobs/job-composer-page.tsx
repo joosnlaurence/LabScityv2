@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Badge,
+  Alert,
   Box,
   Button,
   Card,
@@ -19,25 +19,33 @@ import {
   IconBriefcase,
   IconCalendar,
   IconCheck,
-  IconCurrencyDollar,
   IconExternalLink,
   IconEye,
+  IconInfoCircle,
   IconMapPin,
   IconSend,
   IconTag,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import type { createJob } from "@/lib/actions/job";
 
 export interface JobDraft {
   title: string;
   organization: string;
   department: string;
   location: string;
-  type: string;
-  remote: string;
-  salary: string;
-  deadline: string;
+  type:
+    | "Postdoc"
+    | "Faculty"
+    | "PhD"
+    | "Grad Student"
+    | "Full-time"
+    | "Part-time"
+    | "Internship"
+    | "Contract";
+  remote: "On-site" | "Hybrid" | "Remote";
   contactEmail: string;
   applyUrl: string;
   summary: string;
@@ -47,7 +55,13 @@ export interface JobDraft {
   tags: string[];
 }
 
-export function JobComposerPage() {
+interface JobComposerPageProps {
+  createJobAction: typeof createJob;
+}
+
+export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [draft, setDraft] = useState<JobDraft>({
     title: "",
     organization: "",
@@ -55,8 +69,6 @@ export function JobComposerPage() {
     location: "",
     type: "Postdoc",
     remote: "On-site",
-    salary: "",
-    deadline: "",
     contactEmail: "",
     applyUrl: "",
     summary: "",
@@ -67,13 +79,16 @@ export function JobComposerPage() {
   });
   const [publishNow, setPublishNow] = useState(true);
   const [featured, setFeatured] = useState(false);
-  const [published, setPublished] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const tips = useMemo(
     () => [
       { text: "Use a clear, specific job title", done: draft.title.length > 0 },
       { text: "Include required skills as tags", done: draft.tags.length > 0 },
-      { text: "Add an application deadline", done: draft.deadline.length > 0 },
+      {
+        text: "Add an external application link",
+        done: draft.applyUrl.length > 0,
+      },
       {
         text: "Specify remote / on-site status",
         done: draft.remote.length > 0,
@@ -93,32 +108,70 @@ export function JobComposerPage() {
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
+  const handlePublish = () => {
+    setErrorMessage(null);
+
+    startTransition(async () => {
+      const roleValue =
+        draft.type === "Postdoc" ||
+        draft.type === "Faculty" ||
+        draft.type === "PhD" ||
+        draft.type === "Grad Student"
+          ? draft.type
+          : undefined;
+      const jobTypeValue =
+        draft.type === "Full-time" ||
+        draft.type === "Part-time" ||
+        draft.type === "Internship" ||
+        draft.type === "Contract"
+          ? draft.type
+          : undefined;
+      const workMode: "remote" | "hybrid" | "on-site" =
+        draft.remote === "Remote"
+          ? "remote"
+          : draft.remote === "Hybrid"
+            ? "hybrid"
+            : "on-site";
+
+      const result = await createJobAction({
+        title: draft.title,
+        description: [
+          draft.description.trim(),
+          draft.responsibilities.trim()
+            ? `Responsibilities:\n${draft.responsibilities.trim()}`
+            : "",
+          draft.qualifications.trim()
+            ? `Qualifications:\n${draft.qualifications.trim()}`
+            : "",
+          draft.contactEmail.trim()
+            ? `Contact: ${draft.contactEmail.trim()}`
+            : "",
+          draft.tags.length > 0 ? `Tags: ${draft.tags.join(", ")}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        summary: draft.summary || undefined,
+        location: draft.location || undefined,
+        department: draft.department || undefined,
+        organization: draft.organization || undefined,
+        work_mode: workMode,
+        job_type: jobTypeValue,
+        academia_role: roleValue,
+        application_link: draft.applyUrl || undefined,
+      });
+
+      if (!result.success || !result.data) {
+        setErrorMessage(result.error ?? "Failed to publish job");
+        return;
+      }
+
+      router.push(`/jobs/${result.data.id}`);
+      router.refresh();
+    });
+  };
+
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
-      {published && (
-        <Card
-          pos="fixed"
-          top={72}
-          right={24}
-          shadow="xl"
-          radius="md"
-          withBorder
-          style={{ zIndex: 50, borderColor: "var(--mantine-color-green-3)" }}
-        >
-          <Group gap="sm">
-            <IconCheck size={20} color="var(--mantine-color-green-7)" />
-            <Box>
-              <Text size="sm" fw={800}>
-                Job posted successfully
-              </Text>
-              <Text size="xs" c="dimmed">
-                This is a placeholder until publishing is wired.
-              </Text>
-            </Box>
-          </Group>
-        </Card>
-      )}
-
       <Box maw={1200} mx="auto" px={{ base: "sm", md: "xl" }} py="xl">
         <Group justify="space-between" align="flex-end" mb="lg">
           <Box>
@@ -136,6 +189,12 @@ export function JobComposerPage() {
 
         <Flex gap="lg" align="flex-start">
           <Stack flex={1} miw={0}>
+            {errorMessage ? (
+              <Alert color="red" title="Could not publish job">
+                {errorMessage}
+              </Alert>
+            ) : null}
+
             <FormSection
               title="Basic Information"
               icon={<IconBriefcase size={18} />}
@@ -152,7 +211,6 @@ export function JobComposerPage() {
               <Flex gap="md" direction={{ base: "column", sm: "row" }}>
                 <TextInput
                   label="Organization / Lab"
-                  withAsterisk
                   placeholder="e.g. UCF, Caltech, Google"
                   value={draft.organization}
                   onChange={(event) =>
@@ -185,7 +243,10 @@ export function JobComposerPage() {
                   label="Work Mode"
                   value={draft.remote}
                   onChange={(value) =>
-                    updateDraft("remote", value ?? "On-site")
+                    updateDraft(
+                      "remote",
+                      (value as JobDraft["remote"] | null) ?? "On-site",
+                    )
                   }
                   data={["On-site", "Hybrid", "Remote"]}
                   style={{ flex: 1 }}
@@ -200,6 +261,7 @@ export function JobComposerPage() {
                     "Postdoc",
                     "Faculty",
                     "PhD",
+                    "Grad Student",
                     "Full-time",
                     "Part-time",
                     "Internship",
@@ -211,7 +273,9 @@ export function JobComposerPage() {
                       radius="xl"
                       variant={draft.type === type ? "filled" : "outline"}
                       color={draft.type === type ? "navy" : "gray"}
-                      onClick={() => updateDraft("type", type)}
+                      onClick={() =>
+                        updateDraft("type", type as JobDraft["type"])
+                      }
                     >
                       {type}
                     </Button>
@@ -223,7 +287,6 @@ export function JobComposerPage() {
             <FormSection title="Description" icon={<IconTag size={18} />}>
               <Textarea
                 label="Short Summary"
-                withAsterisk
                 autosize
                 minRows={2}
                 placeholder="2-3 sentence overview of the role..."
@@ -280,36 +343,9 @@ export function JobComposerPage() {
                   "Holography",
                 ]}
               />
-              <Textarea
-                label="Preferred Background"
-                autosize
-                minRows={2}
-                placeholder="e.g. Background in optics + ML, familiarity with PyTorch..."
-              />
             </FormSection>
 
             <FormSection title="Logistics" icon={<IconCalendar size={18} />}>
-              <Flex gap="md" direction={{ base: "column", sm: "row" }}>
-                <TextInput
-                  label="Salary / Stipend / Funding"
-                  placeholder="e.g. $58K-$68K / yr"
-                  value={draft.salary}
-                  onChange={(event) =>
-                    updateDraft("salary", event.currentTarget.value)
-                  }
-                  leftSection={<IconCurrencyDollar size={16} />}
-                  style={{ flex: 1 }}
-                />
-                <TextInput
-                  label="Application Deadline"
-                  placeholder="e.g. May 1, 2026"
-                  value={draft.deadline}
-                  onChange={(event) =>
-                    updateDraft("deadline", event.currentTarget.value)
-                  }
-                  style={{ flex: 1 }}
-                />
-              </Flex>
               <Flex gap="md" direction={{ base: "column", sm: "row" }}>
                 <TextInput
                   label="Contact Email"
@@ -341,13 +377,12 @@ export function JobComposerPage() {
                 checked={publishNow}
                 onChange={(event) => setPublishNow(event.currentTarget.checked)}
                 label="Publish immediately"
-                description="Your listing goes live after the real publishing flow is wired."
               />
               <Checkbox
                 checked={featured}
                 onChange={(event) => setFeatured(event.currentTarget.checked)}
                 label="Featured listing"
-                description="Placeholder visibility option for the future jobs backend."
+                description="Currently visual only until a featured-jobs backend exists."
                 color="yellow"
               />
             </FormSection>
@@ -395,26 +430,40 @@ export function JobComposerPage() {
               </Stack>
             </Card>
 
+            <Alert
+              color="blue"
+              icon={<IconInfoCircle size={16} />}
+              title="Current backend support"
+            >
+              The live publish flow stores the main job fields. Featured status,
+              saved jobs, and application tracking do not have backing endpoints
+              yet.
+            </Alert>
+
             <Card radius="md" shadow="xs" padding="md" withBorder>
               <Stack gap="xs">
                 <Button
                   variant="outline"
                   color="gray"
                   leftSection={<IconEye size={16} />}
+                  disabled
                 >
                   Preview Full Listing
                 </Button>
                 <Button
                   color="navy"
                   leftSection={<IconSend size={16} />}
-                  onClick={() => setPublished(true)}
+                  onClick={handlePublish}
+                  loading={isPending}
+                  disabled={
+                    !publishNow ||
+                    draft.title.trim().length === 0 ||
+                    draft.description.trim().length === 0
+                  }
                 >
                   Publish Job
                 </Button>
               </Stack>
-              <Text size="xs" c="dimmed" ta="center" mt="sm">
-                Publishing is local-only until the jobs backend is added.
-              </Text>
             </Card>
           </Stack>
         </Flex>
@@ -472,25 +521,26 @@ function MiniPreviewCard({ draft }: { draft: JobDraft }) {
         )}
       </Group>
       <Group gap={6} mt={8}>
-        <Badge variant="light" color="gray">
+        <Button size="compact-xs" variant="light" color="gray">
           {draft.type}
-        </Badge>
-        <Badge
+        </Button>
+        <Button
+          size="compact-xs"
           variant="light"
           color={draft.remote === "Remote" ? "green" : "blue"}
         >
           {draft.remote}
-        </Badge>
+        </Button>
       </Group>
-      {draft.tags.length > 0 && (
+      {draft.tags.length > 0 ? (
         <Group gap={4} mt="sm">
           {draft.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} size="sm" variant="light" color="gray">
+            <Button key={tag} size="compact-xs" variant="light" color="gray">
               {tag}
-            </Badge>
+            </Button>
           ))}
         </Group>
-      )}
+      ) : null}
       <Group gap="xs" mt="md">
         <Button size="compact-xs" color="navy">
           View Details

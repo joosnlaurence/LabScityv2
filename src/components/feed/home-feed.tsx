@@ -10,120 +10,60 @@ import {
   Divider,
   Flex,
   Group,
-  Modal,
-  SimpleGrid,
   Stack,
   Text,
-  TextInput,
+  Textarea,
   ThemeIcon,
 } from "@mantine/core";
 import {
   IconBookmark,
   IconBriefcase,
-  IconCheck,
   IconChevronRight,
+  IconDots,
   IconFileText,
   IconFolderPlus,
   IconHeart,
+  IconLink,
   IconMessageCircle,
-  IconPackage,
   IconPlus,
   IconQuote,
   IconShare3,
-  IconSparkles,
-  IconTag,
   IconTrendingUp,
-  IconUserPlus,
   IconUsers,
-  IconX,
 } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
-import type { HomeFeedProps } from "@/components/feed/home-feed.types";
+import { LSPopularGroupsHomeStrip } from "@/components/groups/ls-popular-groups-home-strip";
+import type { GetCollaboratorsResult } from "@/lib/types/collab";
+import type { CreatePostValues } from "@/lib/validations/post";
+import type { HomeFeedProps } from "./home-feed.types";
+import { PostFollowButton } from "./post-follow-button";
+import { useHomeFeed } from "./use-home-feed";
 
-const trendTags = [
-  "Quantum Computing",
-  "Biomedical Imaging",
-  "Climate Modeling",
-  "Human-Computer Interaction",
-  "Machine Learning",
-];
-
-const collaborators = [
-  {
-    initials: "SK",
-    name: "Sarah Kim",
-    role: "PhD Candidate, MIT",
-    field: "Medical Imaging",
-    match: "96%",
-    color: "violet",
-    open: true,
-  },
-  {
-    initials: "CW",
-    name: "Cheng Wu",
-    role: "Research Scientist, UCF",
-    field: "Optics",
-    match: "91%",
-    color: "cyan",
-    open: false,
-  },
-  {
-    initials: "DP",
-    name: "David Park",
-    role: "Postdoc, Stanford",
-    field: "Holography",
-    match: "88%",
-    color: "green",
-    open: true,
-  },
-];
-
-const publications = [
-  {
-    title: "Self-supervised denoising for live-cell fluorescence microscopy",
-    authors: "L. Tanaka, R. Singh",
-    venue: "Nature Methods - 2026",
-    tags: ["Microscopy", "Self-Supervised"],
-  },
-  {
-    title: "Diffusion models for accelerated MRI reconstruction",
-    authors: "A. Petrov, M. Chen, +2",
-    venue: "MICCAI - 2026",
-    tags: ["Medical Imaging", "Diffusion"],
-  },
-  {
-    title: "Benchmarking physics-informed networks on PDE inverse problems",
-    authors: "K. Nowak, J. Riley",
-    venue: "ICLR - 2026",
-    tags: ["Physics-Informed NN", "Benchmark"],
-  },
-];
-
-const products = [
-  {
-    title: "CryoTrace - automated cryo-EM particle picking",
-    contributor: "Helix Bio Lab",
-    tags: ["Cryo-EM", "Automation"],
-    color: "cyan",
-  },
-  {
-    title: "ClimaGrid - high-resolution climate downscaling models",
-    contributor: "EarthScale Collective",
-    tags: ["Climate Modeling", "ML"],
-    color: "green",
-  },
-  {
-    title: "RoboGrasp SDK - dexterous manipulation primitives",
-    contributor: "Mecha Robotics Group",
-    tags: ["Robotics", "Manipulation"],
-    color: "violet",
-  },
-];
-
-export function HomeFeed(_props?: Partial<HomeFeedProps>) {
+export function HomeFeed(props: HomeFeedProps) {
   const isMobile = useIsMobile();
+  const {
+    posts,
+    isFeedLoading,
+    isFeedError,
+    feedError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    activeCommentPostId,
+    setActiveCommentPostId,
+    isComposerOpen,
+    setIsComposerOpen,
+    createPostMutation,
+    handleSubmitPost,
+    handleAddComment,
+    handleTogglePostLike,
+    handleDeletePost,
+    currentUserId,
+  } = useHomeFeed(props);
 
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
@@ -135,576 +75,600 @@ export function HomeFeed(_props?: Partial<HomeFeedProps>) {
         gap="lg"
         align="flex-start"
       >
-        {!isMobile && <HomeLeftRail />}
+        {!isMobile ? <HomeLeftRail {...props} /> : null}
 
         <Stack flex={1} miw={0} gap="lg" maw={760} mx="auto">
-          <CreatePostCard />
-          <FeaturedPublicationPost />
-          <RecommendedProductPost />
-          <CollaborationRequestPost />
-          <CompactPublicationsCluster />
-          <ProductDiscoveryCluster />
-          <PeopleSpotlight />
+          <CreatePostCard
+            isComposerOpen={isComposerOpen}
+            onToggleComposer={() => setIsComposerOpen((current) => !current)}
+            onSubmit={handleSubmitPost}
+            isPending={createPostMutation.isPending}
+          />
+
+          {isFeedLoading && posts.length === 0 ? (
+            <Text c="dimmed">Loading feed...</Text>
+          ) : null}
+
+          {isFeedError ? (
+            <Text c="red.7">
+              {feedError instanceof Error
+                ? feedError.message
+                : "Failed to fetch feed"}
+            </Text>
+          ) : null}
+
+          {!isFeedLoading && !isFeedError && posts.length === 0 ? (
+            <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
+              <Text fw={800} c="gray.8">
+                Your home feed is empty
+              </Text>
+              <Text size="sm" c="dimmed" mt={4}>
+                Create the first post or explore groups and collaborators to
+                start building your network.
+              </Text>
+            </Card>
+          ) : null}
+
+          {posts.map((post) => (
+            <FeedPostCard
+              key={post.id}
+              currentUserId={currentUserId}
+              post={post}
+              commentOpen={activeCommentPostId === post.id}
+              onToggleComments={() =>
+                setActiveCommentPostId((current) =>
+                  current === post.id ? null : post.id,
+                )
+              }
+              onAddComment={handleAddComment}
+              onLike={() => handleTogglePostLike(post.id)}
+              onDelete={() => handleDeletePost(post.id)}
+            />
+          ))}
+
+          {hasNextPage ? (
+            <Button
+              variant="default"
+              radius="md"
+              onClick={() => void fetchNextPage()}
+              loading={isFetchingNextPage}
+            >
+              Load more posts
+            </Button>
+          ) : null}
         </Stack>
 
-        {!isMobile && <HomeRightRail />}
+        {!isMobile ? <HomeRightRail {...props} /> : null}
       </Flex>
     </Box>
   );
 }
 
-function CreatePostCard() {
-  const [tags, setTags] = useState(["Publications", "Products"]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [customTag, setCustomTag] = useState("");
-
-  const removeTag = (tag: string) => {
-    setTags((current) => current.filter((item) => item !== tag));
-  };
-
-  const addTag = (tag: string) => {
-    setTags((current) => (current.includes(tag) ? current : [...current, tag]));
-  };
+function CreatePostCard({
+  isComposerOpen,
+  onToggleComposer,
+  onSubmit,
+  isPending,
+}: {
+  isComposerOpen: boolean;
+  onToggleComposer: () => void;
+  onSubmit: (values: CreatePostValues & { mediaFile?: File | null }) => void;
+  isPending: boolean;
+}) {
+  const [draftField, setDraftField] = useState("");
+  const [draftContent, setDraftContent] = useState("");
 
   return (
-    <>
-      <Card radius="md" shadow="xs" padding="md" withBorder bg="white">
-        <Stack gap="md">
-          <Group justify="space-between" align="center">
-            <Group gap="sm">
-              <Avatar radius="xl" color="navy.7">
-                YA
-              </Avatar>
-              <Box>
-                <Text size="sm" fw={800} c="gray.8">
-                  What are you working on?
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Share a paper, product, result, or collaboration note.
-                </Text>
-              </Box>
-            </Group>
-            <Button
-              leftSection={<IconPlus size={15} />}
-              radius="md"
-              c="gray.0"
-              fw={700}
-              bg="navy.8"
-            >
-              New Post
-            </Button>
+    <Card
+      radius="xl"
+      padding="md"
+      withBorder
+      bg="white"
+      style={{
+        borderColor: "#E5E7EB",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+      }}
+    >
+      <Stack gap="md">
+        <Group justify="space-between" align="center">
+          <Group gap="sm">
+            <Avatar radius="xl" color="navy.7" size={36}>
+              YA
+            </Avatar>
+            <Box>
+              <Text size="sm" fw={800} c="#374151">
+                What&apos;s on your mind?
+              </Text>
+              <Text size="xs" c="#64748B">
+                Share a paper, product, result, or collaboration note.
+              </Text>
+            </Box>
           </Group>
+          <Button
+            leftSection={<IconPlus size={15} />}
+            radius="md"
+            c="white"
+            fw={700}
+            bg="#1F3A5F"
+            onClick={onToggleComposer}
+          >
+            New Post
+          </Button>
+        </Group>
 
-          <Divider />
-
-          <Group gap="xs">
-            <Text size="xs" fw={800} c="gray.5" tt="uppercase">
-              Show
-            </Text>
-            {tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="light"
-                color={tag === "Collaborations" ? "teal" : "blue"}
-                radius="xl"
-                leftSection={<IconTag size={10} />}
-                rightSection={
-                  <ActionIcon
-                    variant="transparent"
-                    color="gray"
-                    size={14}
-                    onClick={() => removeTag(tag)}
-                  >
-                    <IconX size={10} />
-                  </ActionIcon>
-                }
-              >
-                {tag}
-              </Badge>
-            ))}
-            <Button
-              variant="outline"
-              color="teal"
-              radius="xl"
-              size="compact-xs"
-              leftSection={<IconPlus size={13} />}
-              onClick={() => setModalOpen(true)}
-            >
-              Add Tags
-            </Button>
-          </Group>
-        </Stack>
-      </Card>
-
-      <Modal
-        opened={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Filter feed by tags"
-        centered
-      >
-        <Stack>
-          <Text size="sm" c="dimmed">
-            Add topics to tune this example feed.
-          </Text>
-          <Group gap="xs">
-            {[
-              "Optics",
-              "Computer Vision",
-              "Neural Networks",
-              "Microscopy",
-              "Machine Learning",
-              "Biomedical Imaging",
-              "Climate Modeling",
-              "Robotics",
-              "Collaborations",
-            ].map((tag) => (
-              <Button
-                key={tag}
-                variant={tags.includes(tag) ? "filled" : "light"}
-                color={tags.includes(tag) ? "navy" : "gray"}
-                radius="xl"
-                size="compact-sm"
-                onClick={() => addTag(tag)}
-              >
-                {tag}
-              </Button>
-            ))}
-          </Group>
-          <Group>
-            <TextInput
-              value={customTag}
-              onChange={(event) => setCustomTag(event.currentTarget.value)}
-              placeholder="Custom tag"
-              style={{ flex: 1 }}
-            />
-            <Button
-              color="navy"
-              onClick={() => {
-                const nextTag = customTag.trim();
-                if (nextTag) addTag(nextTag);
-                setCustomTag("");
+        {isComposerOpen ? (
+          <Stack gap="sm" pt="md" style={{ borderTop: "1px solid #F3F4F6" }}>
+            <Textarea
+              value={draftContent}
+              onChange={(event) => setDraftContent(event.currentTarget.value)}
+              minRows={4}
+              autosize
+              placeholder="Share an update with the community..."
+              styles={{
+                input: {
+                  borderRadius: 14,
+                  borderColor: "#E5E7EB",
+                  fontSize: 14,
+                },
               }}
-            >
-              Add
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-    </>
+            />
+            <Textarea
+              value={draftField}
+              onChange={(event) => setDraftField(event.currentTarget.value)}
+              minRows={1}
+              autosize
+              placeholder="Scientific field, e.g. Microscopy"
+              styles={{
+                input: {
+                  borderRadius: 14,
+                  borderColor: "#E5E7EB",
+                  fontSize: 14,
+                },
+              }}
+            />
+            <Group justify="space-between" wrap="wrap">
+              <Group gap="xs">
+                <Badge
+                  variant="light"
+                  radius="xl"
+                  color="blue"
+                  style={{ background: "#EFF6FF", color: "#1D4ED8" }}
+                >
+                  Publications
+                </Badge>
+                <Badge
+                  variant="light"
+                  radius="xl"
+                  color="blue"
+                  style={{ background: "#EEF2FF", color: "#1D4ED8" }}
+                >
+                  Products
+                </Badge>
+              </Group>
+              <Button
+                color="navy"
+                radius="md"
+                loading={isPending}
+                disabled={
+                  draftContent.trim().length === 0 ||
+                  draftField.trim().length === 0
+                }
+                onClick={() => {
+                  onSubmit({
+                    content: draftContent,
+                    scientificField: draftField,
+                    category: "general",
+                  });
+                  setDraftContent("");
+                  setDraftField("");
+                }}
+              >
+                Publish Post
+              </Button>
+            </Group>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Card>
   );
 }
 
-function FeaturedPublicationPost() {
+function FeedPostCard({
+  post,
+  currentUserId,
+  commentOpen,
+  onToggleComments,
+  onAddComment,
+  onLike,
+  onDelete,
+}: {
+  post: {
+    id: string;
+    userId: string;
+    userName: string;
+    avatarUrl?: string | null;
+    scientificField: string;
+    content: string;
+    timeAgo: string;
+    mediaUrl?: string | null;
+    mediaWidth?: number;
+    mediaHeight?: number;
+    comments: Array<{
+      id: string;
+      userId: string;
+      userName: string;
+      avatarUrl?: string | null;
+      content: string;
+      timeAgo: string;
+    }>;
+    isLiked?: boolean;
+    likeCount?: number;
+  };
+  currentUserId: string | null;
+  commentOpen: boolean;
+  onToggleComments: () => void;
+  onAddComment: (postId: string, values: { content: string }) => Promise<void>;
+  onLike: () => void;
+  onDelete: () => void;
+}) {
+  const isOwnPost = currentUserId != null && currentUserId === post.userId;
   const [saved, setSaved] = useState(false);
+  const [comment, setComment] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const title = deriveTitle(post.content);
+  const description = deriveDescription(post.content);
 
   return (
-    <Stack gap="xs">
-      <FeedHeader
-        avatar={{ initials: "YA", color: "navy" }}
-        text="Dr. Yara Adeyemi highlighted a publication"
-        sub="2h ago"
-      />
-      <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
-        <Stack gap="md">
-          <Group justify="space-between" align="flex-start" wrap="nowrap">
-            <ThemeIcon size={46} radius="md" color="blue" variant="light">
-              <IconFileText size={22} />
-            </ThemeIcon>
+    <Card
+      radius="xl"
+      withBorder
+      bg="white"
+      p="lg"
+      style={{
+        borderColor: "#E5E7EB",
+        borderTop: "3px solid #2563EB",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+      }}
+    >
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start" wrap="nowrap">
+          <Group gap="xs" wrap="wrap">
+            {isOwnPost ? (
+              <Badge
+                radius="xl"
+                variant="light"
+                style={{
+                  background: "#EEF2FF",
+                  color: "#1D4ED8",
+                  border: "1px solid #C7D2FE",
+                }}
+              >
+                Your Post
+              </Badge>
+            ) : null}
             <Badge
+              radius="xl"
               variant="light"
-              color="teal"
-              leftSection={<IconSparkles size={11} />}
+              color="yellow"
+              leftSection={<IconPlus size={10} />}
+              style={{
+                background: "#FEF3C7",
+                color: "#B45309",
+                border: "1px solid #FCD34D",
+              }}
             >
-              Recommended for your research
+              Featured
+            </Badge>
+            <Badge
+              radius="xl"
+              variant="light"
+              color="blue"
+              leftSection={<IconFileText size={10} />}
+              style={{
+                background: "#EFF6FF",
+                color: "#2563EB",
+                border: "1px solid #BFDBFE",
+              }}
+            >
+              Article
+            </Badge>
+            <Badge
+              radius="xl"
+              variant="light"
+              color="blue"
+              style={{
+                background: "#EEF2FF",
+                color: "#1D4ED8",
+                border: "1px solid #C7D2FE",
+              }}
+            >
+              {post.scientificField}
             </Badge>
           </Group>
-          <Box>
-            <Text fz="lg" fw={850} c="gray.9" lh={1.25}>
-              Physics-informed self-supervised segmentation for high-throughput
-              microscopy
-            </Text>
-            <Text size="sm" c="dimmed" mt={4}>
-              S. Kim, Y. Adeyemi, M. Patel - Nature Methods - 2026
-            </Text>
-          </Box>
-          <Text size="sm" c="gray.7" lh={1.6}>
-            A lightweight model that combines optical priors with
-            self-supervised denoising to reduce annotation requirements in
-            live-cell fluorescence microscopy.
+          <ActionIcon variant="subtle" color="gray" disabled={!isOwnPost}>
+            <IconDots size={18} />
+          </ActionIcon>
+        </Group>
+
+        <Stack gap={8}>
+          <Text
+            component={Link}
+            href={`/posts/${post.id}`}
+            fw={700}
+            fz={17}
+            c="#111827"
+            style={{ textDecoration: "none", lineHeight: 1.4 }}
+          >
+            {title}
           </Text>
-          <Group gap={6}>
-            {["Microscopy", "Self-Supervised", "Computer Vision"].map((tag) => (
-              <Badge key={tag} variant="light" color="blue" radius="xl">
-                {tag}
-              </Badge>
-            ))}
+          <Text size="sm" c="#475569" lh={1.6}>
+            {description}
+          </Text>
+        </Stack>
+
+        <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+          <Group gap="sm" wrap="nowrap">
+            <Avatar.Group spacing="sm">
+              <Avatar size={28} src={post.avatarUrl ?? undefined} color="blue">
+                {initials(post.userName)}
+              </Avatar>
+              <Avatar size={28} color="cyan">
+                {post.scientificField.slice(0, 2).toUpperCase()}
+              </Avatar>
+            </Avatar.Group>
+            <Text size="sm" c="#1F2937" fw={600}>
+              {post.userName}
+              <Text span c="#64748B" fw={400}>
+                {" "}
+                · {post.timeAgo}
+              </Text>
+            </Text>
+            {!isOwnPost ? (
+              <PostFollowButton
+                currentUserId={currentUserId}
+                targetUserId={post.userId}
+              />
+            ) : null}
           </Group>
-          <Divider />
-          <Group gap="xs">
+          <Text size="sm" c="#2563EB">
+            {copied ? "Link copied" : ""}
+          </Text>
+        </Group>
+
+        <Group gap={6} wrap="wrap">
+          <Button
+            component={Link}
+            href={`/posts/${post.id}`}
+            variant="light"
+            radius="xl"
+            size="compact-sm"
+            style={{
+              background: "#EFF6FF",
+              color: "#1D4ED8",
+              border: "1px solid #BFDBFE",
+            }}
+          >
+            {post.scientificField}
+          </Button>
+          <Button
+            variant="light"
+            radius="xl"
+            size="compact-sm"
+            style={{
+              background: "#EFF6FF",
+              color: "#1D4ED8",
+              border: "1px solid #BFDBFE",
+            }}
+          >
+            {post.userName.split(" ")[0]}
+          </Button>
+        </Group>
+
+        {post.mediaUrl ? (
+          <Box
+            style={{
+              overflow: "hidden",
+              borderRadius: 16,
+              border: "1px solid #E5E7EB",
+            }}
+          >
+            <Image
+              src={post.mediaUrl}
+              alt="Post attachment"
+              width={post.mediaWidth ?? 1200}
+              height={post.mediaHeight ?? 700}
+              style={{ width: "100%", height: "auto", display: "block" }}
+            />
+          </Box>
+        ) : null}
+
+        <Divider color="#E5E7EB" />
+
+        <Group justify="space-between" align="center" wrap="wrap">
+          <Group gap="lg">
             <Button
-              variant={saved ? "light" : "subtle"}
-              color={saved ? "navy" : "gray"}
+              variant="subtle"
+              color={post.isLiked ? "red" : "gray"}
+              leftSection={<IconHeart size={16} />}
+              px={0}
+              onClick={onLike}
+            >
+              {post.likeCount ?? 0}
+            </Button>
+            <Button
+              variant="subtle"
+              color="gray"
+              leftSection={<IconMessageCircle size={16} />}
+              px={0}
+              onClick={onToggleComments}
+            >
+              {post.comments.length}
+            </Button>
+            <Button
+              variant="subtle"
+              color="gray"
               leftSection={
                 <IconBookmark
                   size={16}
                   fill={saved ? "currentColor" : "none"}
                 />
               }
+              px={0}
               onClick={() => setSaved((current) => !current)}
             >
-              {saved ? "Saved" : "Save"}
-            </Button>
-            <Button
-              variant="subtle"
-              color="gray"
-              leftSection={<IconQuote size={16} />}
-            >
-              Cite
+              Save
             </Button>
             <Button
               variant="subtle"
               color="gray"
               leftSection={<IconShare3 size={16} />}
+              px={0}
+              onClick={async () => {
+                await navigator.clipboard.writeText(
+                  `${window.location.origin}/posts/${post.id}`,
+                );
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1200);
+              }}
             >
               Share
             </Button>
           </Group>
-        </Stack>
-      </Card>
-    </Stack>
-  );
-}
-
-function RecommendedProductPost() {
-  const [liked, setLiked] = useState(false);
-
-  return (
-    <Stack gap="xs">
-      <FeedHeader
-        text="LabScity found a research product matching your tags"
-        sub="Today"
-        badge="91% match"
-      />
-      <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
-        <Stack gap="md">
-          <Group align="flex-start" wrap="nowrap">
-            <ThemeIcon size={52} radius="md" color="teal" variant="light">
-              <IconPackage size={24} />
-            </ThemeIcon>
-            <Box flex={1} miw={0}>
-              <Text fz="md" fw={850} c="gray.9">
-                MicroLens Studio
-              </Text>
-              <Text size="sm" c="dimmed">
-                Open-source toolkit for microscopy reconstruction workflows
-              </Text>
-            </Box>
-            <Button size="compact-sm" color="navy">
-              View
+          {isOwnPost ? (
+            <Button variant="subtle" color="red" onClick={onDelete}>
+              Delete
             </Button>
-          </Group>
-          <Text size="sm" c="gray.7" lh={1.6}>
-            Build and compare phase retrieval, denoising, and segmentation
-            pipelines from a single notebook-friendly interface.
-          </Text>
-          <Group gap={6}>
-            {["Python", "Microscopy", "Open Source"].map((tag) => (
-              <Badge key={tag} variant="light" color="gray" radius="xl">
-                {tag}
-              </Badge>
-            ))}
-          </Group>
-          <Divider />
-          <Group gap="xs">
-            <Button
-              variant={liked ? "light" : "subtle"}
-              color={liked ? "red" : "gray"}
-              leftSection={
-                <IconHeart size={16} fill={liked ? "currentColor" : "none"} />
-              }
-              onClick={() => setLiked((current) => !current)}
-            >
-              {liked ? "Liked" : "Like"}
-            </Button>
-            <Button
-              variant="subtle"
-              color="gray"
-              leftSection={<IconMessageCircle size={16} />}
-            >
-              Comment
-            </Button>
-            <Button
-              variant="subtle"
-              color="gray"
-              leftSection={<IconShare3 size={16} />}
-            >
-              Share
-            </Button>
-          </Group>
-        </Stack>
-      </Card>
-    </Stack>
-  );
-}
-
-function CollaborationRequestPost() {
-  const [following, setFollowing] = useState(false);
-
-  return (
-    <Stack gap="xs">
-      <FeedHeader
-        avatar={{ initials: "AL", color: "pink" }}
-        text="Ann Lee is looking for collaborators"
-        sub="1d ago"
-      />
-      <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
-        <Stack gap="md">
-          <Group align="flex-start" wrap="nowrap">
-            <Avatar size={54} radius="xl" color="pink">
-              AL
-            </Avatar>
-            <Box flex={1} miw={0}>
-              <Group gap="xs">
-                <Text fw={850} c="gray.9">
-                  Ann Lee
-                </Text>
-                <Badge color="green" variant="light">
-                  Open to collaborate
-                </Badge>
-              </Group>
-              <Text size="sm" c="dimmed">
-                Postdoctoral Fellow - Johns Hopkins
-              </Text>
-            </Box>
-            <Button
-              color={following ? "green" : "navy"}
-              leftSection={
-                following ? <IconCheck size={15} /> : <IconUserPlus size={15} />
-              }
-              onClick={() => setFollowing((current) => !current)}
-            >
-              {following ? "Following" : "Follow"}
-            </Button>
-          </Group>
-          <Text size="sm" c="gray.7" lh={1.6}>
-            We are building a small benchmark for label-efficient microscopy
-            segmentation and need partners with varied acquisition setups. Happy
-            to share early code and co-author results.
-          </Text>
-          <Group gap={6}>
-            {["Microscopy", "Genomics", "Segmentation"].map((tag) => (
-              <Badge key={tag} variant="light" color="gray" radius="xl">
-                {tag}
-              </Badge>
-            ))}
-          </Group>
-          <Divider />
-          <Group gap="xs">
-            <Button color="teal" leftSection={<IconMessageCircle size={16} />}>
-              Collaborate
-            </Button>
-            <Button
-              variant="subtle"
-              color="gray"
-              leftSection={<IconShare3 size={16} />}
-            >
-              Share
-            </Button>
-          </Group>
-        </Stack>
-      </Card>
-    </Stack>
-  );
-}
-
-function CompactPublicationsCluster() {
-  return (
-    <SectionCard
-      title="New publications in your research areas"
-      icon={<IconFileText size={18} />}
-      actionLabel="View more"
-    >
-      <Stack gap={0}>
-        {publications.map((publication) => (
-          <PublicationRow key={publication.title} publication={publication} />
-        ))}
-      </Stack>
-    </SectionCard>
-  );
-}
-
-function PublicationRow({
-  publication,
-}: {
-  publication: (typeof publications)[number];
-}) {
-  const [saved, setSaved] = useState(false);
-
-  return (
-    <Group
-      py="sm"
-      wrap="nowrap"
-      align="flex-start"
-      style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
-    >
-      <ThemeIcon variant="light" color="blue" radius="md" size={40}>
-        <IconFileText size={18} />
-      </ThemeIcon>
-      <Box flex={1} miw={0}>
-        <Text size="sm" fw={800} c="gray.9" lineClamp={2}>
-          {publication.title}
-        </Text>
-        <Text size="xs" c="dimmed" mt={2}>
-          {publication.authors} - {publication.venue}
-        </Text>
-        <Group gap={5} mt={6}>
-          {publication.tags.map((tag) => (
-            <Badge key={tag} variant="light" color="gray" radius="xl">
-              {tag}
-            </Badge>
-          ))}
+          ) : null}
         </Group>
-      </Box>
-      <ActionIcon
-        variant="subtle"
-        color={saved ? "navy" : "gray"}
-        onClick={() => setSaved((current) => !current)}
-      >
-        <IconBookmark size={17} fill={saved ? "currentColor" : "none"} />
-      </ActionIcon>
-    </Group>
-  );
-}
 
-function ProductDiscoveryCluster() {
-  return (
-    <SectionCard
-      title="Research tools gaining traction"
-      icon={<IconTrendingUp size={18} />}
-      actionLabel="Explore"
-      accent="teal"
-    >
-      <Stack gap={0}>
-        {products.map((product) => (
-          <Group
-            key={product.title}
-            py="sm"
-            wrap="nowrap"
-            style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
+        <Group gap="sm">
+          <Button
+            component={Link}
+            href={`/posts/${post.id}`}
+            radius="md"
+            color="blue"
+            rightSection={<IconChevronRight size={14} />}
+            style={{ background: "#2563EB" }}
           >
-            <ThemeIcon
-              variant="light"
-              color={product.color}
-              radius="md"
-              size={42}
-            >
-              <IconPackage size={18} />
-            </ThemeIcon>
-            <Box flex={1} miw={0}>
-              <Text size="sm" fw={800} c="gray.9" truncate>
-                {product.title}
-              </Text>
-              <Group gap={5} mt={4}>
-                <Text size="xs" c="dimmed">
-                  {product.contributor}
-                </Text>
-                {product.tags.map((tag) => (
-                  <Badge key={tag} variant="light" color="gray" radius="xl">
-                    {tag}
-                  </Badge>
-                ))}
+            View
+          </Button>
+          <Button
+            variant="outline"
+            radius="md"
+            color="gray"
+            leftSection={<IconQuote size={15} />}
+            disabled
+          >
+            Cite
+          </Button>
+          <Button
+            variant="subtle"
+            color="gray"
+            leftSection={<IconLink size={15} />}
+            disabled
+          >
+            Link
+          </Button>
+        </Group>
+
+        {commentOpen ? (
+          <Stack gap="sm">
+            <Divider />
+            {post.comments.map((item) => (
+              <Group key={item.id} align="flex-start" wrap="nowrap">
+                <Avatar size="sm" radius="xl" src={item.avatarUrl ?? undefined}>
+                  {initials(item.userName)}
+                </Avatar>
+                <Box>
+                  <Text size="sm" fw={700}>
+                    {item.userName}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {item.timeAgo}
+                  </Text>
+                  <Text size="sm" mt={4}>
+                    {item.content}
+                  </Text>
+                </Box>
               </Group>
-            </Box>
-            <Button size="compact-sm" color="navy">
-              View
-            </Button>
-          </Group>
-        ))}
+            ))}
+            <Textarea
+              placeholder="Add a comment..."
+              value={comment}
+              onChange={(event) => setComment(event.currentTarget.value)}
+              minRows={2}
+              styles={{
+                input: {
+                  borderRadius: 14,
+                  borderColor: "#E5E7EB",
+                },
+              }}
+            />
+            <Group justify="flex-end">
+              <Button
+                size="compact-sm"
+                color="navy"
+                loading={isSubmittingComment}
+                disabled={comment.trim().length === 0}
+                onClick={async () => {
+                  setIsSubmittingComment(true);
+                  try {
+                    await onAddComment(post.id, { content: comment });
+                    setComment("");
+                  } finally {
+                    setIsSubmittingComment(false);
+                  }
+                }}
+              >
+                Post Comment
+              </Button>
+            </Group>
+          </Stack>
+        ) : null}
       </Stack>
-    </SectionCard>
+    </Card>
   );
 }
 
-function PeopleSpotlight() {
-  return (
-    <SectionCard
-      title="Collaborators you may want to meet"
-      icon={<IconUsers size={18} />}
-      actionLabel="See all"
-    >
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing={0}>
-        {collaborators.map((person) => (
-          <SpotlightPerson key={person.name} person={person} />
-        ))}
-      </SimpleGrid>
-    </SectionCard>
-  );
-}
-
-function SpotlightPerson({
-  person,
-}: {
-  person: (typeof collaborators)[number];
-}) {
-  const [following, setFollowing] = useState(false);
-
-  return (
-    <Stack align="center" gap={7} p="md" ta="center">
-      <Avatar size={54} radius="xl" color={person.color}>
-        {person.initials}
-      </Avatar>
-      <Box>
-        <Text size="sm" fw={850}>
-          {person.name}
-        </Text>
-        <Text size="xs" c="dimmed" lineClamp={2}>
-          {person.role}
-        </Text>
-      </Box>
-      <Badge size="sm" color="green" variant="light">
-        {person.match} match
-      </Badge>
-      {person.open && (
-        <Badge size="xs" color="teal" variant="light">
-          Open to collaborate
-        </Badge>
-      )}
-      <Button
-        fullWidth
-        size="compact-sm"
-        color={following ? "green" : "navy"}
-        leftSection={
-          following ? <IconCheck size={14} /> : <IconUserPlus size={14} />
-        }
-        onClick={() => setFollowing((current) => !current)}
-      >
-        {following ? "Following" : "Follow"}
-      </Button>
-    </Stack>
-  );
-}
-
-function HomeLeftRail() {
+function HomeLeftRail({ currentUser }: HomeFeedProps) {
   return (
     <Stack w={228} gap="md" pos="sticky" top={80}>
       <Card radius="md" shadow="xs" padding="md" withBorder>
         <Stack align="center" gap={8}>
-          <Avatar size={58} radius="xl" color="navy.7">
-            YA
+          <Avatar
+            size={58}
+            radius="xl"
+            color="navy.7"
+            src={currentUser?.avatar_url ?? undefined}
+          >
+            {initials(
+              [currentUser?.first_name, currentUser?.last_name]
+                .filter(Boolean)
+                .join(" "),
+            )}
           </Avatar>
           <Text ta="center" size="sm" fw={800}>
-            Dr. Yara Adeyemi
+            {[currentUser?.first_name, currentUser?.last_name]
+              .filter(Boolean)
+              .join(" ") || "Your profile"}
           </Text>
           <Text ta="center" size="xs" c="dimmed">
-            Postdoc - Computational Imaging
+            {currentUser?.occupation || "Researcher"}
           </Text>
           <Text ta="center" size="xs" c="dimmed">
-            Imperial College London
+            {currentUser?.workplace || "LabScity member"}
           </Text>
-          <SimpleGrid cols={2} spacing="xs" w="100%" mt={4}>
-            <Stat label="Following" value="128" />
-            <Stat label="Papers" value="12" />
-          </SimpleGrid>
+          <Button
+            component={Link}
+            href="/profile"
+            size="compact-sm"
+            variant="light"
+            color="navy"
+            radius="xl"
+          >
+            View profile
+          </Button>
         </Stack>
       </Card>
 
@@ -733,7 +697,25 @@ function HomeLeftRail() {
   );
 }
 
-function HomeRightRail() {
+function HomeRightRail({
+  currentUserId,
+  trendingTags,
+  searchPublicGroupsAction,
+  joinGroupAction,
+  getGroupsAction,
+}: HomeFeedProps) {
+  const collaboratorsQuery = useQuery({
+    queryKey: ["home", "collaborators", currentUserId],
+    queryFn: async () => {
+      const res = await fetch("/api/collaborators");
+      if (!res.ok) {
+        throw new Error("Failed to fetch collaborators");
+      }
+      return (await res.json()) as GetCollaboratorsResult[];
+    },
+    enabled: Boolean(currentUserId),
+  });
+
   return (
     <Stack w={320} gap="md" pos="sticky" top={80}>
       <SectionCard
@@ -742,9 +724,38 @@ function HomeRightRail() {
         actionLabel="See all"
       >
         <Stack gap={0}>
-          {collaborators.map((person) => (
-            <CollaboratorRow key={person.name} person={person} />
+          {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => (
+            <Group
+              key={person.profile_user_id}
+              py="sm"
+              wrap="nowrap"
+              style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
+            >
+              <Avatar radius="xl" color="blue">
+                {initials(`${person.first_name} ${person.last_name}`)}
+              </Avatar>
+              <Box flex={1} miw={0}>
+                <Text size="sm" fw={800} truncate>
+                  {person.first_name} {person.last_name}
+                </Text>
+                <Text size="xs" c="dimmed" truncate>
+                  {person.occupation || person.workplace || "Researcher"}
+                </Text>
+                <Badge size="xs" color="green" variant="light" mt={4}>
+                  {Math.round(person.cosine_similarity * 100)}% match
+                </Badge>
+              </Box>
+              <PostFollowButton
+                currentUserId={currentUserId ?? null}
+                targetUserId={person.profile_user_id}
+              />
+            </Group>
           ))}
+          {collaboratorsQuery.isLoading ? (
+            <Text size="sm" c="dimmed">
+              Loading collaborators...
+            </Text>
+          ) : null}
         </Stack>
       </SectionCard>
 
@@ -754,21 +765,22 @@ function HomeRightRail() {
         accent="teal"
       >
         <Stack gap={4}>
-          {trendTags.map((tag, index) => (
+          {(trendingTags ?? []).slice(0, 5).map((tag) => (
             <Button
-              key={tag}
+              key={String(tag)}
               variant="subtle"
               color="gray"
               justify="space-between"
               px="xs"
               rightSection={<IconChevronRight size={14} />}
+              disabled
             >
               <Group gap="sm">
                 <Text size="sm" fw={800} c="gray.4">
-                  {index + 1}
+                  {Math.max(1, (trendingTags ?? []).indexOf(tag) + 1)}
                 </Text>
                 <Text size="sm" c="gray.8">
-                  #{tag.replace(/\s/g, "")}
+                  #{String(tag).replace(/\s+/g, "")}
                 </Text>
               </Group>
             </Button>
@@ -776,117 +788,14 @@ function HomeRightRail() {
         </Stack>
       </SectionCard>
 
-      <SectionCard title="Popular Groups" icon={<IconUsers size={18} />}>
-        <Stack gap="xs">
-          {[
-            "Computational Imaging Hub",
-            "ML for Science",
-            "Climate AI Network",
-          ].map((group) => (
-            <Group key={group} wrap="nowrap">
-              <ThemeIcon variant="light" color="navy" radius="md">
-                <IconUsers size={16} />
-              </ThemeIcon>
-              <Box flex={1} miw={0}>
-                <Text size="sm" fw={800} truncate>
-                  {group}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Active research group
-                </Text>
-              </Box>
-              <Button size="compact-xs" variant="outline" color="navy">
-                Join
-              </Button>
-            </Group>
-          ))}
-        </Stack>
-      </SectionCard>
+      {searchPublicGroupsAction && joinGroupAction && getGroupsAction ? (
+        <LSPopularGroupsHomeStrip
+          searchPublicGroupsAction={searchPublicGroupsAction}
+          joinGroupAction={joinGroupAction}
+          getGroupsAction={getGroupsAction}
+        />
+      ) : null}
     </Stack>
-  );
-}
-
-function CollaboratorRow({
-  person,
-}: {
-  person: (typeof collaborators)[number];
-}) {
-  const [following, setFollowing] = useState(false);
-
-  return (
-    <Group
-      py="sm"
-      wrap="nowrap"
-      style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
-    >
-      <Avatar color={person.color} radius="xl">
-        {person.initials}
-      </Avatar>
-      <Box flex={1} miw={0}>
-        <Group gap={6} wrap="nowrap">
-          <Text size="sm" fw={800} truncate>
-            {person.name}
-          </Text>
-          {person.open && (
-            <Badge size="xs" color="green" variant="light">
-              Open
-            </Badge>
-          )}
-        </Group>
-        <Text size="xs" c="dimmed" truncate>
-          {person.field}
-        </Text>
-        <Badge size="xs" color="green" variant="light" mt={4}>
-          {person.match} match
-        </Badge>
-      </Box>
-      <ActionIcon
-        variant="filled"
-        color={following ? "green" : "navy"}
-        radius="md"
-        size="sm"
-        onClick={() => setFollowing((current) => !current)}
-      >
-        {following ? <IconCheck size={14} /> : <IconUserPlus size={14} />}
-      </ActionIcon>
-    </Group>
-  );
-}
-
-function FeedHeader({
-  avatar,
-  text,
-  sub,
-  badge,
-}: {
-  avatar?: { initials: string; color: string };
-  text: string;
-  sub?: string;
-  badge?: string;
-}) {
-  return (
-    <Group gap="sm" px={4}>
-      {avatar ? (
-        <Avatar size={30} radius="xl" color={avatar.color}>
-          {avatar.initials}
-        </Avatar>
-      ) : (
-        <ThemeIcon variant="light" color="teal" radius="xl" size={30}>
-          <IconSparkles size={15} />
-        </ThemeIcon>
-      )}
-      <Text size="xs" c="dimmed" flex={1}>
-        <Text span fw={700} c="gray.7">
-          {text}
-        </Text>
-        {sub ? ` - ${sub}` : ""}
-      </Text>
-      {badge && (
-        <Badge size="sm" color="green" variant="light">
-          {badge}
-        </Badge>
-      )}
-    </Group>
   );
 }
 
@@ -914,32 +823,20 @@ function SectionCard({
             {title}
           </Text>
         </Group>
-        {actionLabel && (
+        {actionLabel ? (
           <Button
             variant="subtle"
             color="blue"
             size="compact-xs"
             rightSection={<IconChevronRight size={12} />}
+            disabled
           >
             {actionLabel}
           </Button>
-        )}
+        ) : null}
       </Group>
       {children}
     </Card>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <Box ta="center">
-      <Text size="md" fw={850}>
-        {value}
-      </Text>
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-    </Box>
   );
 }
 
@@ -979,8 +876,43 @@ function RailButton({
   }
 
   return (
-    <Button variant="subtle" color="gray" justify="flex-start">
+    <Button variant="subtle" color="gray" justify="flex-start" disabled>
       {content}
     </Button>
   );
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function deriveTitle(content: string) {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return "Untitled research update";
+  }
+
+  const firstSentence = trimmed.split(/[.!?]\s/)[0]?.trim() || trimmed;
+  return firstSentence.length > 90
+    ? `${firstSentence.slice(0, 87).trim()}...`
+    : firstSentence;
+}
+
+function deriveDescription(content: string) {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return "No description available.";
+  }
+
+  if (trimmed.length <= 180) {
+    return trimmed;
+  }
+
+  return `${trimmed.slice(0, 177).trim()}...`;
 }

@@ -21,20 +21,24 @@ import {
   IconBuilding,
   IconChevronDown,
   IconChevronRight,
-  IconCurrencyDollar,
   IconExternalLink,
   IconMapPin,
   IconPlus,
   IconSearch,
   IconShare3,
-  IconStar,
   IconTrendingUp,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { type Job, SAMPLE_JOBS } from "@/components/jobs/jobs-data";
+import type { JobViewModel } from "./job-view-model";
 
-export function JobsPage() {
+interface JobsPageProps {
+  jobs: JobViewModel[];
+  currentUserId: string | null;
+  loadError?: string | null;
+}
+
+export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
   const [search, setSearch] = useState("");
   const [jobType, setJobType] = useState<string | null>("All types");
   const [remoteOnly, setRemoteOnly] = useState(false);
@@ -42,18 +46,25 @@ export function JobsPage() {
 
   const filtered = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-    return SAMPLE_JOBS.filter((job) => {
+    return jobs.filter((job) => {
       const matchesSearch =
         !normalizedSearch ||
         job.title.toLowerCase().includes(normalizedSearch) ||
         job.org.toLowerCase().includes(normalizedSearch) ||
-        job.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch));
+        job.dept.toLowerCase().includes(normalizedSearch) ||
+        job.description.toLowerCase().includes(normalizedSearch);
       const matchesType = jobType === "All types" || job.type === jobType;
       const matchesRemote = !remoteOnly || job.remote === "Remote";
+      const matchesProfile = !similar || job.remote !== "On-site";
 
-      return matchesSearch && matchesType && matchesRemote;
+      return matchesSearch && matchesType && matchesRemote && matchesProfile;
     });
-  }, [jobType, remoteOnly, search]);
+  }, [jobType, jobs, remoteOnly, search, similar]);
+
+  const myPostings = useMemo(() => {
+    if (!currentUserId) return [];
+    return jobs.filter((job) => job.posterId === currentUserId);
+  }, [currentUserId, jobs]);
 
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
@@ -83,7 +94,7 @@ export function JobsPage() {
             <TextInput
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
-              placeholder="Search jobs, skills, or organizations..."
+              placeholder="Search jobs, organizations, or departments..."
               leftSection={<IconSearch size={16} />}
               radius="md"
               style={{ flex: "1 1 280px" }}
@@ -91,7 +102,18 @@ export function JobsPage() {
             <Select
               value={jobType}
               onChange={setJobType}
-              data={["All types", "Postdoc", "Faculty", "PhD", "Full-time"]}
+              data={[
+                "All types",
+                "Postdoc",
+                "Faculty",
+                "PhD",
+                "Grad Student",
+                "Full-time",
+                "Part-time",
+                "Internship",
+                "Contract",
+                "General",
+              ]}
               leftSection={<IconBriefcase size={16} />}
               rightSection={<IconChevronDown size={16} />}
               w={180}
@@ -104,7 +126,7 @@ export function JobsPage() {
             <Checkbox
               checked={similar}
               onChange={(event) => setSimilar(event.currentTarget.checked)}
-              label="Similar to my profile"
+              label="Flexible work modes"
               color="violet"
             />
             <Button
@@ -112,6 +134,7 @@ export function JobsPage() {
               color="gray"
               leftSection={<IconAdjustmentsHorizontal size={16} />}
               ml="auto"
+              disabled
             >
               More filters
             </Button>
@@ -129,43 +152,72 @@ export function JobsPage() {
                 color="gray"
                 size="compact-sm"
                 rightSection={<IconChevronDown size={14} />}
+                disabled
               >
                 Sort: Relevance
               </Button>
             </Group>
 
+            {loadError ? (
+              <Card radius="md" shadow="xs" padding="lg" withBorder>
+                <Text fw={700} c="red.7">
+                  {loadError}
+                </Text>
+              </Card>
+            ) : null}
+
+            {!loadError && filtered.length === 0 ? (
+              <Card radius="md" shadow="xs" padding="lg" withBorder>
+                <Text fw={700} c="gray.8">
+                  No jobs found
+                </Text>
+                <Text size="sm" c="dimmed" mt={4}>
+                  Try a broader search, or post the first listing for this area.
+                </Text>
+              </Card>
+            ) : null}
+
             {filtered.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}
 
-            <Button variant="default" radius="md">
+            <Button variant="default" radius="md" disabled>
               Load more jobs
             </Button>
           </Stack>
 
           <Stack w={300} gap="md" visibleFrom="lg">
-            <SidebarCard title="Saved Jobs" icon={<IconBookmark size={17} />}>
-              {SAMPLE_JOBS.filter((job) => job.saved)
-                .slice(0, 3)
-                .map((job) => (
-                  <SidebarRow
-                    key={job.id}
-                    title={job.title}
-                    subtitle={job.org}
-                    href={`/jobs/${job.id}`}
-                  />
-                ))}
+            <SidebarCard title="Recent Jobs" icon={<IconBookmark size={17} />}>
+              {jobs.slice(0, 3).map((job) => (
+                <SidebarRow
+                  key={job.id}
+                  title={job.title}
+                  subtitle={job.org}
+                  href={`/jobs/${job.id}`}
+                />
+              ))}
             </SidebarCard>
 
             <SidebarCard
               title="Your Postings"
               icon={<IconBuilding size={17} />}
             >
-              <SidebarRow
-                title="Optics Postdoc - UCF"
-                subtitle="Active - 12 applicants"
-                href="/jobs/computational-microscopy-postdoc"
-              />
+              {myPostings.length > 0 ? (
+                myPostings
+                  .slice(0, 3)
+                  .map((job) => (
+                    <SidebarRow
+                      key={job.id}
+                      title={job.title}
+                      subtitle={job.org}
+                      href={`/jobs/${job.id}`}
+                    />
+                  ))
+              ) : (
+                <Text size="sm" c="dimmed">
+                  Post a job to see your listings here.
+                </Text>
+              )}
               <Button
                 component={Link}
                 href="/jobs/new"
@@ -189,7 +241,7 @@ export function JobsPage() {
                   "Holography",
                   "Phase Imaging",
                   "Computational Imaging",
-                  "Physics-Informed NN",
+                  "Scientific Software",
                 ].map((tag) => (
                   <Badge key={tag} variant="light" color="gray" radius="xl">
                     {tag}
@@ -204,43 +256,25 @@ export function JobsPage() {
   );
 }
 
-function JobCard({ job }: { job: Job }) {
-  const [saved, setSaved] = useState(job.saved);
-  const isFeatured = job.badge === "featured";
+function JobCard({ job }: { job: JobViewModel }) {
+  const [saved, setSaved] = useState(false);
 
   return (
-    <Card
-      radius="md"
-      shadow="xs"
-      padding="lg"
-      withBorder
-      bg={isFeatured ? "blue.0" : "white"}
-      style={{
-        borderColor:
-          job.badge === "featured"
-            ? "var(--mantine-color-blue-2)"
-            : job.badge === "closing"
-              ? "var(--mantine-color-yellow-3)"
-              : undefined,
-      }}
-    >
+    <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
       <Group align="flex-start" justify="space-between" gap="md" wrap="nowrap">
         <Box flex={1} miw={0}>
-          <Group gap="xs" mb={4}>
-            <Text
-              component={Link}
-              href={`/jobs/${job.id}`}
-              fz="md"
-              fw={800}
-              c={isFeatured ? "blue.8" : "gray.9"}
-              style={{ textDecoration: "none" }}
-            >
-              {job.title}
-            </Text>
-            {job.badge && <JobBadge badge={job.badge} />}
-          </Group>
+          <Text
+            component={Link}
+            href={`/jobs/${job.id}`}
+            fz="md"
+            fw={800}
+            c="gray.9"
+            style={{ textDecoration: "none" }}
+          >
+            {job.title}
+          </Text>
 
-          <Group gap={6} c="gray.7" fz="sm" mb={2}>
+          <Group gap={6} c="gray.7" fz="sm" mb={2} mt={4}>
             <IconBuilding size={15} color="var(--mantine-color-gray-5)" />
             <Text span fw={600}>
               {job.org}
@@ -251,6 +285,7 @@ function JobCard({ job }: { job: Job }) {
             <IconMapPin size={14} color="var(--mantine-color-gray-5)" />
             <Text span>{job.location}</Text>
           </Group>
+
           <Text size="xs" c="dimmed" mb="sm">
             {job.dept}
           </Text>
@@ -265,11 +300,6 @@ function JobCard({ job }: { job: Job }) {
             <Text span c="gray.4">
               -
             </Text>
-            <IconCurrencyDollar size={14} />
-            <Text span>{job.salary}</Text>
-            <Text span c="gray.4">
-              -
-            </Text>
             <Text
               span
               fw={600}
@@ -280,40 +310,47 @@ function JobCard({ job }: { job: Job }) {
           </Group>
 
           <Text size="sm" c="gray.7" lineClamp={2} mb="sm">
-            {job.description}
+            {job.summary?.trim() || job.description}
           </Text>
 
-          <Group gap={6} mb="md">
-            {job.tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="light"
-                color={isFeatured ? "blue" : "gray"}
-                radius="xl"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </Group>
+          <Badge variant="light" color="gray" radius="xl" mb="md">
+            {job.remote}
+          </Badge>
 
           <Group gap="xs">
             <Button
               component={Link}
               href={`/jobs/${job.id}`}
-              color={isFeatured ? "blue" : "navy"}
+              color="navy"
               radius="md"
               rightSection={<IconChevronRight size={15} />}
             >
               View Details
             </Button>
-            <Button
-              variant="outline"
-              color="gray"
-              radius="md"
-              leftSection={<IconExternalLink size={15} />}
-            >
-              Apply
-            </Button>
+            {job.applyUrl ? (
+              <Button
+                component={Link}
+                href={job.applyUrl}
+                target="_blank"
+                rel="noreferrer"
+                variant="outline"
+                color="gray"
+                radius="md"
+                leftSection={<IconExternalLink size={15} />}
+              >
+                Apply
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                color="gray"
+                radius="md"
+                leftSection={<IconExternalLink size={15} />}
+                disabled
+              >
+                Apply
+              </Button>
+            )}
             <Button
               variant={saved ? "light" : "outline"}
               color={saved ? "navy" : "gray"}
@@ -328,41 +365,13 @@ function JobCard({ job }: { job: Job }) {
             >
               {saved ? "Saved" : "Save"}
             </Button>
-            <Button ml="auto" variant="subtle" color="gray" px="xs">
+            <Button ml="auto" variant="subtle" color="gray" px="xs" disabled>
               <IconShare3 size={16} />
             </Button>
           </Group>
         </Box>
       </Group>
     </Card>
-  );
-}
-
-function JobBadge({ badge }: { badge: NonNullable<Job["badge"]> }) {
-  if (badge === "featured") {
-    return (
-      <Badge
-        color="yellow"
-        variant="light"
-        leftSection={<IconStar size={11} fill="currentColor" />}
-      >
-        Featured
-      </Badge>
-    );
-  }
-
-  if (badge === "closing") {
-    return (
-      <Badge color="red" variant="light">
-        Closing soon
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge color="green" variant="light">
-      New
-    </Badge>
   );
 }
 
