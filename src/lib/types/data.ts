@@ -1,5 +1,6 @@
 import { FeedCommentItem, User } from '@/lib/types/feed'
 import { PublicationType } from './publication';
+import { ProductType } from '../constants/product';
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -36,14 +37,16 @@ export interface Product {
   product_id: number;
   title: string;
   short_summary: string | null;
-  website_link: string | null;
+  links: { 
+    kind: "website" | "github" | "other", 
+    url: string, 
+    label: string | null 
+  }[];
   publication_id: number | null;
   images: string[] | null;
-  github_link: string | null;
-  other_links: string[] | null;
   contributors: string[] | null;
   is_featured: boolean | null;
-  product_type: string | null;
+  product_type: ProductType | null;
   topics: string[] | null;
 }
 

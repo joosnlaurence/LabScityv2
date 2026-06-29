@@ -198,12 +198,11 @@ export async function createProduct(
             .insert({
                 title: parsed.title,
                 short_summary: parsed.short_summary ?? null,
-                website_link: parsed.website_link || null,
                 publication_id: parsed.publication_id ?? null,
-                github_link: parsed.github_link || null,
-                other_links: parsed.other_links ?? [],
+                links: parsed.links ?? [],
                 contributors: parsed.contributors ?? [],
-                is_featured: parsed.is_featured ?? false,
+                // is_featured: parsed.is_featured ?? false,
+                is_featured: false,
                 product_type: parsed.product_type ?? null,
             })
             .select()
@@ -330,10 +329,8 @@ export async function updateProduct(
             Object.entries({
                 title: parsed.title,
                 short_summary: parsed.short_summary,
-                website_link: parsed.website_link,
+                links: parsed.links,
                 publication_id: parsed.publication_id,
-                github_link: parsed.github_link,
-                other_links: parsed.other_links,
                 contributors: parsed.contributors,
                 is_featured: parsed.is_featured,
                 product_type: parsed.product_type,
