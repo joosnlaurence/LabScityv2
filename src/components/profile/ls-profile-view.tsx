@@ -425,7 +425,7 @@ const LSProfileDesktopLayout = ({
   }
 
   return (
-    <Stack gap='lg' maw={1660} mx="auto" px='clamp(16px, 11vw, 190px)' pt='3vh'>
+    <Stack gap='lg' maw={1660} mx="auto" px='clamp(16px, 11vw, 190px)' pt='3vh' pb='200'>
       <Flex p={0} direction="row" w="100%" gap={24} align="flex-start">
         <Stack flex={6}>
           {

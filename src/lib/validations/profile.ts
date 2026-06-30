@@ -37,11 +37,12 @@ export const updateProfileSchema = z.object({
     .min(2, { message: "Occupation must be at least 2 characters" })
     .optional()
     .or(z.literal("")),
-  fieldOfInterest: z
-    .string()
-    .min(2, { message: "Field of interest must be at least 2 characters" })
-    .optional()
-    .or(z.literal("")),
+  researchAreas: z
+    .array(
+      z.string()
+       .min(2, { message: "Field of interest must be at least 2 characters" })
+    )
+    .optional(),
   skill: z
     .array(
       z

@@ -8,6 +8,7 @@ import {
   TagsInput,
   Select,
   Button,
+  Loader,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,12 +17,14 @@ import { useAuthContext } from "@/components/auth/auth-provider";
 import { useUserProfile } from "@/components/profile/use-profile";
 import { updateProfileAction } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SCIENCE_CATEGORIES, SKILL_OPTIONS } from "@/lib/constants/options";
 import {
   updateProfileSchema,
   type UpdateProfileValues,
 } from "@/lib/validations/profile";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useLocationSearch } from "./use-location-search";
 
 interface EditProfileFormValues {
   firstName: string;
@@ -32,24 +35,10 @@ interface EditProfileFormValues {
   labDepartment: string;
   location: string;
   timezone: string;
-  fieldOfInterest: string;
+  researchAreas: string[];
   skill: string[];
 }
 
-const defaultEditValues: EditProfileFormValues = {
-  firstName: "",
-  lastName: "",
-  about: "",
-  workplace: "",
-  occupation: "",
-  labDepartment: "",
-  location: "",
-  timezone: "",
-  fieldOfInterest: "",
-  skill: [],
-};
-
-/** Map the cached profile object (snake_case from getUser) into edit-form values. */
 function profileToEditValues(profile: any): UpdateProfileValues {
   return {
     firstName: profile?.first_name ?? "",
@@ -60,7 +49,7 @@ function profileToEditValues(profile: any): UpdateProfileValues {
     labDepartment: profile?.lab_department ?? "",
     location: profile?.location ?? "",
     timezone: profile?.timezone ?? "",
-    fieldOfInterest: profile?.research_interests?.[0] ?? "", // verify source vs old editInitialValues
+    researchAreas: profile?.research_interests ?? [],
     skill: profile?.skills ?? [],
   };
 }
@@ -75,7 +64,7 @@ function toFormDefaults(v: UpdateProfileValues): EditProfileFormValues {
     labDepartment: v.labDepartment ?? "",
     location: v.location ?? "",
     timezone: v.timezone ?? "",
-    fieldOfInterest: v.fieldOfInterest ?? "",
+    researchAreas: v.researchAreas ?? [],
     skill: v.skill ?? [],
   };
 }
@@ -146,19 +135,42 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
   const timezones = useMemo(() => {
     try {
       const now = new Date();
-      return Intl.supportedValuesOf("timeZone").map((tz) => {
-        const parts = new Intl.DateTimeFormat("en-US", {
-          timeZone: tz,
-          timeZoneName: "shortOffset",
-        }).formatToParts(now);
-        const offset =
-          parts.find((p) => p.type === "timeZoneName")?.value ?? "";
-        return { value: tz, label: `${tz} (${offset})` };
-      });
+      return Intl.supportedValuesOf("timeZone")
+        .map((tz) => {
+          const offsetStr =
+            new Intl.DateTimeFormat("en-US", {
+              timeZone: tz,
+              timeZoneName: "shortOffset",
+            })
+              .formatToParts(now)
+              .find((p) => p.type === "timeZoneName")?.value ?? "GMT+0";
+
+          const match = offsetStr.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+          const offsetMinutes = match
+            ? (match[1] === "-" ? -1 : 1) *
+              (parseInt(match[2]) * 60 + parseInt(match[3] ?? "0"))
+            : 0;
+
+          return {
+            value: tz,
+            label: `${tz.replace(/_/g, " ")} (${offsetStr})`,
+            offsetMinutes,
+          };
+        })
+        .sort((a, b) => a.offsetMinutes - b.offsetMinutes);
     } catch {
       return [];
     }
   }, []);
+
+  const [locationSearch, setLocationSearch] = useState("");
+  const [debouncedLocation] = useDebouncedValue(locationSearch, 500);
+  const { data: locationResults, isFetching: isLocationFetching } = useLocationSearch(debouncedLocation);
+
+  const locationOptions = useMemo(
+    () => (locationResults ?? []).map((r) => r.display_name),
+    [locationResults],
+  );
 
   return (
     <Modal
@@ -223,9 +235,12 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
             {...form.getInputProps("labDepartment")}
           />
 
-          <TextInput
+          <Autocomplete
             label="Location"
-            placeholder="e.g. Orlando, FL, USA"
+            placeholder="Search for a city or place..."
+            data={locationOptions}
+            rightSection={isLocationFetching ? <Loader size="xs" /> : null}
+            onChangeCapture={(e) => setLocationSearch(e.currentTarget.value)}
             key={form.key("location")}
             {...form.getInputProps("location")}
           />
@@ -241,12 +256,12 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
             {...form.getInputProps("timezone")}
           />
 
-          <Autocomplete
-            label="Field of Interest"
-            placeholder="Select or type..."
+          <TagsInput
+            label="Research Areas"
+            placeholder="Select or type your research areas..."
             data={[...SCIENCE_CATEGORIES]}
-            key={form.key("fieldOfInterest")}
-            {...form.getInputProps("fieldOfInterest")}
+            key={form.key("researchAreas")}
+            {...form.getInputProps("researchAreas")}
           />
 
           <TagsInput

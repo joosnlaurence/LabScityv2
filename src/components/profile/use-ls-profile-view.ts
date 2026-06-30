@@ -106,7 +106,7 @@ function profileToEditInitialValues(profile: {
     about: profile.about ?? "",
     workplace: profile.workplace ?? "",
     occupation: profile.occupation ?? "",
-    fieldOfInterest: profile.research_interests?.[0] ?? "",
+    researchAreas: profile.research_interests ?? [],
     skill: profile.skills ?? [],
   };
 }

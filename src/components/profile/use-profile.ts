@@ -8,7 +8,6 @@ import {
   getUserFriends,
 } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
-import { getFeed } from "@/lib/actions/feed";
 
 // NOTE: Profile hooks now return the full React Query result objects
 // so server prefetch and client usage share the same data shape.

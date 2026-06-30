@@ -373,18 +373,13 @@ export default function LSProfileHero({
         {
           // TODO: Add research tags to profile
           // researchTags &&
-          true &&
+          profileUser.research_interests && 
           <Stack gap='xs'>
             <Text fz='xs' c='dimmed' fw='bold'>RESEARCH AREAS</Text>
             <Group gap='xs'>
             {
               // researchTags.map((tag) => {})
-              [
-                'Machine Learning',
-                'Biomedical Imaging',
-                'Computer Vision',
-                'Neural Rendering'
-              ].map((tag) => 
+              profileUser.research_interests?.map((tag) => 
                 <Badge 
                   key={tag}
                   bg='blue.0' 
