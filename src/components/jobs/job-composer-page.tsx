@@ -28,7 +28,6 @@ import {
 } from "@tabler/icons-react";
 import { useEditor } from "@tiptap/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
 import type { createJob } from "@/lib/actions/job";
@@ -65,7 +64,6 @@ interface JobComposerPageProps {
 }
 
 export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [draft, setDraft] = useState<JobDraft>({
     title: "",
@@ -173,8 +171,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
         return;
       }
 
-      router.push(`/jobs/${result.data.id}`);
-      router.refresh();
+      window.location.assign(`/jobs/${result.data.id}`);
     });
   };
 
