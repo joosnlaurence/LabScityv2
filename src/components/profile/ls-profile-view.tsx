@@ -575,7 +575,6 @@ export function LSProfileView(props: LSProfileViewProps) {
           userId={props.userId}
           isOwnProfile={props.isOwnProfile}
           actions={actions}
-          editProfile={editProfile}
           followProfile={followProfile}
           mediaUpload={mediaUpload}
           onReportClick={() => setReportOverlayOpen(true)}
@@ -585,7 +584,6 @@ export function LSProfileView(props: LSProfileViewProps) {
           userId={props.userId}
           isOwnProfile={props.isOwnProfile}
           actions={actions}
-          editProfile={editProfile}
           followProfile={followProfile}
           mediaUpload={mediaUpload}
           onReportClick={() => setReportOverlayOpen(true)}
