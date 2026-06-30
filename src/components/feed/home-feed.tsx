@@ -369,12 +369,10 @@ function CreatePostCard({
   const productsQuery = useQuery({
     queryKey: ["home", "composer", "products", currentUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/products?userId=${currentUserId}`);
+      const response = await fetch(`/api/products/all?userId=${currentUserId}`);
+      if(!response.ok) throw new Error("Failed to load products");
       const payload = (await response.json()) as ApiResponse<Product[]>;
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error ?? "Failed to load products");
-      }
+      if (!payload.success) throw new Error(payload.error);
 
       return payload.data ?? [];
     },
@@ -385,12 +383,10 @@ function CreatePostCard({
   const publicationsQuery = useQuery({
     queryKey: ["home", "composer", "publications", currentUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/publications?userId=${currentUserId}`);
+      const response = await fetch(`/api/publications/all?userId=${currentUserId}`);
+      if(!response.ok) throw new Error("Failed to load products");
       const payload = (await response.json()) as ApiResponse<Publication[]>;
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error ?? "Failed to load publications");
-      }
+      if (!payload.success) throw new Error(payload.error);
 
       return payload.data ?? [];
     },
@@ -1187,7 +1183,7 @@ function CreatePostCard({
   );
 }
 
-function FeedPostCard({
+export function FeedPostCard({
   post,
   currentUserId,
   isPinned,

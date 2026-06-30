@@ -189,7 +189,7 @@ export default function LSProduct(
           {/* Make Featured */}
           {
             isOwner &&
-            <Tooltip label={`You can feature up to ${MAX_FEATURED_PRODUCTS} publications`} disabled={!featureBtnDisabled}> 
+            <Tooltip label={`You can feature up to ${MAX_FEATURED_PRODUCTS} products`} disabled={!featureBtnDisabled}> 
               <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
                 {
                   product.is_featured ?

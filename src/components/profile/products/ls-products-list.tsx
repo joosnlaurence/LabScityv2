@@ -11,10 +11,9 @@ import LSAddProductModal from "./ls-add-product-modal";
 import { useDeleteProduct, useGetProductFacets, useProducts, useSetFeaturedProduct } from "./use-products";
 import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 
-export default function LSPublicationsList({ userId }: { userId: string }) {
+export default function LSProductsList({ userId }: { userId: string }) {
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
-
 
   const {
     data: prodFacets,
@@ -93,7 +92,7 @@ export default function LSPublicationsList({ userId }: { userId: string }) {
       <Group justify='space-between'>
         <Stack gap='0'>
           <Text fw='bold'>Products</Text>
-          <Text size='xs' c='dimmed'>{products.length} research products {isOwner ? ' on your profile' : `from Bob Bobberson`}</Text>
+          <Text size='xs' c='dimmed'>{prodFacets?.count} research products {isOwner ? ' on your profile' : `from Bob Bobberson`}</Text>
         </Stack>
         {
           isOwner &&
@@ -107,7 +106,7 @@ export default function LSPublicationsList({ userId }: { userId: string }) {
           :
           <Stack>
             <TextInput
-              placeholder='Search research products...'
+              placeholder='Search by product title'
               styles={{ input: { background: 'var(--mantine-color-gray-1)' } }}
               leftSection={<IconSearch stroke='1.75' size='1rem' color='var(--mantine-color-gray-5)' />}
               onChange={(e) => setSearchInput(e.currentTarget.value)}
@@ -126,6 +125,7 @@ export default function LSPublicationsList({ userId }: { userId: string }) {
                   filter={optionsFilter}
                   nothingFoundMessage='No Matching Topics...'
                   onChange={(t) => setFilters((prev) => ({ ...prev, tagId: t }))}
+                  comboboxProps={{ shadow: 'sm' }}
                   w='200'
                 />
                 <Select
@@ -137,6 +137,7 @@ export default function LSPublicationsList({ userId }: { userId: string }) {
                   }
                   clearable
                   onChange={(type) => setFilters((prev) => ({ ...prev, type }))}
+                  comboboxProps={{ shadow: 'sm' }}
                   w='175'
                 />
               </Group>
@@ -150,6 +151,7 @@ export default function LSPublicationsList({ userId }: { userId: string }) {
                 allowDeselect={false}
                 onChange={(sort) => setFilters((prev) => ({ ...prev, sort: (sort as 'newest' | 'oldest') ?? 'newest' }))}
                 defaultValue='newest'
+                comboboxProps={{ shadow: 'sm' }}
                 leftSection={<IconAdjustmentsHorizontal stroke='1' color='var(--mantine-color-gray-5)' />}
               />
             </Group>
@@ -182,7 +184,7 @@ export default function LSPublicationsList({ userId }: { userId: string }) {
                 onDeleteClick={() => deleteProduct.mutate(p.product_id)}
                 isDeleting={deleteProduct.isPending}
                 onFeaturedClick={() => setFeaturedProduct.mutate({ productId: p.product_id, isFeatured: !p.is_featured })}
-                featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS}
+                featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS && !p.is_featured}
               />
             )
           }

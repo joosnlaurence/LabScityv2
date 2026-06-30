@@ -56,6 +56,7 @@ export function useAddPubByDoi ({
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) })
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
     },
 
     onSuccess: () => {
@@ -96,6 +97,7 @@ export function useBulkInsertPublications({
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
     }
   })
 }
@@ -111,6 +113,7 @@ export function useDeletePublication(userId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
       notifications.show({color: 'green', message: 'Publication successfully deleted!'})
     },
     onError: (err) => {

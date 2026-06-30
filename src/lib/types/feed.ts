@@ -27,6 +27,9 @@ export interface User {
   articles?: { title: string; url: string }[] | null;
   banner_pic_url?: string | null;
   profile_header_url?: string | null;
+  timezone?: string | null;
+  lab_department?: string | null;
+  location?: string | null;
 }
 
 /**

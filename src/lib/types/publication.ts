@@ -41,6 +41,7 @@ export interface PublicationFacets {
   years: { year: number, count: number }[],
   types: { type: PublicationType, count: number }[]
   tags: { id: number, name: string, count: number }[]
+  count: number
 }
 
 export interface PubFilters {

@@ -1,7 +1,7 @@
 import { ActionIcon, Button, Image, FileInput, Group, Modal, Select, Stack, Textarea, TextInput, Text, MultiSelect, Tooltip, FileButton, Card, Box } from "@mantine/core";
 import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { useForm, isNotEmpty } from "@mantine/form";
-import { IconPlus, IconTrash, IconUpload, IconX } from "@tabler/icons-react";
+import { IconBox, IconPlus, IconTrash, IconUpload, IconX } from "@tabler/icons-react";
 import { createProductSchema, type CreateProductValues } from "@/lib/validations/product"; 
 import { useState } from "react";
 import { MAX_IMAGE_UPLOADS as MAX_PRODUCT_PREVIEWS, MAX_PRODUCT_SUMMARY_LENGTH, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
@@ -104,7 +104,17 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
 
   return (
     <>
-      <Modal size='800' title='Add Research Product' centered opened={modalOpened} onClose={closeModal}>
+      <Modal size='800' title={
+        <Group>
+          <Box bg='navy.3' bdrs='md' p='8'>
+            <IconBox />
+          </Box>
+          <Stack gap='0'>
+            <Text fw='700'>Add a Research Product</Text>
+            <Text fz='xs' c='dimmed'>Share a dataset, tool, or other research output</Text>
+          </Stack>
+        </Group>
+      } centered opened={modalOpened} onClose={closeModal}>
         <Stack gap='xs' mx='5%'>
           <form 
             onSubmit={handleProductSubmit}

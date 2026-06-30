@@ -8,6 +8,7 @@ import {
   getUserFriends,
 } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
+import { getFeed } from "@/lib/actions/feed";
 
 // NOTE: Profile hooks now return the full React Query result objects
 // so server prefetch and client usage share the same data shape.
@@ -45,6 +46,21 @@ const PROFILE_POSTS_PAGE_SIZE = 10;
  * @returns Infinite query result (data.pages, hasNextPage, fetchNextPage, etc.).
  */
 export function useUserPosts(user_id: string) {
+  // return useInfiniteQuery({
+  //   queryKey: profileKeys.posts(user_id),
+  //   initialPageParam: undefined as string | undefined,
+  //   queryFn: async ({ pageParam }) => {
+  //     const input = pageParam
+  //       ? { user_id, cursor: pageParam }
+  //       : user_id;
+  //     const result = await getFeed(input);
+  //     if (!result.success || !result.data) {
+  //       throw new Error(result.error ?? "Failed to fetch feed");
+  //     }
+  //     return result.data;
+  //   },
+  //   getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  // });
   return useInfiniteQuery({
     queryKey: profileKeys.posts(user_id),
     queryFn: async ({ pageParam }) => {

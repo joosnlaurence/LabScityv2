@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay, Divider, RangeSlider, Select, Menu, OptionsFilter, ComboboxItem } from "@mantine/core";
-import { IconAdjustmentsHorizontal, IconPlus, IconSearch } from "@tabler/icons-react";
+import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay, Divider, RangeSlider, Select, Menu, OptionsFilter, ComboboxItem, Card, Modal, Box } from "@mantine/core";
+import { IconAdjustmentsHorizontal, IconLink, IconPlus, IconSearch } from "@tabler/icons-react";
 import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
@@ -13,13 +13,14 @@ import { useForm } from "@mantine/form";
 import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
 import { useEffect, useRef, useState } from "react";
 import { PubFilters } from "@/lib/types/publication";
+import { useUserProfile } from "../use-profile";
 
 export default function LSPublicationsList({userId}: {userId: string}) {  
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
-  
-  const [doiInputExpanded, { toggle: toggleDoiInput }] = useDisclosure(false);
 
+  const { data: profile } = useUserProfile(userId);
+  
   const { 
     data: pubFacets, 
     isLoading: isLoadingFacets, 
@@ -85,12 +86,12 @@ export default function LSPublicationsList({userId}: {userId: string}) {
     validateInputOnBlur: true
   });
 
-  const addPubByDoi = useAddPubByDoi({ 
+  const addPubByDoi = useAddPubByDoi({
     userId,
     onSuccess: () => {
       doiForm.reset();
-      toggleDoiInput();
-    }
+      closeDoiModal();
+    },
   });
     
   const handleDoiSubmit = doiForm.onSubmit((vals) => {
@@ -103,6 +104,8 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   const setFeaturedPub = useSetFeaturedPublication(userId);
   const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
   
+  const [doiModalOpened, { open: openDoiModal, close: closeDoiModal }] = useDisclosure(false);
+
   if(isLoadingUserPubs || isLoadingFacets || userLoading) {
     return (
       <Center py='xl'>
@@ -121,44 +124,79 @@ export default function LSPublicationsList({userId}: {userId: string}) {
 
   return (
     <Stack w='800'>
-      {
-        isOwner && 
-        <Stack>
-          <Group wrap='nowrap'>
-            <Group flex='1' justify='right' wrap='nowrap'>
-              <Collapse in={doiInputExpanded} flex='1'>
-                <form onSubmit={handleDoiSubmit}>
-                  <TextInput 
-                    placeholder="doi.org/..." 
-                    bdrs='md' 
-                    disabled={addPubByDoi.isPending}
-                    key={doiForm.key('doi')}
-                    {...doiForm.getInputProps("doi")}
-                  />
-                </form>
-              </Collapse>
-              <Button 
-                onClick={toggleDoiInput} 
-                rightSection={
-                  <IconPlus 
-                    size='1rem'
-                    style={{
-                      transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
-                      transition: 'transform 200ms ease',
-                    }}
-                  />
-                }
-              >
-                Add Research
-              </Button>
-            </Group>
-            <Group wrap='nowrap'>
-              <LSOrcidLinker userId={userId}/>
-              <OrcidInfo size='2rem' />
-            </Group>
-          </Group>
+      <Group wrap='nowrap'>
+        <Stack gap='0'>
+          <Text fw='bold'>Publications</Text>
+          <Text size='xs' c='dimmed'>{pubFacets?.count} publications {isOwner ? ' on your profile' : `from ${profile?.first_name} ${profile?.last_name}`}</Text>
         </Stack>
-      }
+        {
+          isOwner && 
+          <>
+          <Group flex="1" justify="right" wrap="nowrap">
+            <Modal.Root
+              opened={doiModalOpened}
+              onClose={closeDoiModal}
+              centered
+            >
+              <Modal.Overlay />
+              <Modal.Content>
+                <Modal.Header>
+                  <Group align='flex-start' justify='space-between' w='100%'>
+                    <Modal.Title>
+                      <Group>
+                        <Box bg='navy.3' bdrs='md' p='8'>
+                          <IconLink />
+                        </Box>
+                        <Stack gap='0'>
+                          <Text fw='700'>Add Research via DOI</Text>
+                          <Text fz='xs' c='dimmed'>Fetch publiation metadata from OpenAlex</Text>
+                        </Stack>                 
+                      </Group>
+                    </Modal.Title>
+                    <Modal.CloseButton />
+                  </Group>
+                </Modal.Header>
+                <Modal.Body>
+                  <form onSubmit={handleDoiSubmit}>
+                  <Stack gap="md">
+                    <Group>
+                      <TextInput
+                        flex='1'
+                        placeholder="doi.org/..."
+                        bdrs="md"
+                        disabled={addPubByDoi.isPending}
+                        data-autofocus
+                        key={doiForm.key("doi")}
+                        {...doiForm.getInputProps("doi")}
+                      />
+                      <Button type="submit" loading={addPubByDoi.isPending}
+                        leftSection={<IconSearch size='1rem'/>}
+                      >
+                        Fetch
+                      </Button>
+                    </Group>
+                    <Group justify="flex-end">
+                      <Button variant="outline" onClick={closeDoiModal} disabled={addPubByDoi.isPending}>
+                        Cancel
+                      </Button>
+                    </Group>
+                  </Stack>
+                </form>
+                </Modal.Body>
+                
+              </Modal.Content>
+            </Modal.Root>
+            <Button onClick={openDoiModal} rightSection={<IconPlus size="1rem" />}>
+              Add Research
+            </Button>
+          </Group>
+          <Group wrap='nowrap'>
+            <LSOrcidLinker userId={userId}/>
+            <OrcidInfo size='2rem' />
+          </Group>
+          </>
+        }
+      </Group>
       
       {
         isErrorFacets ?
@@ -182,6 +220,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                 }
                 clearable
                 onChange={(y) => setFilters((prev) => ({ ...prev, year: y }))}
+                comboboxProps={{ shadow: 'sm' }}
                 w='125'
               />
               <Select 
@@ -196,6 +235,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                 filter={optionsFilter}
                 nothingFoundMessage='No Matching Topics...'
                 onChange={(t) => setFilters((prev) => ({ ...prev, tagId: t }))}
+                comboboxProps={{ shadow: 'sm' }}
                 w='200'
               />
               <Select 
@@ -207,6 +247,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                 }
                 clearable
                 onChange={(type) => setFilters((prev) => ({ ...prev, type }))}
+                comboboxProps={{ shadow: 'sm' }}
                 w='175'
               />
             </Group>
@@ -219,6 +260,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
               ]}
               allowDeselect={false}
               onChange={(sort) => setFilters((prev) => ({ ...prev, sort: (sort as 'newest' | 'oldest') ?? 'newest' }))}
+              comboboxProps={{ shadow: 'sm' }}
               defaultValue='newest'
               leftSection={<IconAdjustmentsHorizontal stroke='1' color='var(--mantine-color-gray-5)'/>}
             />

@@ -3,6 +3,7 @@
 import { 
   Box, 
   Button, 
+  Card, 
   Divider, 
   Flex, 
   Stack, 
@@ -20,6 +21,7 @@ import LSProfileHero from "@/components/profile/ls-profile-hero";
 import { LSUserReportOverlay } from "@/components/profile/ls-user-report-overlay";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import type { createUserReport } from "@/lib/actions/profile";
+import classes from "./ls-profile-view.module.css"
 
 /**
  * Formats a date string as a relative time for post/comment display.
@@ -39,9 +41,6 @@ function getTimeAgo(date: string): string {
   return postDate.toLocaleDateString();
 }
 
-import { useForm } from "@mantine/form";
-import { useDisclosure } from "@mantine/hooks";
-import { IconHelp, IconPlus } from "@tabler/icons-react";
 import type {
   CreateCommentAction,
   CreatePostAction,
@@ -127,7 +126,6 @@ interface LSProfileMobileLayoutProps {
   userId: string;
   isOwnProfile: boolean;
   actions: ProfilePostActionsResult;
-  editProfile: EditProfileHeroProps;
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
   onReportClick?: () => void;
@@ -147,7 +145,6 @@ const LSProfileMobileLayout = ({
   userId,
   isOwnProfile,
   actions,
-  editProfile,
   followProfile,
   mediaUpload,
   onReportClick,
@@ -245,26 +242,12 @@ const LSProfileMobileLayout = ({
   return (
     <Stack p={8} gap="lg">
       <LSProfileHero
-        profileName={username ?? "Unknown User"}
-        profileResearchInterest={profile?.research_interests?.[0] ?? ""}
-        profileAbout={profile?.about ?? undefined}
-        profileSkill={profile?.skills ?? undefined}
-        profileArticles={profile?.articles ?? undefined}
-        profilePicURL={profile?.avatar_url ?? undefined}
-        profileHeaderImageURL={profile?.profile_header_url ?? undefined}
-        occupation={profile?.occupation ?? undefined}
-        workplace={profile?.workplace ?? undefined}
+        profileUser={profile!}
         isOwnProfile={isOwnProfile}
         onProfilePicSelect={mediaUpload?.onProfilePicSelect}
         isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
         onProfileHeaderSelect={mediaUpload?.onProfileHeaderSelect}
         isUploadingProfileHeader={mediaUpload?.isUploadingProfileHeader}
-        onOpenEditProfile={editProfile.onOpenEditProfile}
-        editModalOpened={editProfile.editModalOpened}
-        onEditModalClose={editProfile.onEditModalClose}
-        editInitialValues={editProfile.editInitialValues}
-        onEditSubmit={editProfile.onEditSubmit}
-        isEditSubmitting={editProfile.isEditSubmitting}
         isFollowing={followProfile?.isFollowing}
         onToggleFollow={followProfile?.onToggleFollow}
         isTogglePending={followProfile?.isTogglePending}
@@ -312,7 +295,6 @@ interface LSProfileDesktopLayoutProps {
   userId: string;
   isOwnProfile: boolean;
   actions: ProfilePostActionsResult;
-  editProfile: EditProfileHeroProps;
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
   onReportClick?: () => void;
@@ -333,7 +315,6 @@ const LSProfileDesktopLayout = ({
   userId,
   isOwnProfile,
   actions,
-  editProfile,
   followProfile,
   mediaUpload,
   onReportClick,
@@ -444,37 +425,28 @@ const LSProfileDesktopLayout = ({
   }
 
   return (
-    <Box maw={1660} mx="auto" pt={24} pb={300} px={{ base: 16, lg: 32 }}>
+    <Stack gap='lg' maw={1660} mx="auto" px='clamp(16px, 11vw, 190px)' pt='3vh'>
       <Flex p={0} direction="row" w="100%" gap={24} align="flex-start">
-        <Box flex={5}>
-          <LSProfileHero
-            profileName={username ?? "Unknown User"}
-            profileResearchInterest={profile?.research_interests?.[0] ?? ""}
-            profileAbout={profile?.about ?? undefined}
-            profileSkill={profile?.skills ?? undefined}
-            profileArticles={profile?.articles ?? undefined}
-            profilePicURL={profile?.avatar_url ?? undefined}
-            profileHeaderImageURL={profile?.profile_header_url ?? undefined}
-            occupation={profile?.occupation ?? undefined}
-            workplace={profile?.workplace ?? undefined}
-            isOwnProfile={isOwnProfile}
-            onProfilePicSelect={mediaUpload?.onProfilePicSelect}
-            isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
-            onProfileHeaderSelect={mediaUpload?.onProfileHeaderSelect}
-            isUploadingProfileHeader={mediaUpload?.isUploadingProfileHeader}
-            onOpenEditProfile={editProfile.onOpenEditProfile}
-            editModalOpened={editProfile.editModalOpened}
-            onEditModalClose={editProfile.onEditModalClose}
-            editInitialValues={editProfile.editInitialValues}
-            onEditSubmit={editProfile.onEditSubmit}
-            isEditSubmitting={editProfile.isEditSubmitting}
-            isFollowing={followProfile?.isFollowing}
-            onToggleFollow={followProfile?.onToggleFollow}
-            isTogglePending={followProfile?.isTogglePending}
-            onReportClick={onReportClick}
-          />
-        </Box>
-        <Flex flex={3} direction="column" gap="lg" miw={0} maw="100%">
+        <Stack flex={6}>
+          {
+            profile ?
+            <LSProfileHero
+              profileUser={profile}
+              isOwnProfile={isOwnProfile}
+              onProfilePicSelect={mediaUpload?.onProfilePicSelect}
+              isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
+              onProfileHeaderSelect={mediaUpload?.onProfileHeaderSelect}
+              isUploadingProfileHeader={mediaUpload?.isUploadingProfileHeader}
+              isFollowing={followProfile?.isFollowing}
+              onToggleFollow={followProfile?.onToggleFollow}
+              isTogglePending={followProfile?.isTogglePending}
+              onReportClick={onReportClick}
+            /> 
+            : 
+            <>No profile found for this user...</>
+          }
+        </Stack>
+        <Flex flex={2} direction="column" gap="lg" miw={0} maw="100%">
           <Box miw={0}>
             <LSMiniProfileList
               widgetTitle="Friends"
@@ -500,7 +472,6 @@ const LSProfileDesktopLayout = ({
         </Flex>
       </Flex>
 
-      <Divider mt={20} color="navy.1" />
       <Tabs
         defaultValue="posts"
         activateTabWithKeyboard={false}
@@ -509,9 +480,25 @@ const LSProfileDesktopLayout = ({
             display: "flex",
             justifyContent: "center",
           },
+          list: {
+            border: "1px solid var(--mantine-color-gray-3)",
+            borderRadius: "var(--mantine-radius-md)",
+            outline: 'none',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            boxShadow: "var(--mantine-shadow-xs)"
+          },
+          tab: {
+            padding: "0px 10px 0px 10px",
+          },
+          tabLabel: {
+            padding: "10px 0px 10px 0px",
+            fontWeight: '600'
+          }
         }}
+        classNames={classes}
       >
-        <Tabs.List mb={20} grow justify="center">
+        <Tabs.List mb={20} justify="start">
           <Tabs.Tab value="posts">Posts</Tabs.Tab>
           <Tabs.Tab value="publications">Publications</Tabs.Tab>
           <Tabs.Tab value="products">Research Products</Tabs.Tab>
@@ -551,7 +538,7 @@ const LSProfileDesktopLayout = ({
         </Tabs.Panel>
 
       </Tabs>
-    </Box>
+    </Stack>
   );
 };
 

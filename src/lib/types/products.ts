@@ -11,6 +11,7 @@ export interface ProductFilters {
 export interface ProductFacets {
   types: { type: ProductType, count: number }[]
   tags: { id: number, name: string, count: number }[]
+  count: number
 }
 
 export interface InfiniteProducts {

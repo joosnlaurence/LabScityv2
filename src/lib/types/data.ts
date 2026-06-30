@@ -64,7 +64,7 @@ export interface Product {
   publication_id: number | null;
   images: ProductImage[];
   contributors: string[] | null;
-  is_featured: boolean | null;
+  is_featured: boolean;
   product_type: ProductType | null;
   topics: string[] | null;
 }
