@@ -1,15 +1,15 @@
 "use client";
 
-import { ActionIcon, Divider, Flex, Stack, Text } from "@mantine/core";
+import { ActionIcon, Card, Divider, Flex, Stack, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/components/auth/use-auth";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
-import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
+import { PostDetailCard } from "@/components/feed/post-detail-card";
 import { usePostDetail } from "@/components/feed/use-post-detail";
 import { ReportOverlay } from "@/components/report/report-overlay";
 import { LSSpinner } from "@/components/ui/ls-spinner";
@@ -21,11 +21,12 @@ import {
   updatePost,
 } from "@/lib/actions/feed";
 import { feedKeys, postKeys } from "@/lib/query-keys";
-import { feedFilterSchema, type CreateReportValues, type UpdatePostValues } from "@/lib/validations/post";
-import { FeedPostItem, GetFeedPaginatedResult, GetFeedResult, GetPostDetailResult } from "@/lib/types/feed";
-import { keyof } from "zod";
-
-const defaultFeedFilter = feedFilterSchema.parse({});
+import type {
+  FeedPostItem,
+  GetFeedPaginatedResult,
+  GetPostDetailResult,
+} from "@/lib/types/feed";
+import type { CreateReportValues, UpdatePostValues } from "@/lib/validations/post";
 
 /**
  * Post detail page: single post with comments, like/comment/report actions, and ReportOverlay.
@@ -37,6 +38,7 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data, isLoading, isError } = usePostDetail(post_id);
+  const commentsRef = useRef<HTMLDivElement | null>(null);
 
   /** Tracks which post or comment is being reported; null when report overlay is closed. */
   const [reportTarget, setReportTarget] = useState<
@@ -91,9 +93,9 @@ export default function PostDetailPage() {
         context.detailSnapshot
       );
     }
-    context.feedSnapshots?.forEach(([key, data]) => 
-      queryClient.setQueryData<GetFeedPaginatedResult>(key, data)
-    )
+    context.feedSnapshots?.forEach(([key, data]) => {
+      queryClient.setQueryData<GetFeedPaginatedResult>(key, data);
+    });
   }
 
   const createCommentMutation = useMutation({
@@ -318,18 +320,10 @@ export default function PostDetailPage() {
         preview={
           reportTarget?.type === "post"
             ? (
-              <LSPostCard
-                userId={post.userId}
-                userName={post.userName}
-                avatarUrl={post.avatarUrl ?? null}
-                field={post.scientificField}
-                timeAgo={post.timeAgo}
-                content={post.content}
-                mediaUrl={post.mediaUrl ?? null}
-                mediaHeight={post.mediaHeight}
-                mediaWidth={post.mediaWidth}
-                showMenu={false}
-                showActions={false}
+              <PostDetailCard
+                post={post}
+                currentUserId={user?.id ?? null}
+                onLike={() => {}}
               />
             )
             : post.comments
@@ -347,16 +341,16 @@ export default function PostDetailPage() {
         onSubmit={onSubmitReport}
       />
 
-      <LSPostCard
-        userId={post.userId}
-        userName={post.userName}
-        avatarUrl={post.avatarUrl ?? null}
-        field={post.scientificField}
-        timeAgo={post.timeAgo}
-        content={post.content}
-        mediaUrl={post.mediaUrl ?? null}
-        isLiked={post.isLiked ?? false}
-        onLikeClick={() => likePostMutation.mutate(post.id)}
+      <PostDetailCard
+        post={post}
+        currentUserId={user?.id ?? null}
+        onLike={() => likePostMutation.mutate(post.id)}
+        onOpenComments={() =>
+          commentsRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          })
+        }
         onEditSubmit={
           post.userId === user?.id
             ? (values) => handleEditPost(post.id, values)
@@ -364,40 +358,60 @@ export default function PostDetailPage() {
         }
         isEditPending={updatePostMutation.isPending}
         onReportClick={() => setReportTarget({ type: "post", postId: post.id })}
-        showActions
-        showMenu
-        menuId={`post-menu-${post.id}`}
-        mediaHeight={post.mediaHeight}
-        mediaWidth={post.mediaWidth}
-        likeCount={post.likeCount}
-        commentCount={post.comments.length}
       >
-        <Stack gap="md" w="100%">
-          <LSCommentComposer
-            postId={post.id}
-            onAddComment={handleAddComment}
-            isSubmitting={createCommentMutation.isPending}
-          />
+        <Stack gap="md" w="100%" ref={commentsRef}>
+          <Divider color="#E5E7EB" />
+          <Text size="sm" fw={800} c="#1F2937">
+            Discussion
+          </Text>
 
-          
+          <Card
+            radius="xl"
+            withBorder
+            p="md"
+            bg="#F8FAFC"
+            style={{ borderColor: "#E2E8F0" }}
+          >
+            <LSCommentComposer
+              postId={post.id}
+              onAddComment={handleAddComment}
+              isSubmitting={createCommentMutation.isPending}
+            />
+          </Card>
+
           {post.comments.length > 0 ? (
-            <>
-              <Divider />
-              {post.comments.map((comment) => (
-                <LSPostCommentCard
-                  key={comment.id}
-                  comment={comment}
-                  onLikeClick={() => likeCommentMutation.mutate(comment.id)}
-                  onReportClick={() =>
-                    setReportTarget({ type: "comment", postId: post.id, commentId: comment.id })
-                  }
-                  menuId={`comment-menu-${comment.id}`}
-                />
-              ))}
-            </>
-          ) : null}
+            <Card
+              radius="xl"
+              withBorder
+              p="md"
+              bg="white"
+              style={{ borderColor: "#E5E7EB" }}
+            >
+              <Stack gap="sm">
+                {post.comments.map((comment) => (
+                  <LSPostCommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onLikeClick={() => likeCommentMutation.mutate(comment.id)}
+                    onReportClick={() =>
+                      setReportTarget({
+                        type: "comment",
+                        postId: post.id,
+                        commentId: comment.id,
+                      })
+                    }
+                    menuId={`comment-menu-${comment.id}`}
+                  />
+                ))}
+              </Stack>
+            </Card>
+          ) : (
+            <Text size="sm" c="#64748B">
+              No comments yet. Start the discussion.
+            </Text>
+          )}
         </Stack>
-      </LSPostCard>
+      </PostDetailCard>
     </Stack>
   );
 }

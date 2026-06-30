@@ -1,22 +1,34 @@
-import { addPublicationByDoi, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
+import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
 import { publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
-import { Publication } from "@/lib/types/data";
+import { InfinitePublications, ParsedOpenAlexWork, PubFilters, PublicationFacets } from "@/lib/types/publication";
 import { notifications } from "@mantine/notifications";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function usePublications(userId: string) {
-  return useQuery({
-    queryKey: publicationKeys.list(userId),
-    queryFn: async () => {
-      const res = await fetch(`/api/publications?userId=${userId}`);
+export function usePublications(userId: string, filters: PubFilters) {
+  return useInfiniteQuery({
+    queryKey: publicationKeys.list(userId, filters),
+    initialPageParam: null as { date_published: string | null, publication_id: number } | null,
+    queryFn: async ({ pageParam }) => {
+      const params = new URLSearchParams({ userId });
+      if(filters.search) params.set('search', filters.search);
+      if(filters.year) params.set('year', filters.year);
+      if(filters.tagId) params.set('tagId', filters.tagId);
+      if(filters.type) params.set('type', filters.type);
+      if(filters.sort) params.set('sort', filters.sort);
+
+      if(pageParam) {
+        params.set("cursor", btoa(JSON.stringify(pageParam)));  
+      }
+      const res = await fetch(`/api/publications?${params}`);
       if(!res.ok) throw new Error("Failed to fetch publications");
-      const apiResponse: ApiResponse<Publication[]> = await res.json();
+      const apiResponse: ApiResponse<InfinitePublications> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error)
-
-      return apiResponse.data
-    }
-  });
+      return apiResponse.data;
+    },
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    placeholderData: keepPreviousData
+  })
 }
 
 export function useAddPubByDoi ({
@@ -34,35 +46,7 @@ export function useAddPubByDoi ({
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    onMutate: async (doi) => {
-      await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
-      const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
-
-      const optimisticPub: Publication = {
-        publication_id: -Date.now(),
-        title: 'Loading...',
-        doi: doi,
-        journal: null,
-        date_published: null,
-        authors: null,
-        preview_path: null,
-        is_oa: false,
-        pdf_url: null,
-        type: 'other',
-        is_featured: false,
-        topics: []
-      };
-
-      queryClient.setQueryData<Publication[]>(
-        publicationKeys.list(userId),
-        (old) => [optimisticPub, ...(old ?? [])]
-      );
-
-      return { snapshot };
-    },
     onError: (error, _doi, context) => {
-      if(context?.snapshot) 
-        queryClient.setQueryData(publicationKeys.list(userId), context.snapshot);
       notifications.show({
         color: "red",
         title: "Error adding publication",
@@ -72,11 +56,48 @@ export function useAddPubByDoi ({
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) })
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
     },
 
     onSuccess: () => {
       onSuccess?.();
       notifications.show({color: 'green', message: 'Publication Added!'});
+    }
+  })
+}
+
+export function useBulkInsertPublications({
+  userId, 
+  onSuccess,
+}: {
+  userId: string,
+  onSuccess: () => void
+}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (publications: ParsedOpenAlexWork[]) => {
+      const res = await bulkInsertPublications(publications);
+      if(!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      onSuccess?.();
+      notifications.show({
+          color: 'green', 
+          message: `${data!.inserted} pubs inserted, ${data!.skipped} skipped`
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        color: "red",
+        title: "Error pinning publication",
+        message: error.message
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
     }
   })
 }
@@ -92,6 +113,7 @@ export function useDeletePublication(userId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
       notifications.show({color: 'green', message: 'Publication successfully deleted!'})
     },
     onError: (err) => {
@@ -116,30 +138,10 @@ export function useSetFeaturedPublication(userId: string) {
       if(!res.success) throw new Error(res.error);
       return res.success;
     },
-    onMutate: async ({ publicationId, isFeatured}) => {
-      await queryClient.cancelQueries({ queryKey: publicationKeys.list(userId) });
-      const snapshot = queryClient.getQueryData<Publication[]>(publicationKeys.list(userId));
-
-      queryClient.setQueryData<Publication[]>(
-        publicationKeys.list(userId),
-        (old) => {
-          if(!old) return old;
-          return old.map((pub) => 
-            pub.publication_id === publicationId 
-              ? { ...pub, is_featured: isFeatured}
-              : pub
-          );
-        }
-      );
-
-      return { snapshot };
-    },
     onSuccess: (_data, {publicationId, isFeatured}) => {
       notifications.show({color: 'green', message: `Publication ${isFeatured ? 'pinned' : 'unpinned'}!`});
     },
     onError: (error, _vars, context) => {
-      if(context?.snapshot) 
-        queryClient.setQueryData(publicationKeys.list(userId), context.snapshot);
       notifications.show({
         color: "red",
         title: "Error pinning publication",
@@ -150,4 +152,17 @@ export function useSetFeaturedPublication(userId: string) {
       queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
     }
   });
+}
+
+export function useGetPublicationFacets(userId: string) {
+  return useQuery({
+    queryKey: publicationKeys.facets(userId),
+    queryFn: async () => {
+      const res = await fetch(`/api/publications/facets?userId=${userId}`);
+      if(!res.ok) throw new Error('Failed to fetch publication facets');
+      const apiResponse: ApiResponse<PublicationFacets> = await res.json();
+      if(!apiResponse.success) throw new Error(apiResponse.error);
+      return apiResponse.data;
+    }
+  })
 }

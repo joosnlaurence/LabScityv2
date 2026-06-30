@@ -1,5 +1,6 @@
 import { FeedCommentItem, User } from '@/lib/types/feed'
 import { PublicationType } from './publication';
+import { ProductType } from '../constants/product';
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -32,18 +33,40 @@ export interface Group {
   rules: string | null;
 }
 
+export interface UploadProductPreview { 
+  file: File, 
+  url: string, 
+  width: number, 
+  height: number 
+}
+
+export interface ProductImageDraft {
+  file: File,
+  height: number,
+  width: number
+}
+
+export interface ProductImage {
+  url: string;
+  width: number;
+  height: number;
+}
+
 export interface Product {
   product_id: number;
   title: string;
   short_summary: string | null;
-  website_link: string | null;
+  links: { 
+    kind: "website" | "github" | "other", 
+    url: string, 
+    label: string | null 
+  }[];
   publication_id: number | null;
-  image_path: string | null;
-  github_link: string | null;
-  other_links: string[] | null;
+  images: ProductImage[];
   contributors: string[] | null;
-  is_featured: boolean | null;
-  product_type: string | null;
+  is_featured: boolean;
+  product_type: ProductType | null;
+  topics: string[] | null;
 }
 
 export interface Publication {
@@ -61,6 +84,30 @@ export interface Publication {
   topics: Array<string> | null;
 }
 
+export interface JobTag {
+  job_id: number;
+  tag_id: number;
+  is_required: boolean;
+}
+
+export interface JobSkill {
+  job_id: number;
+  skill_id: number;
+  is_required: boolean;
+}
+
+export interface TagSearchResult {
+  id: number;
+  name: string;
+}
+
+export interface LocationResult {
+    place_id: number;
+    display_name: string;
+    lat: string;
+    lon: string;
+}
+
 export interface Job {
   id: number;
   title: string;
@@ -72,10 +119,11 @@ export interface Job {
   department: string | null;
   organization: string | null;
   work_mode: "on-site" | "remote" | "hybrid" | null;
-  job_type: "Full-time" | "Part-time" | "Internship" | "Contract" | null;
-  academia_role: "Postdoc" | "Faculty" | "PhD" | "Grad Student"  | null;
+  job_type: "full-time" | "part-time" | "internship" | "contract" | null;
+  academia_role: "postdoc" | "faculty" | "phd" | "grad_student"  | null;
   application_link: string | null;
 }
+
 /** Extended post with optional author information */
 export interface PostWithAuthor extends Post {
   author?: {

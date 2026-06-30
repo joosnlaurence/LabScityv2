@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs } from "@mantine/core";
+import { Box, Tabs } from "@mantine/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import type { getGroups, searchPublicGroups } from "@/lib/actions/groups";
@@ -53,30 +53,43 @@ export function LSGroupsPageShell({
   );
 
   return (
-    <Tabs
-      value={tabValue}
-      onChange={(v) => {
-        if (v === "mine" || v === "discover") setTabInUrl(v);
-      }}
-      color="navy"
-      radius="md"
-    >
-      <Tabs.List grow>
-        <Tabs.Tab value="mine">My groups</Tabs.Tab>
-        <Tabs.Tab value="discover">Discover</Tabs.Tab>
-      </Tabs.List>
+    <Box bg="gray.0" mih="calc(100vh - 60px)">
+      <Tabs
+        value={tabValue}
+        onChange={(v) => {
+          if (v === "mine" || v === "discover") setTabInUrl(v);
+        }}
+        color="navy"
+        radius="xl"
+      >
+        <Box maw={1320} mx="auto" px={{ base: "md", md: "lg" }} pt="md">
+          <Tabs.List
+            grow
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E5E7EB",
+              borderRadius: 20,
+              padding: 6,
+              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+            }}
+          >
+            <Tabs.Tab value="mine">My groups</Tabs.Tab>
+            <Tabs.Tab value="discover">Discover</Tabs.Tab>
+          </Tabs.List>
+        </Box>
 
-      <Tabs.Panel value="mine" pt="md">
-        <LSGroupLayout {...layoutProps} />
-      </Tabs.Panel>
+        <Tabs.Panel value="mine" pt="md">
+          <LSGroupLayout {...layoutProps} />
+        </Tabs.Panel>
 
-      <Tabs.Panel value="discover" pt="md">
-        <LSDiscoverGroupsPanel
-          searchPublicGroupsAction={searchPublicGroupsAction}
-          joinGroupAction={layoutProps.joinGroupAction}
-          getGroupsAction={getGroupsAction}
-        />
-      </Tabs.Panel>
-    </Tabs>
+        <Tabs.Panel value="discover" pt="md">
+          <LSDiscoverGroupsPanel
+            searchPublicGroupsAction={searchPublicGroupsAction}
+            joinGroupAction={layoutProps.joinGroupAction}
+            getGroupsAction={getGroupsAction}
+          />
+        </Tabs.Panel>
+      </Tabs>
+    </Box>
   );
 }

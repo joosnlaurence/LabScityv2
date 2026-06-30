@@ -1,19 +1,13 @@
 "use client";
 
 import { 
-  Text, 
   Box, 
   Button, 
+  Card, 
   Divider, 
   Flex, 
-  Group, 
-  Popover, 
   Stack, 
   Tabs, 
-  UnstyledButton, 
-  Anchor, 
-  TextInput, 
-  Collapse, 
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -24,9 +18,10 @@ import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
 import { LSProfileGroupsWidget } from "@/components/profile/ls-profile-groups-widget";
 import LSProfileHero from "@/components/profile/ls-profile-hero";
-import { LSSpinner } from "@/components/ui/ls-spinner";
 import { LSUserReportOverlay } from "@/components/profile/ls-user-report-overlay";
-import { createUserReport } from "@/lib/actions/profile";
+import { LSSpinner } from "@/components/ui/ls-spinner";
+import type { createUserReport } from "@/lib/actions/profile";
+import classes from "./ls-profile-view.module.css"
 
 /**
  * Formats a date string as a relative time for post/comment display.
@@ -76,14 +71,9 @@ import type {
   updateOwnProfilePicture,
   updateProfileAction,
 } from "@/lib/actions/profile";
-import LSPublication from "./publications/ls-publication";
-import { useAuthContext } from "../auth/auth-provider";
-import { IconHelp, IconPlus } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
-import { useAddPubByDoi, useDeletePublication, usePublications, useSetFeaturedPublication } from "./publications/use-publications";
-import { useForm } from "@mantine/form";
-import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
-import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
+import LSPublicationsList from "./publications/ls-publications-list";
+import LSProductsList from "./products/ls-products-list";
+import { getLegacyPostText } from "@/lib/utils/post-content";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -136,7 +126,6 @@ interface LSProfileMobileLayoutProps {
   userId: string;
   isOwnProfile: boolean;
   actions: ProfilePostActionsResult;
-  editProfile: EditProfileHeroProps;
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
   onReportClick?: () => void;
@@ -156,7 +145,6 @@ const LSProfileMobileLayout = ({
   userId,
   isOwnProfile,
   actions,
-  editProfile,
   followProfile,
   mediaUpload,
   onReportClick,
@@ -164,7 +152,7 @@ const LSProfileMobileLayout = ({
   const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
-  const username = profile?.first_name + " " + profile?.last_name;
+  const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const followingQuery = useUserFollowing(userId);
@@ -194,7 +182,7 @@ const LSProfileMobileLayout = ({
           avatarUrl={profile?.avatar_url ?? undefined}
           field={post.scientific_field ?? post.category ?? "—"}
           timeAgo={getTimeAgo(post.created_at)}
-          content={post.text ?? ""}
+          content={getLegacyPostText(post.text)}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
@@ -235,7 +223,10 @@ const LSProfileMobileLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike({postId, commentId: comment.id})
+                      actions.handleToggleCommentLike({
+                        postId,
+                        commentId: comment.id,
+                      })
                     }
                     showMenu={false}
                   />
@@ -251,26 +242,12 @@ const LSProfileMobileLayout = ({
   return (
     <Stack p={8} gap="lg">
       <LSProfileHero
-        profileName={username ?? "Unknown User"}
-        profileResearchInterest={profile?.research_interests?.[0] ?? ""}
-        profileAbout={profile?.about ?? undefined}
-        profileSkill={profile?.skills ?? undefined}
-        profileArticles={profile?.articles ?? undefined}
-        profilePicURL={profile?.avatar_url ?? undefined}
-        profileHeaderImageURL={profile?.profile_header_url ?? undefined}
-        occupation={profile?.occupation ?? undefined}
-        workplace={profile?.workplace ?? undefined}
+        profileUser={profile!}
         isOwnProfile={isOwnProfile}
         onProfilePicSelect={mediaUpload?.onProfilePicSelect}
         isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
         onProfileHeaderSelect={mediaUpload?.onProfileHeaderSelect}
         isUploadingProfileHeader={mediaUpload?.isUploadingProfileHeader}
-        onOpenEditProfile={editProfile.onOpenEditProfile}
-        editModalOpened={editProfile.editModalOpened}
-        onEditModalClose={editProfile.onEditModalClose}
-        editInitialValues={editProfile.editInitialValues}
-        onEditSubmit={editProfile.onEditSubmit}
-        isEditSubmitting={editProfile.isEditSubmitting}
         isFollowing={followProfile?.isFollowing}
         onToggleFollow={followProfile?.onToggleFollow}
         isTogglePending={followProfile?.isTogglePending}
@@ -318,7 +295,6 @@ interface LSProfileDesktopLayoutProps {
   userId: string;
   isOwnProfile: boolean;
   actions: ProfilePostActionsResult;
-  editProfile: EditProfileHeroProps;
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
   onReportClick?: () => void;
@@ -339,7 +315,6 @@ const LSProfileDesktopLayout = ({
   userId,
   isOwnProfile,
   actions,
-  editProfile,
   followProfile,
   mediaUpload,
   onReportClick,
@@ -347,7 +322,7 @@ const LSProfileDesktopLayout = ({
   const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
-  const username = profile?.first_name + " " + profile?.last_name;
+  const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
   const friendsQuery = useUserFriends(userId);
@@ -358,7 +333,6 @@ const LSProfileDesktopLayout = ({
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
     null,
   );
-  const [doiInputExpanded, { toggle: toggleDoiInput }] = useDisclosure(false);
 
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
@@ -380,7 +354,7 @@ const LSProfileDesktopLayout = ({
           avatarUrl={profile?.avatar_url ?? undefined}
           field={post.scientific_field ?? post.category ?? "—"}
           timeAgo={getTimeAgo(post.created_at)}
-          content={post.text ?? ""}
+          content={getLegacyPostText(post.text)}
           mediaUrl={post.media_url ?? null}
           onLikeClick={() => actions.handleTogglePostLike(postId)}
           onCommentClick={() =>
@@ -423,7 +397,10 @@ const LSProfileDesktopLayout = ({
                     key={comment.id}
                     comment={comment}
                     onLikeClick={() =>
-                      actions.handleToggleCommentLike({postId, commentId: comment.id})
+                      actions.handleToggleCommentLike({
+                        postId,
+                        commentId: comment.id,
+                      })
                     }
                     showMenu={false}
                   />
@@ -435,37 +412,6 @@ const LSProfileDesktopLayout = ({
       </li>
     );
   });
-  const pubsQuery = usePublications(userId);
-  const publications = pubsQuery.data;
-  
-  const doiForm = useForm<DoiFormValues>({
-    mode: 'uncontrolled',
-    initialValues: { doi: ''},
-    validate: {
-      doi: (val) => {
-        if(!val.trim()) return null;
-        const res = doiSchema.safeParse(val);
-        return res.success ? null : res.error.issues[0].message;
-      }
-    },
-    validateInputOnBlur: true
-  });
-
-  const addPubByDoi = useAddPubByDoi({ 
-    userId,
-    onSuccess: () => {
-      doiForm.reset();
-      toggleDoiInput();
-    }
-  });  
-  const handleDoiSubmit = doiForm.onSubmit((vals) => {
-    addPubByDoi.mutate(vals.doi);
-  })
-
-  const deletePub = useDeletePublication(userId);
-
-  const setFeaturedPub = useSetFeaturedPublication(userId);
-  const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
 
   if (profileQuery.status === "pending") {
     return (
@@ -479,37 +425,28 @@ const LSProfileDesktopLayout = ({
   }
 
   return (
-    <Box pt={24} pb={300} px={80}>
-      <Flex p={8} direction="row" w="100%" gap={28} align="flex-start">
-        <Box flex={5}>
-          <LSProfileHero
-            profileName={username ?? "Unknown User"}
-            profileResearchInterest={profile?.research_interests?.[0] ?? ""}
-            profileAbout={profile?.about ?? undefined}
-            profileSkill={profile?.skills ?? undefined}
-            profileArticles={profile?.articles ?? undefined}
-            profilePicURL={profile?.avatar_url ?? undefined}
-            profileHeaderImageURL={profile?.profile_header_url ?? undefined}
-            occupation={profile?.occupation ?? undefined}
-            workplace={profile?.workplace ?? undefined}
-            isOwnProfile={isOwnProfile}
-            onProfilePicSelect={mediaUpload?.onProfilePicSelect}
-            isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
-            onProfileHeaderSelect={mediaUpload?.onProfileHeaderSelect}
-            isUploadingProfileHeader={mediaUpload?.isUploadingProfileHeader}
-            onOpenEditProfile={editProfile.onOpenEditProfile}
-            editModalOpened={editProfile.editModalOpened}
-            onEditModalClose={editProfile.onEditModalClose}
-            editInitialValues={editProfile.editInitialValues}
-            onEditSubmit={editProfile.onEditSubmit}
-            isEditSubmitting={editProfile.isEditSubmitting}
-            isFollowing={followProfile?.isFollowing}
-            onToggleFollow={followProfile?.onToggleFollow}
-            isTogglePending={followProfile?.isTogglePending}
-            onReportClick={onReportClick}
-          />
-        </Box>
-        <Flex flex={3} direction="column" gap="lg" miw={0} maw="100%">
+    <Stack gap='lg' maw={1660} mx="auto" px='clamp(16px, 11vw, 190px)' pt='3vh' pb='200'>
+      <Flex p={0} direction="row" w="100%" gap={24} align="flex-start">
+        <Stack flex={6}>
+          {
+            profile ?
+            <LSProfileHero
+              profileUser={profile}
+              isOwnProfile={isOwnProfile}
+              onProfilePicSelect={mediaUpload?.onProfilePicSelect}
+              isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
+              onProfileHeaderSelect={mediaUpload?.onProfileHeaderSelect}
+              isUploadingProfileHeader={mediaUpload?.isUploadingProfileHeader}
+              isFollowing={followProfile?.isFollowing}
+              onToggleFollow={followProfile?.onToggleFollow}
+              isTogglePending={followProfile?.isTogglePending}
+              onReportClick={onReportClick}
+            /> 
+            : 
+            <>No profile found for this user...</>
+          }
+        </Stack>
+        <Flex flex={2} direction="column" gap="lg" miw={0} maw="100%">
           <Box miw={0}>
             <LSMiniProfileList
               widgetTitle="Friends"
@@ -534,31 +471,41 @@ const LSProfileDesktopLayout = ({
           </Box>
         </Flex>
       </Flex>
-      
-      <Divider mt={20} color="navy.1" />
-      <Tabs defaultValue='posts' activateTabWithKeyboard={false}
+
+      <Tabs
+        defaultValue="posts"
+        activateTabWithKeyboard={false}
         styles={{
           panel: {
-            display: 'flex',
-            justifyContent: 'center'
+            display: "flex",
+            justifyContent: "center",
+          },
+          list: {
+            border: "1px solid var(--mantine-color-gray-3)",
+            borderRadius: "var(--mantine-radius-md)",
+            outline: 'none',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            boxShadow: "var(--mantine-shadow-xs)"
+          },
+          tab: {
+            padding: "0px 10px 0px 10px",
+          },
+          tabLabel: {
+            padding: "10px 0px 10px 0px",
+            fontWeight: '600'
           }
         }}
+        classNames={classes}
       >
-
-        <Tabs.List mb={20} grow justify='center'>
-          <Tabs.Tab value='posts'>
-            Posts
-          </Tabs.Tab>
-          <Tabs.Tab value='publications'>
-            Publications
-          </Tabs.Tab>
-          <Tabs.Tab value='products'>
-            Research Products
-          </Tabs.Tab>
+        <Tabs.List mb={20} justify="start">
+          <Tabs.Tab value="posts">Posts</Tabs.Tab>
+          <Tabs.Tab value="publications">Publications</Tabs.Tab>
+          <Tabs.Tab value="products">Research Products</Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value='posts'>
-          <Stack w='100%' maw='600'>
+        <Tabs.Panel value="posts">
+          <Stack w="100%" maw="600">
             <Stack
               component="ul"
               gap="lg"
@@ -583,107 +530,15 @@ const LSProfileDesktopLayout = ({
         </Tabs.Panel>
 
         <Tabs.Panel value='publications'>
-          <Stack w='700'>
-            {
-              isOwnProfile && 
-              <Group wrap='nowrap' justify='space-between'>
-                <Group wrap='nowrap'>
-                  <Button 
-                    onClick={toggleDoiInput} 
-                    rightSection={
-                      <IconPlus 
-                        size='1rem'
-                        style={{
-                          transform: doiInputExpanded ? 'rotate(45deg)' : 'rotate(0deg)',
-                          transition: 'transform 200ms ease',
-                        }}
-                      />
-                    }
-                  >
-                    Add Research
-                  </Button>
-                  <Collapse in={doiInputExpanded} flex='1'>
-                    <form onSubmit={handleDoiSubmit}>
-                      <TextInput 
-                        placeholder="doi.org/..." 
-                        bdrs='md' 
-                        disabled={addPubByDoi.isPending}
-                        key={doiForm.key('doi')}
-                        {...doiForm.getInputProps("doi")}
-                      />
-                    </form>
-                  </Collapse>
-                </Group>
-                <Group wrap='nowrap'>
-                  <Button variant='outline'>
-                    Link With ORCID iD
-                  </Button>
-                  <Popover width='200' position='top' shadow='xs'>
-                    <Popover.Target>
-                      <UnstyledButton variant='none' bdrs='100'>
-                        <Flex>
-                          <IconHelp size='2rem' stroke='1' color='var(--mantine-color-dimmed)'/>  
-                        </Flex>
-                      </UnstyledButton>  
-                    </Popover.Target>  
-                    <Popover.Dropdown 
-                      bdrs='md' 
-                      bd='1px solid navy.2'
-                      styles={{
-                        arrow: {
-                          border: '1px solid var(--mantine-color-navy-2)'
-                        }
-                      }}
-                    >
-                      <Text fz='xs'>
-                        An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
-                        is a unique identifier researchers can use to link all of your 
-                        research with you. Linking your account with an ORCID iD will
-                        enable LabScity to automatically fetch data about your 
-                        publications. 
-                      </Text>
-                      <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
-                        Learn more at orcid.org
-                      </Anchor>
-                    </Popover.Dropdown>
-                  </Popover>
-                </Group>
-              </Group>
-            }
-            
-            <Stack maw='800'>
-            {
-              (publications && publications.length > 0)
-              ? 
-              publications.map((pub, i) => 
-                <LSPublication 
-                  key={pub.publication_id}
-                  pub={pub}
-                  isOwner={isOwnProfile}
-                  onDeleteClick={() => deletePub.mutate(pub.publication_id)}
-                  isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
-                  onFeaturedClick={() => setFeaturedPub.mutate({ 
-                    publicationId: pub.publication_id, 
-                    isFeatured: !pub.is_featured
-                  })}
-                  featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
-                />
-              )
-              :
-              <>
-                No Publications found
-              </>
-            }
-            </Stack>
-          </Stack>
+          <LSPublicationsList userId={userId}/>
         </Tabs.Panel>
 
         <Tabs.Panel value='products'>
-          Products
+          <LSProductsList userId={userId}/>
         </Tabs.Panel>
 
       </Tabs>
-    </Box>
+    </Stack>
   );
 };
 
@@ -702,11 +557,11 @@ export function LSProfileView(props: LSProfileViewProps) {
   const profileQuery = useUserProfile(props.userId);
   const profile = profileQuery.data;
   const profileName = profile
-    ? profile.first_name + " " + profile.last_name
+    ? `${profile.first_name} ${profile.last_name}`
     : "Unknown User";
 
   return (
-    <Box bg="gray.0" mih="100vh">
+    <Box bg="gray.0" mih="calc(100vh - 56px)">
       {!props.isOwnProfile && (
         <LSUserReportOverlay
           open={reportOverlayOpen}
@@ -720,7 +575,6 @@ export function LSProfileView(props: LSProfileViewProps) {
           userId={props.userId}
           isOwnProfile={props.isOwnProfile}
           actions={actions}
-          editProfile={editProfile}
           followProfile={followProfile}
           mediaUpload={mediaUpload}
           onReportClick={() => setReportOverlayOpen(true)}
@@ -730,7 +584,6 @@ export function LSProfileView(props: LSProfileViewProps) {
           userId={props.userId}
           isOwnProfile={props.isOwnProfile}
           actions={actions}
-          editProfile={editProfile}
           followProfile={followProfile}
           mediaUpload={mediaUpload}
           onReportClick={() => setReportOverlayOpen(true)}

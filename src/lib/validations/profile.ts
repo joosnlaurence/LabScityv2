@@ -37,11 +37,12 @@ export const updateProfileSchema = z.object({
     .min(2, { message: "Occupation must be at least 2 characters" })
     .optional()
     .or(z.literal("")),
-  fieldOfInterest: z
-    .string()
-    .min(2, { message: "Field of interest must be at least 2 characters" })
-    .optional()
-    .or(z.literal("")),
+  researchAreas: z
+    .array(
+      z.string()
+       .min(2, { message: "Field of interest must be at least 2 characters" })
+    )
+    .optional(),
   skill: z
     .array(
       z
@@ -51,16 +52,17 @@ export const updateProfileSchema = z.object({
     .max(20, { message: "You can select up to 20 skills" })
     .optional()
     .default([]),
-  articles: z
-    .array(
-      z.object({
-        title: z.string().min(1, { message: "Title is required" }),
-        url: z.string().url({ message: "Must be a valid URL" }),
-      }),
-    )
-    .max(30, { message: "You can add up to 30 articles" })
+  labDepartment: z
+    .string()
+    .min(2, { message: "Lab/department must be at least 2 characters" })
+    .max(120, { message: "Lab/department must be at most 120 characters" })
     .optional()
-    .default([]),
+    .or(z.literal("")),
+  location: z
+    .string()
+    .max(120, { message: "Location must be at most 120 characters" })
+    .optional()
+    .or(z.literal("")),
 });
 
 /** Inferred type from updateProfileSchema. Use for form values and updateProfileAction input. */

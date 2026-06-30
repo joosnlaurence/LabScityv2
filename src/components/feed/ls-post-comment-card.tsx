@@ -90,7 +90,11 @@ export function LSPostCommentCard({
             maxHeight={92} // Enough for about 4 lines worth of comment
             showLabel='Show more'
             hideLabel='Hide'
-            style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
+            style={{
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+              whiteSpace: "pre-wrap",
+            }}
             styles={{
               control: {
                 color: 'var(--mantine-color-indigo-7)',

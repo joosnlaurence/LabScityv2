@@ -2,6 +2,7 @@
 
 import { Button } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { IconCheck } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUserFollowing, toggleFollowAction } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
@@ -88,8 +89,7 @@ export function PostFollowButton({
   if (
     !currentUserId ||
     currentUserId === targetUserId ||
-    followingQuery.isPending ||
-    isFollowing
+    followingQuery.isPending
   ) {
     return null;
   }
@@ -98,12 +98,13 @@ export function PostFollowButton({
     <Button
       size="compact-xs"
       radius="xl"
-      variant="light"
-      color="navy"
+      variant={isFollowing ? "light" : "filled"}
+      color={isFollowing ? "green" : "navy"}
+      leftSection={isFollowing ? <IconCheck size={12} /> : undefined}
       onClick={noPropagate(toggleFollowMutation.mutate)}
       loading={toggleFollowMutation.isPending}
     >
-      Follow
+      {isFollowing ? "Following" : "Follow"}
     </Button>
   );
 }

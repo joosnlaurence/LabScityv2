@@ -1,4 +1,6 @@
 import type { FeedFilterValues } from "@/lib/validations/post";
+import { PubFilters } from "./types/publication";
+import { ProductFilters } from "./types/products";
 
 /**
  * Query key factory for the feed.
@@ -74,5 +76,21 @@ export const dataKeys = {
 
 export const publicationKeys = {
   all: ["publications"] as const,
-  list: (userId: string) => [...publicationKeys.all, 'list', userId] as const
+  lists: () => [...publicationKeys.all, 'list'] as const,
+  list: (userId: string, filters?: PubFilters) =>
+    [...publicationKeys.lists(), userId, filters ?? {}] as const,
+  facets: (userId: string) => [...publicationKeys.all, 'facets', userId] as const
+}
+
+export const productKeys = {
+  all: ["products"] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (userId: string, filters?: ProductFilters) => 
+    [...productKeys.lists(), userId, filters ?? {}] as const,
+  facets: (userId: string) => [...productKeys.all, 'facets', userId] as const
+}
+
+export const tagKeys = {
+  all: ["tags"] as const,
+  search: (q: string) => [...tagKeys.all, 'search', q] as const,
 }

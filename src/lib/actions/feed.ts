@@ -14,6 +14,7 @@ import {
   type FeedFilterValues,
   feedFilterSchema,
 } from "@/lib/validations/post";
+import { parsePostContent } from "@/lib/utils/post-content";
 import { createClient } from "@/supabase/server";
 
 const idSchema = z.string().min(1, "ID is required");
@@ -768,7 +769,7 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
     // Query posts from the last 30 days with their like amounts
     const { data: posts, error } = await supabase
       .from("posts")
-      .select("scientific_field, like_amount")
+      .select("text, like_amount")
       .eq("taken_down", false)
       .gte("created_at", thirtyDaysAgo.toISOString());
 
@@ -782,12 +783,12 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
 			return { success: true, data: { hashtags } };
 		}
 
-    const isTrendingFieldExcluded = (field: unknown) => {
-      if (typeof field !== "string") {
+    const isTrendingFieldExcluded = (tag: unknown) => {
+      if (typeof tag !== "string") {
         return true;
       }
 
-      const normalizedField = field.trim().replace(/^#+/, "").toLowerCase();
+      const normalizedField = tag.trim().replace(/^#+/, "").toLowerCase();
       return (
         !normalizedField ||
         normalizedField === "other" ||
@@ -795,21 +796,27 @@ export async function getTrendingScientificFields(supabaseClient?: any) {
       );
     };
 
-    // Aggregate posts and likes by scientific field, excluding placeholder values
+    // Aggregate posts and likes by structured post tags.
     const fieldScores = posts.reduce(
       (
         acc: Record<string, { postCount: number; totalLikes: number }>,
         post: any,
       ) => {
-        const field = post.scientific_field;
-        if (isTrendingFieldExcluded(field)) {
-          return acc;
+        const parsedContent = parsePostContent(post.text);
+
+        for (const tag of parsedContent.tags) {
+          if (isTrendingFieldExcluded(tag)) {
+            continue;
+          }
+
+          if (!acc[tag]) {
+            acc[tag] = { postCount: 0, totalLikes: 0 };
+          }
+
+          acc[tag].postCount += 1;
+          acc[tag].totalLikes += post.like_amount || 0;
         }
-        if (!acc[field]) {
-          acc[field] = { postCount: 0, totalLikes: 0 };
-        }
-        acc[field].postCount += 1;
-        acc[field].totalLikes += post.like_amount || 0;
+
         return acc;
       },
       {} as Record<string, { postCount: number; totalLikes: number }>,
