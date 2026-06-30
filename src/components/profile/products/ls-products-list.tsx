@@ -10,10 +10,13 @@ import LSProduct from "./ls-product";
 import LSAddProductModal from "./ls-add-product-modal";
 import { useDeleteProduct, useGetProductFacets, useProducts, useSetFeaturedProduct } from "./use-products";
 import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
+import { useUserProfile } from "../use-profile";
 
 export default function LSProductsList({ userId }: { userId: string }) {
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
+
+  const { data: profile } = useUserProfile(userId);
 
   const {
     data: prodFacets,
@@ -92,7 +95,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
       <Group justify='space-between'>
         <Stack gap='0'>
           <Text fw='bold'>Products</Text>
-          <Text size='xs' c='dimmed'>{prodFacets?.count ?? 0} research products {isOwner ? ' on your profile' : `from Bob Bobberson`}</Text>
+          <Text size='xs' c='dimmed'>{prodFacets?.count ?? 0} research products {isOwner ? ' on your profile' : `from ${profile?.first_name} ${profile?.last_name}`}</Text>
         </Stack>
         {
           isOwner &&
