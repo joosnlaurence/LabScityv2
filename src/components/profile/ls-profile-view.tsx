@@ -189,7 +189,9 @@ const LSProfileMobileLayout = ({
 
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
-    const comments = post.comments ?? [];
+    const comments = (post.comments ?? []).filter(
+      (comment) => !comment.parentCommentId,
+    );
 
     return (
       <li key={postId}>
@@ -379,7 +381,9 @@ const LSProfileDesktopLayout = ({
 
   const listPosts = posts.map((post) => {
     const postId = String(post.post_id);
-    const comments = post.comments ?? [];
+    const comments = (post.comments ?? []).filter(
+      (comment) => !comment.parentCommentId,
+    );
     return (
       <li key={postId}>
         <LSPostCard

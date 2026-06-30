@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionIcon, Anchor, Avatar, Box, Group, Menu, noop, Spoiler, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Anchor, Avatar, Box, Button, Group, Menu, Spoiler, Text, UnstyledButton } from "@mantine/core";
 import Link from "next/link";
 import { IconDots, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { FeedCommentItem } from "@/lib/types/feed";
@@ -20,6 +20,7 @@ interface LSPostCommentCardProps {
   comment: FeedCommentItem;
   onLikeClick?: () => void;
   onReportClick?: () => void;
+  onReplyClick?: () => void;
   showMenu?: boolean;
   showActions?: boolean;
   menuId?: string;
@@ -33,6 +34,7 @@ export function LSPostCommentCard({
   comment,
   onLikeClick,
   onReportClick,
+  onReplyClick,
   showMenu = true,
   showActions = true,
   menuId,
@@ -109,6 +111,17 @@ export function LSPostCommentCard({
 
         <Group justify="flex-start" gap="xs" mt={4}>
           <Text size="xs" c="navy.5" style={{ whiteSpace: "nowrap" }}>{comment.timeAgo}</Text>
+          {onReplyClick ? (
+            <Button
+              variant="subtle"
+              color="gray"
+              size="compact-xs"
+              px={0}
+              onClick={noPropagate(onReplyClick)}
+            >
+              Reply
+            </Button>
+          ) : null}
           {showMenu ? (
             <Menu
               withinPortal

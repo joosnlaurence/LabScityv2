@@ -367,6 +367,7 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 						text,
 						created_at,
 						user_id,
+            parent_comment_id,
 						users:user_id(user_id, first_name, last_name, profile_pic_path),
 						comment_likes(user_id)
 					`,
@@ -409,10 +410,12 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 					? supabase.storage.from("profile_pictures").getPublicUrl(comment.users.profile_pic_path).data.publicUrl
 					: null,
 				content: comment.text,
+        createdAt: comment.created_at,
 				timeAgo: getTimeAgo(comment.created_at),
 				isLiked: authData.user
 					? comment.comment_likes?.some((like: any) => like.user_id === authData.user?.id)
 					: false,
+        parentCommentId: comment.parent_comment_id != null ? String(comment.parent_comment_id) : null,
 			})),
 			isLiked: post.likes && post.likes.length > 0 && authData.user
 				? post.likes.some((like: any) => like.user_id === authData.user?.id)
@@ -462,6 +465,12 @@ export async function createComment(
     const postIdStr = String(postId);
     idSchema.parse(postIdStr);
     const parsed = createCommentSchema.parse(values);
+    const parentCommentIdStr = parsed.parentCommentId
+      ? String(parsed.parentCommentId)
+      : null;
+    if (parentCommentIdStr) {
+      idSchema.parse(parentCommentIdStr);
+    }
 
     // Get authenticated user
     const supabase = supabaseClient ?? (await createClient());
@@ -471,6 +480,23 @@ export async function createComment(
       return { success: false, error: "Authentication required" };
     }
 
+    if (parentCommentIdStr) {
+      const { data: parentComment, error: parentError } = await supabase
+        .from("comment")
+        .select("comment_id, post_id")
+        .eq("comment_id", parentCommentIdStr)
+        .eq("taken_down", false)
+        .maybeSingle();
+
+      if (parentError) {
+        return { success: false, error: parentError.message };
+      }
+
+      if (!parentComment || String(parentComment.post_id) !== postIdStr) {
+        return { success: false, error: "Reply target is invalid" };
+      }
+    }
+
     // Insert comment into database
     const { data, error } = await supabase
       .from("comment")
@@ -478,6 +504,7 @@ export async function createComment(
         post_id: postIdStr,
         user_id: authData.user.id,
         text: parsed.content,
+        parent_comment_id: parentCommentIdStr,
       })
       .select()
       .single();
@@ -1033,13 +1060,14 @@ export async function getPostDetail(
 				text,
 				created_at,
 				user_id,
+        parent_comment_id,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				comment_likes(user_id)
 			`,
       )
       .eq("post_id", postIdStr)
       .eq("taken_down", false)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     const mediaUrl = post.media_path
       ? supabase.storage.from(postMediaBucket).getPublicUrl(post.media_path)
@@ -1068,10 +1096,12 @@ export async function getPostDetail(
 					? supabase.storage.from("profile_pictures").getPublicUrl(comment.users.profile_pic_path).data.publicUrl
 					: null,
 				content: comment.text,
+        createdAt: comment.created_at,
 				timeAgo: getTimeAgo(comment.created_at),
 				isLiked: authData.user
 					? comment.comment_likes?.some((like: any) => like.user_id === authData.user?.id)
 					: false,
+        parentCommentId: comment.parent_comment_id != null ? String(comment.parent_comment_id) : null,
 			})),
 			isLiked: post.likes && post.likes.length > 0 && authData.user
 				? post.likes.some((like: any) => like.user_id === authData.user?.id)
