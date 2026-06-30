@@ -6,17 +6,17 @@ export const WORK_MODE_LABELS = {
 } as const;
 
 export const JOB_TYPE_LABELS = {
-  "Full-time": "Full-time",
-  "Part-time": "Part-time",
-  "Internship": "Internship",
-  'Contract': "Contract",
+  "full-time": "Full-time",
+  "part-time": "Part-time",
+  "internship": "Internship",
+  'contract': "Contract",
 } as const;
 
 export const ACADEMIA_ROLE_LABELS = {
-  "Postdoc": "Postdoc",
-  "Faculty": "Faculty",
-  "PhD": "PhD",
-  "Grad Student": "Grad Student",
+  "postdoc": "Postdoc",
+  "faculty": "Faculty",
+  "phd": "PhD",
+  "grad_student": "Grad Student",
 } as const;
 
 export type WorkMode = keyof typeof WORK_MODE_LABELS;

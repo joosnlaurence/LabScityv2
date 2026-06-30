@@ -119,8 +119,8 @@ export interface Job {
   department: string | null;
   organization: string | null;
   work_mode: "on-site" | "remote" | "hybrid" | null;
-  job_type: "Full-time" | "Part-time" | "Internship" | "Contract" | null;
-  academia_role: "Postdoc" | "Faculty" | "PhD" | "Grad Student"  | null;
+  job_type: "full-time" | "part-time" | "internship" | "contract" | null;
+  academia_role: "postdoc" | "faculty" | "phd" | "grad_student"  | null;
   application_link: string | null;
 }
 

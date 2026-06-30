@@ -1,4 +1,5 @@
 import type { Job as DbJob } from "@/lib/types/data";
+import { formatJobTypeLabel, formatWorkModeLabel } from "./job-display";
 
 export interface JobViewModel {
   id: string;
@@ -40,9 +41,7 @@ function formatTimeAgo(value: string) {
 function toRemoteLabel(
   workMode: DbJob["work_mode"],
 ): "On-site" | "Hybrid" | "Remote" {
-  if (workMode === "remote") return "Remote";
-  if (workMode === "hybrid") return "Hybrid";
-  return "On-site";
+  return formatWorkModeLabel(workMode) as "On-site" | "Hybrid" | "Remote";
 }
 
 export function toJobViewModel(job: DbJob): JobViewModel {
@@ -54,7 +53,7 @@ export function toJobViewModel(job: DbJob): JobViewModel {
     org: job.organization?.trim() || "Organization not specified",
     dept: job.department?.trim() || "Department not specified",
     location: job.location?.trim() || "Location not specified",
-    type: job.academia_role ?? job.job_type ?? "General",
+    type: formatJobTypeLabel(job.academia_role ?? job.job_type),
     posted: formatTimeAgo(job.created_at),
     remote: toRemoteLabel(job.work_mode),
     description: job.description,

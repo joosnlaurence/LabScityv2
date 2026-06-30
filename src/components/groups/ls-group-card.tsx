@@ -41,15 +41,19 @@ export function LSGroupCard({
   return (
     <Card
       withBorder
-      shadow="sm"
-      radius="md"
-      p="md"
+      shadow="xs"
+      radius="xl"
+      p="lg"
       h="100%"
+      bg="white"
       styles={{
         root: {
+          borderColor: "#E5E7EB",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
           transition: "box-shadow 160ms ease, transform 160ms ease",
           "&:hover": {
-            boxShadow: "var(--mantine-shadow-md)",
+            boxShadow: "0 16px 36px rgba(15,23,42,0.08)",
+            transform: "translateY(-2px)",
           },
         },
       }}
@@ -58,18 +62,18 @@ export function LSGroupCard({
         <Stack gap="xs">
           <Group gap="sm" align="center" wrap="nowrap">
             <Avatar
-              size={44}
-              radius="md"
-              color="navy.7"
-              bg={group.avatar_url ? undefined : "navy.7"}
+              size={48}
+              radius="xl"
+              color="blue"
+              bg={group.avatar_url ? undefined : "#1F3A5F"}
               src={group.avatar_url ?? undefined}
             >
               {cardInitials(group.name)}
             </Avatar>
             <Text
-              fw={600}
+              fw={700}
               size="lg"
-              c="navy.7"
+              c="#123257"
               lineClamp={2}
               style={{ flex: 1 }}
             >
@@ -77,14 +81,23 @@ export function LSGroupCard({
             </Text>
           </Group>
           {desc ? (
-            <Text size="sm" c="dimmed" lineClamp={4}>
+            <Text size="sm" c="#64748B" lineClamp={4} lh={1.6}>
               {desc}
             </Text>
           ) : null}
           {group.topics.length > 0 ? (
             <Group gap={6} wrap="wrap">
               {group.topics.slice(0, 5).map((t) => (
-                <Badge key={t} size="sm" variant="light" color="navy">
+                <Badge
+                  key={t}
+                  size="sm"
+                  variant="light"
+                  style={{
+                    background: "#EEF2FF",
+                    color: "#2563EB",
+                    border: "1px solid #DBEAFE",
+                  }}
+                >
                   {t}
                 </Badge>
               ))}
@@ -95,8 +108,9 @@ export function LSGroupCard({
           {isMember ? (
             <Button
               variant="light"
-              color="navy"
               fullWidth
+              radius="xl"
+              style={{ background: "#EFF6FF", color: "#1D4ED8" }}
               onClick={() => onView(group.group_id)}
             >
               View
@@ -104,8 +118,9 @@ export function LSGroupCard({
           ) : (
             <Button
               fullWidth
-              color="navy"
+              radius="xl"
               loading={isJoining}
+              style={{ background: "#1F3A5F" }}
               onClick={() => onJoin(group.group_id)}
             >
               Join
