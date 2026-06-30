@@ -1,0 +1,1 @@
+alter table profile add column lab_department text, add column location text;

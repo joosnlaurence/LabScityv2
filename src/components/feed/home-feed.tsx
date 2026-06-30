@@ -1764,9 +1764,9 @@ function HomeRightRail({
         accent="teal"
       >
         <Stack gap={4}>
-          {(trendingTags ?? []).slice(0, 5).map((tag) => (
+          {(trendingTags ?? []).slice(0, 5).map((tag, i) => (
             <Button
-              key={String(tag)}
+              key={`${tag}${i}}`}
               variant={
                 activeFeedTags.some(
                   (activeTag) => activeTag.toLowerCase() === String(tag).toLowerCase(),
