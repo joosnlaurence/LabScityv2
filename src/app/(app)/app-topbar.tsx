@@ -41,11 +41,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useSetNotificationPreference } from "@/components/notifications/use-notifications";
 import { LSSpinner } from "@/components/ui/ls-spinner";
-import { searchUserContent } from "@/lib/actions/data";
+import { getUser, searchUserContent } from "@/lib/actions/data";
 import type { searchResult } from "@/lib/types/data";
 import { useNotificationStore } from "@/store/notificationStore";
 import { createClient } from "@/supabase/client";
 import { useIsMobile } from "../use-is-mobile";
+import { useGetUser } from "@/components/data/use-data";
+import classes from './app-topbar.module.css';
 
 type NotificationType =
   | "post_like"
@@ -117,6 +119,8 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
   const [results, setResults] = useState<searchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { data: profile } = useGetUser(userId);
 
   useEffect(() => {
     const rawValue = window.localStorage.getItem(
@@ -265,7 +269,7 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
         component="header"
         pos="sticky"
         top={0}
-        bg="white"
+        bg="navy.7"
         style={{
           borderBottom: "1px solid var(--mantine-color-gray-3)",
           zIndex: 30,
@@ -324,7 +328,7 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
           )}
 
           {!isMobile && (
-            <Group gap={4} ml="auto">
+            <Group gap={0} ml="auto" h='100%'>
               {navItems.map((item) => {
                 const active = isActive(item.href);
                 const href = getHref(item.href);
@@ -334,19 +338,23 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
                     key={item.href}
                     component={Link}
                     href={href}
-                    variant="subtle"
-                    color={active ? "navy" : "gray"}
-                    radius="md"
+                    radius="0"
                     size="compact-sm"
                     leftSection={<item.icon size={18} />}
                     fw={active ? 700 : 500}
+                    c={active ? "white" : "gray.4"}
                     styles={{
                       root: {
+                        backgroundColor: active
+                          ? "rgba(255,255,255,0.12)"
+                          : undefined,
                         borderBottom: active
-                          ? "2px solid var(--mantine-color-navy-7)"
+                          ? "2px solid var(--mantine-color-navy-2)"
                           : "2px solid transparent",
                       },
                     }}
+                    h='100%'
+                    className={classes.navItems}
                   >
                     {item.label}
                   </Button>
@@ -370,50 +378,51 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
               </ActionIcon>
             )}
 
-            <Button
+            <ActionIcon
               component={Link}
               href="/notifications"
               variant="subtle"
               color={
                 hasNewNotifications
-                  ? "blue"
+                  ? "indigo.4"
                   : inNotificationsPage
-                    ? "navy"
-                    : "gray"
+                    ? "white"
+                    : "gray.4"
               }
-              size="compact-sm"
-              px={8}
+              radius={100}
+              className={classes.navItems}
               styles={{ root: { overflow: "visible" } }}
-              leftSection={
-                <Box pos="relative" style={{ display: "inline-flex" }}>
-                  {inNotificationsPage ? (
-                    <IconBellFilled size={20} />
-                  ) : (
-                    <IconBell size={20} />
-                  )}
-                  {hasNewNotifications && (
-                    <Badge
-                      size="xs"
-                      color="blue"
-                      variant="filled"
-                      pos="absolute"
-                      top={-8}
-                      right={-10}
-                      px={4}
-                    >
-                      {displayedNewNotificationsCount}
-                    </Badge>
-                  )}
-                </Box>
-              }
-            />
+            >
+              <Box pos="relative" style={{ display: "inline-flex" }}>
+                {inNotificationsPage ? (
+                  <IconBellFilled size={20} />
+                ) : (
+                  <IconBell size={20} />
+                )}
+                {hasNewNotifications && (
+                  <Badge
+                    size="xs"
+                    color="indigo.4"
+                    variant="filled"
+                    pos="absolute"
+                    top={-8}
+                    right={-10}
+                    px={4}
+                  >
+                    {displayedNewNotificationsCount}
+                  </Badge>
+                )}
+              </Box>
+            </ActionIcon>
 
             <Menu opened={settingsOpen} onChange={setSettingsOpen}>
               <Menu.Target>
                 <ActionIcon
                   variant="subtle"
-                  color={settingsOpen ? "navy" : "gray"}
+                  color={settingsOpen ? "white" : "gray.4"}
                   aria-label="Settings"
+                  radius="100"
+                  className={classes.navItems}
                 >
                   {settingsOpen ? (
                     <IconSettingsFilled size={20} />
@@ -443,8 +452,8 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
 
             {!isMobile && (
               <UnstyledButton component={Link} href={`/profile/${userId}`}>
-                <Avatar size={34} radius="xl" color="navy.7">
-                  {userId.slice(0, 2).toUpperCase()}
+                <Avatar size={34} radius="xl" bg='navy.1' color="navy.6" src={profile?.avatar_url}>
+                  {(`${profile?.first_name[0]}${profile?.last_name[0]}`).toUpperCase()}
                 </Avatar>
               </UnstyledButton>
             )}

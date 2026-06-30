@@ -123,7 +123,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   }
 
   return (
-    <Stack w='800'>
+    <Stack w='100%' maw='800'>
       <Group wrap='nowrap'>
         <Stack gap='0'>
           <Text fw='bold'>Publications</Text>

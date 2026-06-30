@@ -25,6 +25,9 @@ import {
   Textarea,
   TextInput,
   ThemeIcon,
+  Image,
+  Spoiler,
+  Anchor
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
@@ -47,11 +50,13 @@ import {
   IconTrash,
   IconTrendingUp,
   IconUsers,
+  IconHeartFilled,
 } from "@tabler/icons-react";
+import StickyBox from "react-sticky-box";
 import { useQuery } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
 import { useEditor } from "@tiptap/react";
-import Image from "next/image";
+import NextImage from "next/image";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -74,6 +79,7 @@ import type { CreatePostValues } from "@/lib/validations/post";
 import type { HomeFeedProps } from "./home-feed.types";
 import { PostFollowButton } from "./post-follow-button";
 import { useHomeFeed } from "./use-home-feed";
+import { useGetUser } from "../data/use-data";
 
 const DEFAULT_EDITOR_TEXT_COLOR = "#000000";
 const DEFAULT_EDITOR_FONT_SIZE = "16px";
@@ -295,7 +301,7 @@ export function HomeFeed(props: HomeFeedProps) {
             <Button
               variant="default"
               radius="md"
-              onClick={() => void fetchNextPage()}
+              onClick={() => fetchNextPage()}
               loading={isFetchingNextPage}
             >
               Load more posts
@@ -304,11 +310,13 @@ export function HomeFeed(props: HomeFeedProps) {
         </Stack>
 
         {!isMobile ? (
-          <HomeRightRail
-            {...props}
-            activeFeedTags={activeFeedTags}
-            onTrendClick={addFeedTag}
-          />
+          <StickyBox offsetTop={60 + 26} offsetBottom={16}>
+            <HomeRightRail
+              {...props}
+              activeFeedTags={activeFeedTags}
+              onTrendClick={addFeedTag}
+            />
+          </StickyBox>
         ) : null}
       </Flex>
     </Box>
@@ -395,6 +403,8 @@ function CreatePostCard({
       composerMode === "publication" &&
       Boolean(currentUserId),
   });
+
+  const { data: profile } = useGetUser(currentUserId ?? '');
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -736,7 +746,7 @@ function CreatePostCard({
         <Stack gap="md">
         <Group justify="space-between" align="center">
           <Group gap="sm">
-            <Avatar radius="xl" color="navy.7" size={36}>
+            <Avatar radius="xl" color="navy.7" size={36} src={profile?.avatar_url}>
               {initials(currentUserName)}
             </Avatar>
             <Box>
@@ -1106,6 +1116,7 @@ function CreatePostCard({
                   }}
                 >
                   <Image
+                    component={NextImage}
                     src={mediaPreviewUrl}
                     alt="Selected post image"
                     fill
@@ -1193,6 +1204,8 @@ export function FeedPostCard({
   onLike,
   onDelete,
   onTogglePinned,
+  hidePin,
+  hideYourPostBadge
 }: {
   post: {
     id: string;
@@ -1224,6 +1237,8 @@ export function FeedPostCard({
   onLike: () => void;
   onDelete: () => void;
   onTogglePinned: () => void;
+  hidePin?: boolean;
+  hideYourPostBadge?: boolean;
 }) {
   const isOwnPost = currentUserId != null && currentUserId === post.userId;
   const [saved, setSaved] = useState(false);
@@ -1232,7 +1247,7 @@ export function FeedPostCard({
   const [copied, setCopied] = useState(false);
   const parsedContent = parsePostContent(post.content);
   const title = parsedContent.title;
-  const description = deriveDescription(parsedContent.bodyText);
+  const description = parsedContent.bodyText;
   const inferredTags =
     parsedContent.tags.length > 0
       ? parsedContent.tags
@@ -1245,6 +1260,8 @@ export function FeedPostCard({
   const hasHighlightedStyling = isPinned || isFeatured;
   const isCitable =
     parsedContent.kind === "publication" || inferredTags.includes("Article");
+
+  const spoilerControlRef = useRef<HTMLButtonElement>(null);
 
   return (
     <Card
@@ -1299,7 +1316,7 @@ export function FeedPostCard({
                 Pinned
               </Badge>
             ) : null}
-            {isOwnPost ? (
+            {isOwnPost && !hideYourPostBadge? (
               <Badge
                 radius="xl"
                 variant="light"
@@ -1332,14 +1349,17 @@ export function FeedPostCard({
             ))}
           </Group>
           <Group gap={4} wrap="nowrap">
-            <ActionIcon
-              variant="subtle"
-              color={isPinned ? "yellow" : "gray"}
-              aria-label={isPinned ? "Unpin post" : "Pin post"}
-              onClick={onTogglePinned}
-            >
-              {isPinned ? <IconPinFilled size={18} /> : <IconPin size={18} />}
-            </ActionIcon>
+            {
+              !hidePin &&
+              <ActionIcon
+                variant="subtle"
+                color={isPinned ? "yellow" : "gray"}
+                aria-label={isPinned ? "Unpin post" : "Pin post"}
+                onClick={onTogglePinned}
+              >
+                {isPinned ? <IconPinFilled size={18} /> : <IconPin size={18} />}
+              </ActionIcon>
+            }
             {isOwnPost ? (
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -1366,21 +1386,22 @@ export function FeedPostCard({
         </Group>
 
         <Stack gap={8}>
-          <Text
-            component={Link}
-            href={`/posts/${post.id}`}
-            fw={700}
-            fz={17}
-            c="#111827"
-            style={{
-              textDecoration: "none",
-              lineHeight: 1.4,
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {title}
-          </Text>
+          <Box>
+            <Anchor
+              component={Link}
+              href={`/posts/${post.id}`}
+              fw={700}
+              fz={17}
+              c="#111827"
+              style={{
+                lineHeight: 1.4,
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+              }}
+            >
+              {title}
+            </Anchor>
+          </Box>
           {parsedContent.bodyHtml ? (
             <Box c="#475569">
               <PostRichTextContent
@@ -1389,47 +1410,75 @@ export function FeedPostCard({
               />
             </Box>
           ) : (
-            <Text
-              size="sm"
+            <Spoiler
+              controlRef={spoilerControlRef}
+              fz="sm"
               c="#475569"
               lh={1.6}
-              style={{
-                whiteSpace: "pre-wrap",
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
+              maxHeight={176} // Enough for about 8 lines worth of content
+              showLabel='Show more'
+              hideLabel='Hide'
+              style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+              styles={{
+                control: {
+                  color: 'var(--mantine-color-blue-7)',
+                  fontSize: 'var(--mantine-font-size-sm)',
+                  fontWeight: 600
+                }
               }}
             >
               {description}
-            </Text>
+            </Spoiler>
           )}
         </Stack>
 
         <Group justify="space-between" align="center" wrap="wrap" gap="sm">
           <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-            <Avatar.Group spacing="sm">
+            <Avatar 
+              size={28} 
+              src={post.avatarUrl ?? undefined} 
+              color="blue"
+              component={Link}
+              href={`/profile/${post.userId}`}
+            >
+              {initials(post.userName)}
+            </Avatar>
+            {/* <Avatar.Group spacing="sm">
               <Avatar size={28} src={post.avatarUrl ?? undefined} color="blue">
                 {initials(post.userName)}
               </Avatar>
               <Avatar size={28} color="cyan">
                 {(post.scientificField || "GE").slice(0, 2).toUpperCase()}
               </Avatar>
-            </Avatar.Group>
-            <Text
-              size="sm"
-              c="#1F2937"
-              fw={600}
-              style={{
-                minWidth: 0,
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
-              }}
-            >
-              {post.userName}
-              <Text span c="#64748B" fw={400}>
-                {" "}
-                · {post.timeAgo}
+            </Avatar.Group> */}
+            
+              <Text
+                size="sm"
+                style={{
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                }}
+              >
+                <Anchor
+                  component={Link}
+                  href={`/profile/${post.userId}`}
+                  underline="hover"
+                >
+                  <Text 
+                    span
+                    c="#1F2937"
+                    fw={600}
+                  >
+                    {post.userName}
+                  </Text>
+                </Anchor>
+                <Text span c="#64748B" fw={400}>
+                  {" "}
+                  · {post.timeAgo}
+                </Text>
               </Text>
-            </Text>
+            
             {!isOwnPost ? (
               <PostFollowButton
                 currentUserId={currentUserId}
@@ -1464,19 +1513,25 @@ export function FeedPostCard({
 
         {post.mediaUrl ? (
           <Box
+            pos="relative"
+            mah={600}
+            maw='100%'
+            fw={600}
             style={{
+              aspectRatio: `${(post.mediaWidth ?? 1) / (post.mediaHeight ?? 1)}`,
               overflow: "hidden",
-              borderRadius: 16,
-              border: "1px solid #E5E7EB",
-              aspectRatio: "16 / 9",
-              position: "relative",
+              letterSpacing: "0.3px",
             }}
           >
             <Image
+              component={NextImage}
               src={post.mediaUrl}
               alt="Post attachment"
+              bdrs="lg"
+              bg='navy.0'
               fill
-              style={{ objectFit: "cover", display: "block" }}
+              mah={600}
+              style={{ objectFit: "contain" }}
             />
           </Box>
         ) : null}
@@ -1488,7 +1543,7 @@ export function FeedPostCard({
             <Button
               variant="subtle"
               color={post.isLiked ? "red" : "gray"}
-              leftSection={<IconHeart size={16} />}
+              leftSection={post.isLiked ? <IconHeartFilled size={16}/> : <IconHeart size={16} />}
               px={0}
               onClick={onLike}
             >
@@ -1691,6 +1746,63 @@ function HomeLeftRail({ currentUser }: HomeFeedProps) {
   );
 }
 
+export function RecommendedCollabsCard({ currentUserId }: { currentUserId: string | null }) {
+  const collaboratorsQuery = useQuery({
+    queryKey: ["home", "collaborators", currentUserId],
+    queryFn: async () => {
+      const res = await fetch("/api/collaborators");
+      if (!res.ok) {
+        throw new Error("Failed to fetch collaborators");
+      }
+      return (await res.json()) as GetCollaboratorsResult[];
+    },
+    enabled: Boolean(currentUserId),
+  });
+  
+  return (
+    <SectionCard
+      title="Recommended Collaborators"
+      icon={<IconUsers size={18} />}
+      actionLabel="See all"
+    >
+      <Stack gap={0}>
+        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => (
+          <Group
+            key={person.profile_user_id}
+            py="sm"
+            wrap="nowrap"
+            style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
+          >
+            <Avatar radius="xl" color="blue">
+              {initials(`${person.first_name} ${person.last_name}`)}
+            </Avatar>
+            <Box flex={1} miw={0}>
+              <Text size="sm" fw={800} truncate>
+                {person.first_name} {person.last_name}
+              </Text>
+              <Text size="xs" c="dimmed" truncate>
+                {person.occupation || person.workplace || "Researcher"}
+              </Text>
+              <Badge size="xs" color="green" variant="light" mt={4}>
+                {Math.round(person.cosine_similarity * 100)}% match
+              </Badge>
+            </Box>
+            <PostFollowButton
+              currentUserId={currentUserId ?? null}
+              targetUserId={person.profile_user_id}
+            />
+          </Group>
+        ))}
+        {collaboratorsQuery.isLoading ? (
+          <Text size="sm" c="dimmed">
+            Loading collaborators...
+          </Text>
+        ) : null}
+      </Stack>
+    </SectionCard>
+  )
+} 
+
 function HomeRightRail({
   currentUserId,
   trendingTags,
@@ -1703,60 +1815,9 @@ function HomeRightRail({
   activeFeedTags: string[];
   onTrendClick: (tag: string) => void;
 }) {
-  const collaboratorsQuery = useQuery({
-    queryKey: ["home", "collaborators", currentUserId],
-    queryFn: async () => {
-      const res = await fetch("/api/collaborators");
-      if (!res.ok) {
-        throw new Error("Failed to fetch collaborators");
-      }
-      return (await res.json()) as GetCollaboratorsResult[];
-    },
-    enabled: Boolean(currentUserId),
-  });
-
   return (
     <Stack w={320} gap="md" pos="sticky" top={80}>
-      <SectionCard
-        title="Recommended Collaborators"
-        icon={<IconUsers size={18} />}
-        actionLabel="See all"
-      >
-        <Stack gap={0}>
-          {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => (
-            <Group
-              key={person.profile_user_id}
-              py="sm"
-              wrap="nowrap"
-              style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
-            >
-              <Avatar radius="xl" color="blue">
-                {initials(`${person.first_name} ${person.last_name}`)}
-              </Avatar>
-              <Box flex={1} miw={0}>
-                <Text size="sm" fw={800} truncate>
-                  {person.first_name} {person.last_name}
-                </Text>
-                <Text size="xs" c="dimmed" truncate>
-                  {person.occupation || person.workplace || "Researcher"}
-                </Text>
-                <Badge size="xs" color="green" variant="light" mt={4}>
-                  {Math.round(person.cosine_similarity * 100)}% match
-                </Badge>
-              </Box>
-              <PostFollowButton
-                currentUserId={currentUserId ?? null}
-                targetUserId={person.profile_user_id}
-              />
-            </Group>
-          ))}
-          {collaboratorsQuery.isLoading ? (
-            <Text size="sm" c="dimmed">
-              Loading collaborators...
-            </Text>
-          ) : null}
-        </Stack>
-      </SectionCard>
+      <RecommendedCollabsCard currentUserId={currentUserId} />
 
       <SectionCard
         title="Trending Research"
@@ -1897,18 +1958,18 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function deriveDescription(content: string) {
-  const trimmed = content.trim();
-  if (!trimmed) {
-    return "No description available.";
-  }
+// function deriveDescription(content: string) {
+//   const trimmed = content.trim();
+//   if (!trimmed) {
+//     return "No description available.";
+//   }
 
-  if (trimmed.length <= 180) {
-    return trimmed;
-  }
+//   if (trimmed.length <= 180) {
+//     return trimmed;
+//   }
 
-  return `${trimmed.slice(0, 177).trim()}...`;
-}
+//   return `${trimmed.slice(0, 177).trim()}...`;
+// }
 
 function escapeHtml(value: string) {
   return value
@@ -1925,8 +1986,8 @@ function derivePostTags(post: {
   mediaUrl?: string | null;
 }) {
   const tags: string[] = [];
-  const normalizedContent = post.content.toLowerCase();
-  const normalizedField = post.scientificField.trim().toLowerCase();
+  const normalizedContent = (post.content ?? '').toLowerCase();
+  const normalizedField = (post.scientificField ?? '').trim().toLowerCase();
 
   const looksLikeArticle =
     normalizedContent.includes("doi.org/") ||

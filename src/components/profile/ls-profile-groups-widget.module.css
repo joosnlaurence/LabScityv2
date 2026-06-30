@@ -1,0 +1,8 @@
+.groupRow {
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+  /* transition: background-color 120ms ease; */
+}
+.groupRow:hover {
+  background-color: var(--mantine-color-gray-3);
+}
