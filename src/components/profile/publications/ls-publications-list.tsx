@@ -127,7 +127,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
       <Group wrap='nowrap'>
         <Stack gap='0'>
           <Text fw='bold'>Publications</Text>
-          <Text size='xs' c='dimmed'>{pubFacets?.count} publications {isOwner ? ' on your profile' : `from ${profile?.first_name} ${profile?.last_name}`}</Text>
+          <Text size='xs' c='dimmed'>{pubFacets?.count ?? 0} publications {isOwner ? ' on your profile' : `from ${profile?.first_name} ${profile?.last_name}`}</Text>
         </Stack>
         {
           isOwner && 
@@ -269,38 +269,38 @@ export default function LSPublicationsList({userId}: {userId: string}) {
       }
       <Divider />
 
-      <Stack pos='relative'>
-        {
-          (addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)) &&
-          <Loader mx='auto' />
-        }
-        {/* <LoadingOverlay
-          visible={addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)}
-          loaderProps={{ children: '' }}
-        /> */}
-      {
-        (publications && publications.length > 0)
-        ? 
-        publications.map((pub, i) => 
-          <LSPublication 
-            key={pub.publication_id}
-            pub={pub}
-            isOwner={isOwner}
-            onDeleteClick={() => deletePub.mutate(pub.publication_id)}
-            isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
-            onFeaturedClick={() => setFeaturedPub.mutate({ 
-              publicationId: pub.publication_id, 
-              isFeatured: !pub.is_featured
-            })}
-            featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
-          />
-        )
-        :
-        <>
-          No Publications found
-        </>
-      }
-      </Stack>
+        <Stack pos='relative'>
+          {
+            (addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)) &&
+            <Loader mx='auto' />
+          }
+          {/* <LoadingOverlay
+            visible={addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)}
+            loaderProps={{ children: '' }}
+          /> */}
+          {
+            publications.length > 0 
+            ?
+            publications.map((pub, i) => 
+              <LSPublication 
+                key={pub.publication_id}
+                pub={pub}
+                isOwner={isOwner}
+                onDeleteClick={() => deletePub.mutate(pub.publication_id)}
+                isDeleting={deletePub.isPending && deletePub.variables === pub.publication_id}
+                onFeaturedClick={() => setFeaturedPub.mutate({ 
+                  publicationId: pub.publication_id, 
+                  isFeatured: !pub.is_featured
+                })}
+                featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
+              />
+            )
+            :
+            <Text ta='center' c='dimmed'>
+              No Publications Found...
+            </Text>
+          }
+        </Stack>
 
       <div ref={scrollRef} style={{ height: 1 }}/>
 

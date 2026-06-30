@@ -92,7 +92,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
       <Group justify='space-between'>
         <Stack gap='0'>
           <Text fw='bold'>Products</Text>
-          <Text size='xs' c='dimmed'>{prodFacets?.count} research products {isOwner ? ' on your profile' : `from Bob Bobberson`}</Text>
+          <Text size='xs' c='dimmed'>{prodFacets?.count ?? 0} research products {isOwner ? ' on your profile' : `from Bob Bobberson`}</Text>
         </Stack>
         {
           isOwner &&
@@ -168,28 +168,33 @@ export default function LSProductsList({ userId }: { userId: string }) {
           visible={addPubByDoi.isPending || (isFetchingPubs && !isFetchingNextPage)}
           loaderProps={{ children: '' }}
         /> */}
+        {
+          products.length > 0 ?
+          <Stack>
+            {
+              products.map((p) =>
+                <LSProduct
+                  key={p.product_id}
+                  product={p}
+                  isOwner={isOwner}
+                  onDeleteClick={() => deleteProduct.mutate(p.product_id)}
+                  isDeleting={deleteProduct.isPending}
+                  onFeaturedClick={() => setFeaturedProduct.mutate({ productId: p.product_id, isFeatured: !p.is_featured })}
+                  featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS && !p.is_featured}
+                />
+              )
+            }
+          </Stack>
+          : 
+          <Text ta='center' c='dimmed'>
+            No Products Found...
+          </Text>
+        }
       </Stack>
 
       <div ref={scrollRef} style={{ height: 1 }} />
 
-      {
-        products.length > 0 &&
-        <Stack>
-          {
-            products.map((p) =>
-              <LSProduct
-                key={p.product_id}
-                product={p}
-                isOwner={isOwner}
-                onDeleteClick={() => deleteProduct.mutate(p.product_id)}
-                isDeleting={deleteProduct.isPending}
-                onFeaturedClick={() => setFeaturedProduct.mutate({ productId: p.product_id, isFeatured: !p.is_featured })}
-                featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS && !p.is_featured}
-              />
-            )
-          }
-        </Stack>
-      }
+      
 
       {isFetchingNextPage &&
         <Center py='md'>
