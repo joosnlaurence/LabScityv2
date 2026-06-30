@@ -32,6 +32,12 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
 import type { createJob } from "@/lib/actions/job";
+import {
+  formatJobTypeLabel,
+  formatWorkModeLabel,
+  JOB_TYPE_OPTIONS,
+  WORK_MODE_OPTIONS,
+} from "./job-display";
 
 export interface JobDraft {
   title: string;
@@ -250,7 +256,10 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                       (value as JobDraft["remote"] | null) ?? "on-site",
                     )
                   }
-                  data={["On-site", "Hybrid", "Remote"]}
+                  data={WORK_MODE_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
                   style={{ flex: 1 }}
                 />
               </Flex>
@@ -259,27 +268,18 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   Job Type
                 </Text>
                 <Group gap="xs">
-                  {[
-                    "Postdoc",
-                    "Faculty",
-                    "PhD",
-                    "Grad Student",
-                    "Full-time",
-                    "Part-time",
-                    "Internship",
-                    "Contract",
-                  ].map((type) => (
+                  {JOB_TYPE_OPTIONS.map((type) => (
                     <Button
-                      key={type}
+                      key={type.value}
                       size="compact-sm"
                       radius="xl"
-                      variant={draft.type === type ? "filled" : "outline"}
-                      color={draft.type === type ? "navy" : "gray"}
+                      variant={draft.type === type.value ? "filled" : "outline"}
+                      color={draft.type === type.value ? "navy" : "gray"}
                       onClick={() =>
-                        updateDraft("type", type as JobDraft["type"])
+                        updateDraft("type", type.value)
                       }
                     >
-                      {type}
+                      {type.label}
                     </Button>
                   ))}
                 </Group>
@@ -516,14 +516,14 @@ function MiniPreviewCard({ draft }: { draft: JobDraft }) {
       </Group>
       <Group gap={6} mt={8}>
         <Button size="compact-xs" variant="light" color="gray">
-          {draft.type}
+          {formatJobTypeLabel(draft.type)}
         </Button>
         <Button
           size="compact-xs"
           variant="light"
           color={draft.remote === "remote" ? "green" : "blue"}
         >
-          {draft.remote}
+          {formatWorkModeLabel(draft.remote)}
         </Button>
       </Group>
       {draft.tags.length > 0 ? (

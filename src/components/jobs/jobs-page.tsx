@@ -30,6 +30,8 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
+import { getJobPreviewHtml, JOB_TYPE_OPTIONS } from "./job-display";
 import type { JobViewModel } from "./job-view-model";
 
 interface JobsPageProps {
@@ -104,14 +106,7 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
               onChange={setJobType}
               data={[
                 "All types",
-                "Postdoc",
-                "Faculty",
-                "PhD",
-                "Grad Student",
-                "Full-time",
-                "Part-time",
-                "Internship",
-                "Contract",
+                ...JOB_TYPE_OPTIONS.map((option) => option.label),
                 "General",
               ]}
               leftSection={<IconBriefcase size={16} />}
@@ -309,9 +304,12 @@ function JobCard({ job }: { job: JobViewModel }) {
             </Text>
           </Group>
 
-          <Text size="sm" c="gray.7" lineClamp={2} mb="sm">
-            {job.summary?.trim() || job.description}
-          </Text>
+          <Box mb="sm">
+            <PostRichTextContent
+              html={getJobPreviewHtml(job.summary, job.description)}
+              maxHeight={52}
+            />
+          </Box>
 
           <Badge variant="light" color="gray" radius="xl" mb="md">
             {job.remote}
