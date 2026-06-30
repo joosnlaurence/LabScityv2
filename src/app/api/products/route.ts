@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("user_products_full")
-    .select("*, product_tags(tags(name))")
+    .select("*, product_tags(tags(name)), product_images(image_path, width, height)")
     .eq("user_id", userId);
 
   if (!hasFilters) {
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
   if (!cursor && !hasFilters) {
     const { data: featuredData, error: featuredError } = await supabase
       .from("user_products_full")
-      .select("*, product_tags(tags(name))")
+      .select("*, product_tags(tags(name)), product_images(image_path, width, height)")
       .eq("user_id", userId)
       .eq("is_featured", true)
       .order("created_at", { ascending: !descending })

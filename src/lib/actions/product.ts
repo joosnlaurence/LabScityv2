@@ -531,11 +531,12 @@ export async function saveProductImagePaths(
     const { error: productError } = await supabase
       .from("product_images")
       .insert(
-        images.map((img) => ({ 
+        images.map((img, i) => ({ 
           product_id: productId,
           image_path: img.image_path,
           width: img.width,
-          height: img.height 
+          height: img.height,
+          position: i
         })
       ));
 
