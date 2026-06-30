@@ -1773,13 +1773,15 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
             wrap="nowrap"
             style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
           >
-            <Avatar radius="xl" color="blue">
+            <Avatar component={Link} href={`/profile/${person.profile_user_id}`} radius="xl" color="blue">
               {initials(`${person.first_name} ${person.last_name}`)}
             </Avatar>
             <Box flex={1} miw={0}>
-              <Text size="sm" fw={800} truncate>
-                {person.first_name} {person.last_name}
-              </Text>
+              <Anchor component={Link} href={`/profile/${person.profile_user_id}`}>
+                <Text size="sm" fw={800} truncate>
+                  {person.first_name} {person.last_name}
+                </Text>
+              </Anchor>
               <Text size="xs" c="dimmed" truncate>
                 {person.occupation || person.workplace || "Researcher"}
               </Text>
