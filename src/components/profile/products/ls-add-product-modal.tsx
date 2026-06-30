@@ -29,7 +29,7 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
         { kind: 'github', url: '', label: ''},
       ],
       contributors: [],
-      product_type: undefined,
+      product_type: 'other',
       tag_ids: [],
     },
     validateInputOnBlur: true,
@@ -57,6 +57,7 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
   const handleProductSubmit = form.onSubmit((product) => {
     product = {
       ...product,
+      product_type: product.product_type ?? 'other',
       links: product.links?.filter((l) => l.url.trim() !== "")
         .map((link) => ({
           ...link,

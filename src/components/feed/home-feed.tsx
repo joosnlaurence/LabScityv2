@@ -1821,7 +1821,7 @@ function HomeRightRail({
     <Stack w={320} gap="md" pos="sticky" top={80}>
       <RecommendedCollabsCard currentUserId={currentUserId} />
 
-      <SectionCard
+      {/* <SectionCard
         title="Trending Research"
         icon={<IconTrendingUp size={18} />}
         accent="teal"
@@ -1854,7 +1854,7 @@ function HomeRightRail({
             </Button>
           ))}
         </Stack>
-      </SectionCard>
+      </SectionCard> */}
 
       {searchPublicGroupsAction && joinGroupAction && getGroupsAction ? (
         <LSPopularGroupsHomeStrip
