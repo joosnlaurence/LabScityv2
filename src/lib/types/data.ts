@@ -108,6 +108,11 @@ export interface LocationResult {
     lon: string;
 }
 
+export interface Skill {
+  id: number;
+  name: string;
+}
+
 export interface Job {
   id: number;
   title: string;

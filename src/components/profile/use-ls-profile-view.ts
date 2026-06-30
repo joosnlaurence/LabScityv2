@@ -33,6 +33,7 @@ import type {
   createProfileHeaderUploadUrl,
   updateOwnProfileHeader,
 } from "@/lib/actions/profile";
+import { Skill } from "@/lib/types/data";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -98,7 +99,7 @@ function profileToEditInitialValues(profile: {
   workplace?: string | null;
   occupation?: string | null;
   research_interests?: string[] | null;
-  skills?: string[] | null;
+  skills?: Skill[] | null;
 }): UpdateProfileValues {
   return {
     firstName: profile.first_name ?? "",
@@ -107,7 +108,7 @@ function profileToEditInitialValues(profile: {
     workplace: profile.workplace ?? "",
     occupation: profile.occupation ?? "",
     researchAreas: profile.research_interests ?? [],
-    skill: profile.skills ?? [],
+    skill: (profile.skills ?? []).map(s => String(s.id)),
   };
 }
 

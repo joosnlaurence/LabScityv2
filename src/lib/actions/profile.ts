@@ -372,7 +372,6 @@ export async function updateProfileAction(
       about: emptyToNull(validated.about),
       workplace: emptyToNull(validated.workplace),
       occupation: emptyToNull(validated.occupation),
-      skill: validated.skill.length ? validated.skill : null,
       timezone: emptyToNull(validated.timezone),
       lab_department: emptyToNull(validated?.labDepartment),
       location: emptyToNull(validated?.location)
@@ -381,9 +380,27 @@ export async function updateProfileAction(
     const { error: profileError } = await supabase
       .from("profile")
       .upsert(profilePayload, { onConflict: "user_id" });
-
     if (profileError) {
       return { success: false, error: profileError.message };
+    }
+
+    const skillIds = validated.skill.map(Number).filter(n => Number.isInteger(n));
+
+    const { error: delErr } = await supabase
+      .from("profile_skills")
+      .delete()
+      .eq("profile_user_id", userId);
+    if (delErr) {
+      return { success: false, error: delErr.message };
+    }
+    
+    if (skillIds.length > 0) {
+      const { error: insErr } = await supabase
+        .from("profile_skills")
+        .insert(skillIds.map((skill_id) => ({ profile_user_id: userId, skill_id })));
+      if (insErr) {
+        return { success: false, error: insErr.message };
+      }
     }
 
     const { error: usersError } = await supabase
@@ -393,7 +410,6 @@ export async function updateProfileAction(
         last_name: validated.lastName.trim(),
       })
       .eq("user_id", userId);
-
     if (usersError) {
       return { success: false, error: usersError.message };
     }

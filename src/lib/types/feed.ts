@@ -3,6 +3,8 @@
  * Based on Supabase database schema
  */
 
+import { Skill } from "./data";
+
 export type PostCategory = "formal" | "natural" | "social" | "applied" | "general";
 
 /**
@@ -22,7 +24,7 @@ export interface User {
   about?: string | null;
   occupation?: string | null;
   workplace?: string | null;
-  skills?: string[] | null;
+  skills?: Skill[] | null;
   /** Profile articles (title + URL). From public.profile.articles jsonb. */
   articles?: { title: string; url: string }[] | null;
   banner_pic_url?: string | null;

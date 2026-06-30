@@ -12,10 +12,11 @@ import {
   Loader,
 } from "@mantine/core";
 import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LSEditProfileModal } from "./ls-edit-profile-modal";
 import { useDisclosure } from "@mantine/hooks";
 import { User } from "@/lib/types/feed";
+import { useGetPublicationFacets } from "./publications/use-publications";
 
 const PROFILE_BANNER_HEIGHT = 150;
 
@@ -103,6 +104,12 @@ export default function LSProfileHero({
   const labDepartment = profileUser.lab_department ?? undefined;
   const location = profileUser.location ?? undefined;
   const timezone = profileUser.timezone ?? undefined;
+
+  const { data: pubFacets } = useGetPublicationFacets(profileUser.user_id);
+  const researchAreas = useMemo(
+    () => (pubFacets?.tags ?? []).slice(0, 3).map(t => t.name),
+    [pubFacets]
+  );
 
   const avatarInitials = profileName
     .split(" ")
@@ -372,14 +379,12 @@ export default function LSProfileHero({
 
         {
           // TODO: Add research tags to profile
-          // researchTags &&
-          profileUser.research_interests && 
+          researchAreas.length > 0 &&
           <Stack gap='xs'>
             <Text fz='xs' c='dimmed' fw='bold'>RESEARCH AREAS</Text>
             <Group gap='xs'>
             {
-              // researchTags.map((tag) => {})
-              profileUser.research_interests?.map((tag) => 
+              researchAreas.map((tag) => 
                 <Badge 
                   key={tag}
                   bg='blue.0' 
@@ -404,7 +409,7 @@ export default function LSProfileHero({
               {(profileSkill.map((skill, i) => {
                 return (
                   <Badge 
-                    key={skill} 
+                    key={skill.id} 
                     bg='gray.2' 
                     bd='1px solid gray.4' 
                     c='navy.7' 
@@ -414,7 +419,7 @@ export default function LSProfileHero({
                     p='sm'
                     bdrs='md'
                   >
-                    {skill}
+                    {skill.name}
                   </Badge>
                 )
               }))}
