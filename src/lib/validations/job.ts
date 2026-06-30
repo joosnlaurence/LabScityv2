@@ -34,18 +34,18 @@ export const createJobSchema = z.object({
         .optional(),
     job_type: z
         .enum([
-            "Full-time",
-            "Part-time",
-            "Internship",
-            "Contract",
+            "full-time",
+            "part-time",
+            "internship",
+            "contract",
         ])
         .optional(),
     academia_role: z
         .enum([
-            "Postdoc",
-            "Faculty",
-            "PhD",
-            "Grad Student",
+            "postdoc",
+            "faculty",
+            "phd",
+            "grad_student",
         ])
         .optional(),
     application_link: z

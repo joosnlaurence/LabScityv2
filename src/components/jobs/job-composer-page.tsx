@@ -39,15 +39,15 @@ export interface JobDraft {
   department: string;
   location: string;
   type:
-    | "Postdoc"
-    | "Faculty"
-    | "PhD"
-    | "Grad Student"
-    | "Full-time"
-    | "Part-time"
-    | "Internship"
-    | "Contract";
-  remote: "On-site" | "Hybrid" | "Remote";
+    | "postdoc"
+    | "faculty"
+    | "phd"
+    | "grad_student"
+    | "full-time"
+    | "part-time"
+    | "internship"
+    | "contract";
+  remote: "on-site" | "hybrid" | "remote";
   contactEmail: string;
   applyUrl: string;
   description: string;
@@ -66,8 +66,8 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
     organization: "",
     department: "",
     location: "",
-    type: "Postdoc",
-    remote: "On-site",
+    type: "postdoc",
+    remote: "on-site",
     contactEmail: "",
     applyUrl: "",
     description: "",
@@ -130,23 +130,23 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
 
     startTransition(async () => {
       const roleValue =
-        draft.type === "Postdoc" ||
-        draft.type === "Faculty" ||
-        draft.type === "PhD" ||
-        draft.type === "Grad Student"
+        draft.type === "postdoc" ||
+        draft.type === "faculty" ||
+        draft.type === "phd" ||
+        draft.type === "grad_student"
           ? draft.type
           : undefined;
       const jobTypeValue =
-        draft.type === "Full-time" ||
-        draft.type === "Part-time" ||
-        draft.type === "Internship" ||
-        draft.type === "Contract"
+        draft.type === "full-time" ||
+        draft.type === "part-time" ||
+        draft.type === "internship" ||
+        draft.type === "contract"
           ? draft.type
           : undefined;
       const workMode: "remote" | "hybrid" | "on-site" =
-        draft.remote === "Remote"
+        draft.remote === "remote"
           ? "remote"
-          : draft.remote === "Hybrid"
+          : draft.remote === "hybrid"
             ? "hybrid"
             : "on-site";
 
@@ -247,7 +247,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   onChange={(value) =>
                     updateDraft(
                       "remote",
-                      (value as JobDraft["remote"] | null) ?? "On-site",
+                      (value as JobDraft["remote"] | null) ?? "on-site",
                     )
                   }
                   data={["On-site", "Hybrid", "Remote"]}
@@ -521,7 +521,7 @@ function MiniPreviewCard({ draft }: { draft: JobDraft }) {
         <Button
           size="compact-xs"
           variant="light"
-          color={draft.remote === "Remote" ? "green" : "blue"}
+          color={draft.remote === "remote" ? "green" : "blue"}
         >
           {draft.remote}
         </Button>
