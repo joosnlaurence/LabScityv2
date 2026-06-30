@@ -10,12 +10,17 @@ import {
   Stack,
   FileButton,
   Loader,
+  UnstyledButton,
 } from "@mantine/core";
 import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { LSEditProfileModal } from "./ls-edit-profile-modal";
 import { useDisclosure } from "@mantine/hooks";
 import { User } from "@/lib/types/feed";
+import { useGetPublicationFacets } from "./publications/use-publications";
+import LSProfileListModal from "./ls-profile-list-modal";
+import { useUserFollowers, useUserFollowing } from "./use-profile";
+import classes from './ls-profile-hero.module.css'
 
 const PROFILE_BANNER_HEIGHT = 150;
 
@@ -91,6 +96,14 @@ export default function LSProfileHero({
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
+  const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
+
+  const lastList = useRef<"followers" | "following">("followers");
+  if (listModal) lastList.current = listModal;
+
+  const activeList = listModal ?? lastList.current;
+  const { data: followers = []} = useUserFollowers(profileUser.user_id);
+  const { data: following = []} = useUserFollowing(profileUser.user_id);
 
   const profileName = `${profileUser.first_name} ${profileUser.last_name}`;
   const profileResearchInterest = profileUser.research_interests?.[0] ?? "";
@@ -104,6 +117,12 @@ export default function LSProfileHero({
   const location = profileUser.location ?? undefined;
   const timezone = profileUser.timezone ?? undefined;
 
+  const { data: pubFacets } = useGetPublicationFacets(profileUser.user_id);
+  const researchAreas = useMemo(
+    () => (pubFacets?.tags ?? []).slice(0, 3).map(t => t.name),
+    [pubFacets]
+  );  
+
   const avatarInitials = profileName
     .split(" ")
     .filter(Boolean)
@@ -115,8 +134,8 @@ export default function LSProfileHero({
     <Avatar
       src={profilePicURL || undefined}
       size={80}
-      c="navy.7"
-      bg={profilePicURL ? undefined : "navy.3"}
+      color="navy.6"
+      bg={profilePicURL ? undefined : "navy.1"}
       bd="2px solid white"
       style={{ position: "relative", zIndex: 2 }}
     >
@@ -324,6 +343,25 @@ export default function LSProfileHero({
           ) : null}
         </Stack>
         
+        <Group gap="xs">
+          <UnstyledButton onClick={() => setListModal("followers")} className={classes.followCounts}>
+            <Text c="navy.7" size="sm">
+              <b>{followers.length}</b> Followers
+            </Text>
+          </UnstyledButton>
+          <UnstyledButton onClick={() => setListModal("following")} className={classes.followCounts}>
+            <Text c="navy.7" size="sm">
+              <b>{following.length}</b> Following
+            </Text>
+          </UnstyledButton>
+          <LSProfileListModal
+            title={activeList === "followers" ? "Followers" : "Following"}
+            profiles={activeList === "followers" ? followers : following}
+            opened={listModal !== null}
+            onClose={() => setListModal(null)}
+          />
+        </Group>
+
         <Stack>
           <Stack fz='sm' gap='6'>
             {/* TODO: Update the profile table and updates so that the user can input these fields */}
@@ -372,14 +410,12 @@ export default function LSProfileHero({
 
         {
           // TODO: Add research tags to profile
-          // researchTags &&
-          profileUser.research_interests && 
+          researchAreas.length > 0 &&
           <Stack gap='xs'>
             <Text fz='xs' c='dimmed' fw='bold'>RESEARCH AREAS</Text>
             <Group gap='xs'>
             {
-              // researchTags.map((tag) => {})
-              profileUser.research_interests?.map((tag) => 
+              researchAreas.map((tag) => 
                 <Badge 
                   key={tag}
                   bg='blue.0' 
@@ -404,7 +440,7 @@ export default function LSProfileHero({
               {(profileSkill.map((skill, i) => {
                 return (
                   <Badge 
-                    key={skill} 
+                    key={skill.id} 
                     bg='gray.2' 
                     bd='1px solid gray.4' 
                     c='navy.7' 
@@ -414,7 +450,7 @@ export default function LSProfileHero({
                     p='sm'
                     bdrs='md'
                   >
-                    {skill}
+                    {skill.name}
                   </Badge>
                 )
               }))}
@@ -425,3 +461,4 @@ export default function LSProfileHero({
     </Card >
   );
 };
+

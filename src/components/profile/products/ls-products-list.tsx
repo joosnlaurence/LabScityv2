@@ -91,7 +91,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
   }
 
   return (
-    <Stack w='800'>
+    <Stack w='100%' maw='800'> 
       <Group justify='space-between'>
         <Stack gap='0'>
           <Text fw='bold'>Products</Text>

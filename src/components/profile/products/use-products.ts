@@ -59,6 +59,7 @@ async function uploadProductImages(productId: number, images: ProductImageDraft[
       const { error } = await supabase.storage
         .from(prep.data.bucket)
         .uploadToSignedUrl(path, token, img.file);
+
       if (error) throw error;
       return {
         image_path: prep.data.path,

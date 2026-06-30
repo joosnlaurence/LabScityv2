@@ -5,10 +5,10 @@ import {
   TextInput,
   Textarea,
   Autocomplete,
-  TagsInput,
   Select,
   Button,
   Loader,
+  MultiSelect,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,13 +18,13 @@ import { useUserProfile } from "@/components/profile/use-profile";
 import { updateProfileAction } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
 import { useEffect, useMemo, useState } from "react";
-import { SCIENCE_CATEGORIES, SKILL_OPTIONS } from "@/lib/constants/options";
 import {
   updateProfileSchema,
   type UpdateProfileValues,
 } from "@/lib/validations/profile";
 import { useDebouncedValue } from "@mantine/hooks";
-import { useLocationSearch } from "./use-location-search";
+import { useLocationSearch, useSkillSearch } from "./use-profile-search";
+import { User } from "@/lib/types/feed";
 
 interface EditProfileFormValues {
   firstName: string;
@@ -39,7 +39,7 @@ interface EditProfileFormValues {
   skill: string[];
 }
 
-function profileToEditValues(profile: any): UpdateProfileValues {
+function profileToEditValues(profile: User | undefined): UpdateProfileValues {
   return {
     firstName: profile?.first_name ?? "",
     lastName: profile?.last_name ?? "",
@@ -50,7 +50,7 @@ function profileToEditValues(profile: any): UpdateProfileValues {
     location: profile?.location ?? "",
     timezone: profile?.timezone ?? "",
     researchAreas: profile?.research_interests ?? [],
-    skill: profile?.skills ?? [],
+    skill: (profile?.skills ?? []).map(s => String(s.id)),
   };
 }
 
@@ -114,6 +114,9 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
       form.setInitialValues(next);
       form.setValues(next);
       form.clearErrors();
+      setSelectedSkills(
+        (profile?.skills ?? []).map(s => ({ value: String(s.id), label: s.name }))
+      )
     }
   }, [opened, initialValues]);
 
@@ -162,6 +165,21 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
       return [];
     }
   }, []);
+
+  const [selectedSkills, setSelectedSkills] = useState<{ value: string; label: string }[]>([]);
+  const [skillSearch, setSkillSearch] = useState("");
+  const [debouncedSkill] = useDebouncedValue(skillSearch, 300);
+  const { data: skillResults } = useSkillSearch(debouncedSkill);
+
+  const skillOptions = useMemo(() => {
+    const map = new Map<string, { value: string; label: string }>();
+    for (const s of selectedSkills) map.set(s.value, s);
+    for (const r of skillResults ?? []) {
+      const v = String(r.id);
+      if (!map.has(v)) map.set(v, { value: v, label: r.name });
+    }
+    return [...map.values()];
+  }, [selectedSkills, skillResults]);
 
   const [locationSearch, setLocationSearch] = useState("");
   const [debouncedLocation] = useDebouncedValue(locationSearch, 500);
@@ -256,20 +274,33 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
             {...form.getInputProps("timezone")}
           />
 
-          <TagsInput
+          {/* <TagsInput
             label="Research Areas"
             placeholder="Select or type your research areas..."
             data={[...SCIENCE_CATEGORIES]}
             key={form.key("researchAreas")}
             {...form.getInputProps("researchAreas")}
-          />
+          /> */}
 
-          <TagsInput
-            label="Your Skills"
-            placeholder="Select or type your own..."
-            data={[...SKILL_OPTIONS]}
+          <MultiSelect
+            label='Skills'
+            placeholder="Search skills by name..."
+            data={skillOptions}
+            searchable
+            searchValue={skillSearch}
+            onSearchChange={setSkillSearch}
+            clearSearchOnChange={false}
+            value={form.getValues().skill}
+            onChange={(ids) => {
+              form.setFieldValue("skill", ids);
+              setSelectedSkills(
+                ids.map(
+                  (id) => skillOptions.find((o) => o.value === id) ?? { value: id, label: id },
+                ),
+              )
+            }}
+            nothingFoundMessage="No matching skills"
             key={form.key("skill")}
-            {...form.getInputProps("skill")}
           />
 
           <Button type="submit" loading={updateMutation.isPending}>

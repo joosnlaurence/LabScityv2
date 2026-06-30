@@ -74,6 +74,8 @@ import type {
 import LSPublicationsList from "./publications/ls-publications-list";
 import LSProductsList from "./products/ls-products-list";
 import { getLegacyPostText } from "@/lib/utils/post-content";
+import { FeedPostCard, RecommendedCollabsCard } from "../feed/home-feed";
+import StickyBox from "react-sticky-box";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -298,6 +300,7 @@ interface LSProfileDesktopLayoutProps {
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
   onReportClick?: () => void;
+  currentUserId: string | null;
 }
 
 /**
@@ -318,17 +321,13 @@ const LSProfileDesktopLayout = ({
   followProfile,
   mediaUpload,
   onReportClick,
+  currentUserId
 }: LSProfileDesktopLayoutProps) => {
-  const router = useRouter();
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
   const username = `${profile?.first_name} ${profile?.last_name}`;
   const userPostsQuery = useUserPosts(userId);
   const posts = userPostsQuery.data?.pages.flatMap((p) => p.posts) ?? [];
-  const friendsQuery = useUserFriends(userId);
-  const friends = friendsQuery.data;
-  const followingQuery = useUserFollowing(userId);
-  const following = followingQuery.data;
 
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
     null,
@@ -337,81 +336,28 @@ const LSProfileDesktopLayout = ({
   const hasNextPage = userPostsQuery.hasNextPage ?? false;
   const isFetchingNextPage = userPostsQuery.isFetchingNextPage ?? false;
 
-  const friendIds = new Set(friends?.map((friend) => friend.user_id));
-
-  const notFollowedBack = following?.filter(
-    (user) => !friendIds.has(user.user_id),
-  );
-
-  const listPosts = posts.map((post) => {
-    const postId = String(post.post_id);
-    const comments = post.comments ?? [];
-    return (
-      <li key={postId}>
-        <LSPostCard
-          userId={post.user_id}
-          userName={username ?? "Unknown User"}
-          avatarUrl={profile?.avatar_url ?? undefined}
-          field={post.scientific_field ?? post.category ?? "—"}
-          timeAgo={getTimeAgo(post.created_at)}
-          content={getLegacyPostText(post.text)}
-          mediaUrl={post.media_url ?? null}
-          onLikeClick={() => actions.handleTogglePostLike(postId)}
-          onCommentClick={() =>
-            setActiveCommentPostId((current) =>
-              current === postId ? null : postId,
-            )
-          }
-          isLiked={post.isLiked ?? false}
-          likeCount={post.like_amount ?? 0}
-          commentCount={post.comments?.length ?? 0}
-          showMenu={isOwnProfile}
-          onDeleteClick={
-            isOwnProfile ? () => actions.handleDeletePost(postId) : undefined
-          }
-          onEditSubmit={
-            isOwnProfile
-              ? (values) => actions.handleEditPost(postId, values)
-              : undefined
-          }
-          isEditPending={actions.updatePostMutation.isPending}
-          onPostClick={() => router.push(`/posts/${post.post_id}`)}
-          mediaHeight={post.media_height}
-          mediaWidth={post.media_width}
-          shareUrl={`/posts/${post.post_id}`}
-        >
-          <Stack gap="md" w="100%">
-            {activeCommentPostId === postId ? (
-              <LSCommentComposer
-                postId={postId}
-                onAddComment={actions.handleAddComment}
-                isSubmitting={false}
-              />
-            ) : null}
-
-            {comments.length > 0 ? (
-              <>
-                <Divider />
-                {comments.map((comment) => (
-                  <LSPostCommentCard
-                    key={comment.id}
-                    comment={comment}
-                    onLikeClick={() =>
-                      actions.handleToggleCommentLike({
-                        postId,
-                        commentId: comment.id,
-                      })
-                    }
-                    showMenu={false}
-                  />
-                ))}
-              </>
-            ) : null}
-          </Stack>
-        </LSPostCard>
-      </li>
-    );
-  });
+  const feedPosts = posts.map((post) => ({
+    id: String(post.post_id),
+    userId: post.user_id,
+    userName: username ?? "Unknown User",
+    avatarUrl: profile?.avatar_url ?? undefined,
+    scientificField: post.scientific_field ?? post.category ?? "—",
+    content: post.text ?? "",
+    timeAgo: getTimeAgo(post.created_at),
+    mediaUrl: post.media_url ?? null,
+    mediaWidth: post.media_width ?? undefined,
+    mediaHeight: post.media_height ?? undefined,
+    comments: (post.comments ?? []).map((c) => ({
+      id: c.id,
+      userId: c.userId ?? "",
+      userName: c.userName ?? "",
+      avatarUrl: c.avatarUrl ?? undefined,
+      content: c.content ?? "",
+      timeAgo: c.timeAgo,
+    })),
+    isLiked: post.isLiked ?? false,
+    likeCount: post.like_amount ?? 0,
+  }));
 
   if (profileQuery.status === "pending") {
     return (
@@ -445,99 +391,105 @@ const LSProfileDesktopLayout = ({
             : 
             <>No profile found for this user...</>
           }
+          <Tabs
+            defaultValue="posts"
+            activateTabWithKeyboard={false}
+            styles={{
+              panel: {
+                display: "flex",
+                justifyContent: "center",
+              },
+              list: {
+                border: "1px solid var(--mantine-color-gray-3)",
+                borderRadius: "var(--mantine-radius-md)",
+                outline: 'none',
+                paddingLeft: '16px',
+                paddingRight: '16px',
+                boxShadow: "var(--mantine-shadow-xs)"
+              },
+              tab: {
+                padding: "0px 10px 0px 10px",
+              },
+              tabLabel: {
+                padding: "10px 0px 10px 0px",
+                fontWeight: '600'
+              }
+            }}
+            classNames={classes}
+            w='100%'
+          >
+            <Tabs.List mb={20} justify="start">
+              <Tabs.Tab value="posts">Posts</Tabs.Tab>
+              <Tabs.Tab value="publications">Publications</Tabs.Tab>
+              <Tabs.Tab value="products">Research Products</Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="posts">
+              <Stack w="100%" maw="600">
+                <Stack
+                  component="ul"
+                  gap="lg"
+                  w="100%"
+                  style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}
+                >
+                  {feedPosts.map((post) => (
+                    <FeedPostCard
+                      key={post.id}
+                      post={post}
+                      currentUserId={currentUserId}
+                      isPinned={false}
+                      commentOpen={activeCommentPostId === post.id}
+                      onToggleComments={() =>
+                        setActiveCommentPostId((c) => (c === post.id ? null : post.id))
+                      }
+                      onAddComment={async (postId, values) => await actions.handleAddComment(postId, values)}
+                      onLike={() => actions.handleTogglePostLike(post.id)}
+                      onDelete={() => actions.handleDeletePost(post.id)}
+                      onTogglePinned={() => {}}
+                      hidePin
+                      hideYourPostBadge
+                    />
+                  ))}
+                </Stack>
+                {hasNextPage ? (
+                  <Button
+                    variant="subtle"
+                    color="navy"
+                    size="sm"
+                    radius="xl"
+                    onClick={() => userPostsQuery.fetchNextPage()}
+                    loading={isFetchingNextPage}
+                  >
+                    Load more posts
+                  </Button>
+                ) : null}
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value='publications'>
+              <LSPublicationsList userId={userId}/>
+            </Tabs.Panel>
+
+            <Tabs.Panel value='products'>
+              <LSProductsList userId={userId}/>
+            </Tabs.Panel>
+
+          </Tabs>
         </Stack>
-        <Flex flex={2} direction="column" gap="lg" miw={0} maw="100%">
-          <Box miw={0}>
-            <LSMiniProfileList
-              widgetTitle="Friends"
-              profiles={friends ?? []}
-              maxInline={6}
-              listGap="lg"
-            />
-          </Box>
-          <Box miw={0}>
-            <LSMiniProfileList
-              widgetTitle="Following"
-              profiles={notFollowedBack}
-              maxInline={6}
-              listGap="lg"
-            />
-          </Box>
-          <Box miw={0}>
+
+        <StickyBox offsetTop={60 + 26} offsetBottom={16}>
+          <Stack w={300} gap="lg" miw={0} maw="100%" visibleFrom="md">
             <LSProfileGroupsWidget
               userId={userId}
               isOwnProfile={isOwnProfile}
             />
-          </Box>
-        </Flex>
-      </Flex>
-
-      <Tabs
-        defaultValue="posts"
-        activateTabWithKeyboard={false}
-        styles={{
-          panel: {
-            display: "flex",
-            justifyContent: "center",
-          },
-          list: {
-            border: "1px solid var(--mantine-color-gray-3)",
-            borderRadius: "var(--mantine-radius-md)",
-            outline: 'none',
-            paddingLeft: '16px',
-            paddingRight: '16px',
-            boxShadow: "var(--mantine-shadow-xs)"
-          },
-          tab: {
-            padding: "0px 10px 0px 10px",
-          },
-          tabLabel: {
-            padding: "10px 0px 10px 0px",
-            fontWeight: '600'
-          }
-        }}
-        classNames={classes}
-      >
-        <Tabs.List mb={20} justify="start">
-          <Tabs.Tab value="posts">Posts</Tabs.Tab>
-          <Tabs.Tab value="publications">Publications</Tabs.Tab>
-          <Tabs.Tab value="products">Research Products</Tabs.Tab>
-        </Tabs.List>
-
-        <Tabs.Panel value="posts">
-          <Stack w="100%" maw="600">
-            <Stack
-              component="ul"
-              gap="lg"
-              w="100%"
-              style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}
-            >
-              {listPosts}
-            </Stack>
-            {hasNextPage ? (
-              <Button
-                variant="subtle"
-                color="navy"
-                size="sm"
-                radius="xl"
-                onClick={() => userPostsQuery.fetchNextPage()}
-                loading={isFetchingNextPage}
-              >
-                Load more posts
-              </Button>
-            ) : null}
+            {
+              isOwnProfile &&
+              <RecommendedCollabsCard currentUserId={userId}/>
+            }
           </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value='publications'>
-          <LSPublicationsList userId={userId}/>
-        </Tabs.Panel>
-
-        <Tabs.Panel value='products'>
-          <LSProductsList userId={userId}/>
-        </Tabs.Panel>
-
-      </Tabs>
+        </StickyBox>
+      </Flex>
     </Stack>
   );
 };
@@ -587,6 +539,7 @@ export function LSProfileView(props: LSProfileViewProps) {
           followProfile={followProfile}
           mediaUpload={mediaUpload}
           onReportClick={() => setReportOverlayOpen(true)}
+          currentUserId={props.currentUserId}
         />
       )}
     </Box>

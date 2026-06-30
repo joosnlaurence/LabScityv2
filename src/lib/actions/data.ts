@@ -10,6 +10,7 @@ import type {
   searchResult,
   SearchInput,
   Group,
+  Skill,
 } from "@/lib/types/data";
 
 import { User } from "@/lib/types/feed"
@@ -572,9 +573,17 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
       ? supabase.storage.from("profile_header").getPublicUrl(profileData.header_pic_path).data.publicUrl
       : null;
 
-    // Map profile.skill (DB column) to User.skills; merge extended profile fields.
-    const profileSkill = profileData?.skill;
-    const skills = Array.isArray(profileSkill) ? profileSkill : null;
+    const { data: skillRows } = await supabase
+      .from("profile_skills")
+      .select("skill_id, skills!inner(id, name)")
+      .eq("profile_user_id", user_id);
+
+    const skills = (skillRows ?? []).flatMap((r) =>
+      (Array.isArray(r.skills) ? r.skills : [r.skills]).map((s) => ({
+        id: s.id,
+        name: s.name,
+      })),
+    );
 
     return {
       success: true,
