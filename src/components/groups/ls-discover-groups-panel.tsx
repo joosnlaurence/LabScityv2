@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Box,
   Center,
   Paper,
   SimpleGrid,
@@ -118,21 +119,37 @@ export function LSDiscoverGroupsPanel({
 
   return (
     <Stack gap="lg" w="100%" px={{ base: "md" }}>
-      <Paper radius="md" p="md" withBorder bg="white">
+      <Paper
+        radius="xl"
+        p="lg"
+        withBorder
+        bg="white"
+        style={{
+          borderColor: "#E5E7EB",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+        }}
+      >
         <Stack gap="md">
-          <div>
-            <Title order={5} c="navy.7">
+          <Box>
+            <Title order={4} c="#123257">
               Find a group
             </Title>
-            <Text size="xs" c="dimmed">
-              Search by name, description, or narrow with topic tags.
+            <Text size="sm" c="#64748B">
+              Search by name, description, or narrow things down with topic
+              tags.
             </Text>
-          </div>
+          </Box>
           <TextInput
             label="Search"
             placeholder="Group name or description"
             value={searchInput}
             onChange={(e) => setSearchInput(e.currentTarget.value)}
+            radius="xl"
+            styles={{
+              input: {
+                borderColor: "#E5E7EB",
+              },
+            }}
           />
           <TagsInput
             label="Filter by topics"
@@ -141,6 +158,12 @@ export function LSDiscoverGroupsPanel({
             value={topicInput}
             onChange={setTopicInput}
             maxTags={5}
+            radius="xl"
+            styles={{
+              input: {
+                borderColor: "#E5E7EB",
+              },
+            }}
           />
         </Stack>
       </Paper>
@@ -156,9 +179,18 @@ export function LSDiscoverGroupsPanel({
             : "Something went wrong"}
         </Text>
       ) : discoverQuery.data?.length === 0 ? (
-        <Text c="dimmed" size="sm">
-          No public groups match your filters. Try different keywords or topics.
-        </Text>
+        <Paper
+          radius="xl"
+          p="lg"
+          withBorder
+          bg="white"
+          style={{ borderColor: "#E5E7EB" }}
+        >
+          <Text c="#64748B" size="sm">
+            No public groups match your filters. Try different keywords or
+            topics.
+          </Text>
+        </Paper>
       ) : (
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
           {discoverQuery.data?.map((g) => (

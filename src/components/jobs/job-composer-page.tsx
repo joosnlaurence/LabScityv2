@@ -116,6 +116,15 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
     [draft],
   );
 
+  const hasPublishableDescription = useMemo(() => {
+    const plainText = draft.description
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .trim();
+
+    return plainText.length > 0;
+  }, [draft.description]);
+
   const handlePublish = () => {
     setErrorMessage(null);
 
@@ -443,8 +452,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   disabled={
                     !publishNow ||
                     draft.title.trim().length === 0 ||
-                    !descriptionEditor ||
-                    descriptionEditor.isEmpty
+                    !hasPublishableDescription
                   }
                 >
                   Publish Job

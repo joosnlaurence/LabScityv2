@@ -155,25 +155,59 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
   const contentNode =
     activeGroupId && groupDetails ? (
       <Stack gap="md">
-        <Flex p={8} direction={{ base: "column", lg: "row" }} w="100%" gap={8}>
+        <Flex p={8} direction={{ base: "column", lg: "row" }} w="100%" gap="md">
           <Box flex={5}>
-            <Paper p="lg" radius="md" shadow="sm" bg="white">
+            <Paper
+              p="xl"
+              radius="xl"
+              withBorder
+              bg="white"
+              style={{
+                borderColor: "#E5E7EB",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                background:
+                  "linear-gradient(180deg, rgba(239,246,255,0.95) 0%, #FFFFFF 100%)",
+              }}
+            >
               <Group gap="md" align="flex-start">
                 <Avatar
-                  size={72}
+                  size={76}
                   radius="xl"
-                  color="navy.7"
-                  bg={groupDetails.avatar_url ? undefined : "navy.7"}
+                  color="blue"
+                  bg={groupDetails.avatar_url ? undefined : "#1F3A5F"}
                   src={groupDetails.avatar_url ?? undefined}
                 >
                   {groupInitials}
                 </Avatar>
                 <Stack gap={4} style={{ flex: 1 }}>
-                  <Text size="xl" fw={600} c="navy.7">
+                  <Text size="xl" fw={700} c="#123257">
                     {groupDetails.name}
                   </Text>
+                  <Group gap={8} wrap="wrap">
+                    <Text size="sm" fw={600} c="#2563EB">
+                      {groupDetails.memberCount} members
+                    </Text>
+                    {groupDetails.topics?.slice(0, 4).map((topic) => (
+                      <Text
+                        key={topic}
+                        size="xs"
+                        fw={700}
+                        c="#2563EB"
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          background: "#EEF2FF",
+                          border: "1px solid #DBEAFE",
+                        }}
+                      >
+                        {topic}
+                      </Text>
+                    ))}
+                  </Group>
                   {groupDetails.description && (
-                    <Text c="navy.7">{groupDetails.description}</Text>
+                    <Text c="#475569" lh={1.7}>
+                      {groupDetails.description}
+                    </Text>
                   )}
                 </Stack>
               </Group>
@@ -190,6 +224,8 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                   variant="light"
                   leftSection={<IconMessageCircle size={16} />}
                   fullWidth
+                  radius="xl"
+                  style={{ background: "#EFF6FF", color: "#1D4ED8" }}
                   onClick={() =>
                     router.push(`/chat/${groupDetails.conversation_id}`)
                   }
@@ -204,10 +240,11 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                       <Menu.Target>
                         <Button
                           variant="light"
-                          color="navy"
+                          radius="xl"
                           fullWidth
                           leftSection={<IconSettings size={16} />}
                           aria-label="Group settings"
+                          style={{ background: "#EFF6FF", color: "#1D4ED8" }}
                         >
                           Settings
                         </Button>
@@ -241,6 +278,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                       variant="light"
                       color="red"
                       fullWidth
+                      radius="xl"
                       leftSection={<IconLogout size={16} />}
                       onClick={() => setLeaveConfirmOpened(true)}
                       loading={leaveMutation.isPending}
@@ -274,20 +312,46 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
       </Center>
     ) : activeGroupId && !isDetailsLoading && !groupDetails ? (
       <Center h="100%">
-        <Stack align="center" gap="sm">
-          <Text c="dimmed" size="lg">
+        <Paper
+          radius="xl"
+          p="xl"
+          withBorder
+          bg="white"
+          style={{ borderColor: "#E5E7EB" }}
+        >
+          <Stack align="center" gap="sm">
+            <Text c="#64748B" size="lg">
             Group not found.
-          </Text>
-          <Button variant="light" onClick={() => router.push("/groups")}>
-            Back to Groups
-          </Button>
-        </Stack>
+            </Text>
+            <Button
+              variant="light"
+              radius="xl"
+              onClick={() => router.push("/groups")}
+            >
+              Back to Groups
+            </Button>
+          </Stack>
+        </Paper>
       </Center>
     ) : (
       <Center h="100%">
-        <Text c="dimmed" size="lg">
-          Select a group from the sidebar to get started.
-        </Text>
+        <Paper
+          radius="xl"
+          p="xl"
+          withBorder
+          bg="white"
+          style={{ borderColor: "#E5E7EB", maxWidth: 420 }}
+        >
+          <Stack align="center" gap="sm">
+            <Text c="#123257" size="xl" fw={700}>
+              Select a group
+            </Text>
+            <Text c="#64748B" size="sm" ta="center">
+              Open one of your active groups from the sidebar to jump into its
+              posts, members, and chat.
+            </Text>
+          </Stack>
+        </Paper>
       </Center>
     );
 
@@ -405,7 +469,15 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
             {sidebarNode}
           </Drawer>
 
-          <Stack gap={0} h="calc(100vh - 60px)" bg="gray.0">
+          <Stack
+            gap={0}
+            h="calc(100vh - 60px)"
+            bg="gray.0"
+            style={{
+              background:
+                "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
+            }}
+          >
             <Box p="xs">
               <Button
                 variant="subtle"
@@ -424,14 +496,21 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
           </Stack>
         </>
       ) : (
-        <Flex h="calc(100vh - 60px)" bg="gray.0">
+        <Flex
+          h="calc(100vh - 60px)"
+          bg="gray.0"
+          style={{
+            background:
+              "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
+          }}
+        >
           <Paper
             w={320}
             miw={320}
             radius={0}
-            bg="gray.1"
+            bg="#F8FAFC"
             style={{
-              borderRight: "1px solid var(--mantine-color-gray-3)",
+              borderRight: "1px solid #E2E8F0",
             }}
           >
             {sidebarNode}
