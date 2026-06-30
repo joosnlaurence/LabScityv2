@@ -125,6 +125,7 @@ export function useCreateProduct({
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) })
+      queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
     },
     onSuccess: () => {
       onSuccess?.();
@@ -144,6 +145,7 @@ export function useDeleteProduct(userId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
       notifications.show({color: 'green', message: 'Product successfully deleted!'})
     },
     onError: (err) => {
