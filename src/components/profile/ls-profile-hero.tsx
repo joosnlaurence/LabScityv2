@@ -53,7 +53,7 @@ const PROFILE_BANNER_HEIGHT = 150;
  * @param onReportClick - When viewing others: called when user clicks Report button.
  */
 export interface LSProfileHeroProps {
-  profileUser: User;
+  profile: User;
   isOwnProfile: boolean;
   onProfilePicSelect?: (file: File | null) => void;
   isUploadingProfilePic?: boolean;
@@ -81,7 +81,7 @@ function formatLocalTime(timeZone: string, now: Date = new Date()) {
  * above avatar so the camera/Edit overlay is visible). Other profile: Follow/Unfollow button.
  */
 export default function LSProfileHero({
-  profileUser,
+  profile,
   isOwnProfile,
   onProfilePicSelect,
   isUploadingProfilePic = false,
@@ -102,22 +102,22 @@ export default function LSProfileHero({
   if (listModal) lastList.current = listModal;
 
   const activeList = listModal ?? lastList.current;
-  const { data: followers = []} = useUserFollowers(profileUser.user_id);
-  const { data: following = []} = useUserFollowing(profileUser.user_id);
+  const { data: followers = []} = useUserFollowers(profile.user_id);
+  const { data: following = []} = useUserFollowing(profile.user_id);
 
-  const profileName = `${profileUser.first_name} ${profileUser.last_name}`;
-  const profileResearchInterest = profileUser.research_interests?.[0] ?? "";
-  const profileAbout = profileUser.about ?? undefined;
-  const profileSkill = profileUser.skills ?? undefined;
-  const profileHeaderImageURL = profileUser.profile_header_url ?? undefined;
-  const profilePicURL = profileUser.avatar_url ?? undefined;
-  const occupation = profileUser.occupation ?? undefined;
-  const workplace = profileUser.workplace ?? undefined;
-  const labDepartment = profileUser.lab_department ?? undefined;
-  const location = profileUser.location ?? undefined;
-  const timezone = profileUser.timezone ?? undefined;
+  const profileName = `${profile.first_name} ${profile.last_name}`;
+  const profileResearchInterest = profile.research_interests?.[0] ?? "";
+  const profileAbout = profile.about ?? undefined;
+  const profileSkill = profile.skills ?? undefined;
+  const profileHeaderImageURL = profile.profile_header_url ?? undefined;
+  const profilePicURL = profile.avatar_url ?? undefined;
+  const occupation = profile.occupation ?? undefined;
+  const workplace = profile.workplace ?? undefined;
+  const labDepartment = profile.lab_department ?? undefined;
+  const location = profile.location ?? undefined;
+  const timezone = profile.timezone ?? undefined;
 
-  const { data: pubFacets } = useGetPublicationFacets(profileUser.user_id);
+  const { data: pubFacets } = useGetPublicationFacets(profile.user_id);
   const researchAreas = useMemo(
     () => (pubFacets?.tags ?? []).slice(0, 3).map(t => t.name),
     [pubFacets]
@@ -292,6 +292,7 @@ export default function LSProfileHero({
               <LSEditProfileModal
                 opened={editModalOpened}
                 onClose={closeEditModal}
+                userId={profile.user_id}
               />
             </>
             ) : (

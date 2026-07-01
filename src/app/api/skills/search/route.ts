@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/supabase/server";
 import type { InfiniteScrollResponse } from "@/lib/types/api";
 
-const SKILLS_PAGE_SIZE = 10;
+const SKILLS_PAGE_SIZE = 20;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

@@ -13,7 +13,6 @@ import {
 import { useForm } from "@mantine/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
-import { useAuthContext } from "@/components/auth/auth-provider";
 import { useUserProfile } from "@/components/profile/use-profile";
 import { updateProfileAction } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
@@ -72,14 +71,12 @@ function toFormDefaults(v: UpdateProfileValues): EditProfileFormValues {
 export interface LSEditProfileModalProps {
   opened: boolean;
   onClose: () => void;
+  userId: string;
 }
 
-export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps) {
-  const { user } = useAuthContext();
+export function LSEditProfileModal({ opened, onClose, userId }: LSEditProfileModalProps) {
   const queryClient = useQueryClient();
-  const { data: profile } = useUserProfile(user?.id ?? "", {
-    enabled: !!user?.id,
-  });
+  const { data: profile } = useUserProfile(userId);
 
   const initialValues = useMemo(() => profileToEditValues(profile), [profile]);
 
@@ -91,7 +88,7 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: profileKeys.user(user?.id ?? ""),
+        queryKey: profileKeys.user(userId ?? ""),
       });
       onClose();
     },
@@ -172,11 +169,11 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
   const { data: skillResults } = useSkillSearch(debouncedSkill);
 
   const skillOptions = useMemo(() => {
-    const map = new Map<string, { value: string; label: string }>();
+    const map = new Map();
     for (const s of selectedSkills) map.set(s.value, s);
     for (const r of skillResults ?? []) {
       const v = String(r.id);
-      if (!map.has(v)) map.set(v, { value: v, label: r.name });
+      if(!map.has(v)) map.set(v, { value: v, label: r.name });
     }
     return [...map.values()];
   }, [selectedSkills, skillResults]);
@@ -225,23 +222,16 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
             {...form.getInputProps("about")}
           />
 
-          <Autocomplete
+          <TextInput
             label="Institution / Workplace"
             placeholder="Select or type..."
-            data={[
-              "University of Central Florida",
-              "University of Florida",
-              "Harvard",
-              "School of Rock",
-            ]}
             key={form.key("workplace")}
             {...form.getInputProps("workplace")}
           />
 
-          <Autocomplete
+          <TextInput
             label="Occupation"
             placeholder="Select or type..."
-            data={["Researcher", "Professor", "PhD Student", "Engineer"]}
             key={form.key("occupation")}
             {...form.getInputProps("occupation")}
           />
@@ -267,6 +257,7 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
             label="Time Zone"
             placeholder="Select your time zone"
             data={timezones}
+            comboboxProps={{ shadow: 'md' }}
             searchable
             clearable
             nothingFoundMessage="No matching time zone"
@@ -286,21 +277,14 @@ export function LSEditProfileModal({ opened, onClose }: LSEditProfileModalProps)
             label='Skills'
             placeholder="Search skills by name..."
             data={skillOptions}
+            comboboxProps={{ shadow: 'md' }}
             searchable
             searchValue={skillSearch}
             onSearchChange={setSkillSearch}
-            clearSearchOnChange={false}
-            value={form.getValues().skill}
-            onChange={(ids) => {
-              form.setFieldValue("skill", ids);
-              setSelectedSkills(
-                ids.map(
-                  (id) => skillOptions.find((o) => o.value === id) ?? { value: id, label: id },
-                ),
-              )
-            }}
             nothingFoundMessage="No matching skills"
+            clearSearchOnChange={false}
             key={form.key("skill")}
+            {...form.getInputProps('skill')}
           />
 
           <Button type="submit" loading={updateMutation.isPending}>

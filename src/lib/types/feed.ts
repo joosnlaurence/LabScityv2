@@ -27,7 +27,6 @@ export interface User {
   skills?: Skill[] | null;
   /** Profile articles (title + URL). From public.profile.articles jsonb. */
   articles?: { title: string; url: string }[] | null;
-  banner_pic_url?: string | null;
   profile_header_url?: string | null;
   timezone?: string | null;
   lab_department?: string | null;

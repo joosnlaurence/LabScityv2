@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { loginAction } from "@/lib/actions/auth";
 import { LSLoginForm } from "@/components/auth/ls-login-form";
 
 export const metadata: Metadata = {
@@ -15,5 +14,5 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const showBannedMessage = params?.banned === "1";
-  return <LSLoginForm loginAction={loginAction} showBannedMessage={showBannedMessage} />;
+  return <LSLoginForm showBannedMessage={showBannedMessage} />;
 }

@@ -80,6 +80,7 @@ import type { HomeFeedProps } from "./home-feed.types";
 import { PostFollowButton } from "./post-follow-button";
 import { useHomeFeed } from "./use-home-feed";
 import { useGetUser } from "../data/use-data";
+import { createClient } from "@/supabase/client";
 
 const DEFAULT_EDITOR_TEXT_COLOR = "#000000";
 const DEFAULT_EDITOR_FONT_SIZE = "16px";
@@ -1754,11 +1755,15 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
       if (!res.ok) {
         throw new Error("Failed to fetch collaborators");
       }
-      return (await res.json()) as GetCollaboratorsResult[];
+      const data = (await res.json()) as GetCollaboratorsResult[];
+      console.log(data);
+      return data;
     },
     enabled: Boolean(currentUserId),
   });
   
+  const supabase = createClient();
+
   return (
     <SectionCard
       title="Recommended Collaborators"
@@ -1766,35 +1771,47 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
       actionLabel="See all"
     >
       <Stack gap={0}>
-        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => (
-          <Group
-            key={person.profile_user_id}
-            py="sm"
-            wrap="nowrap"
-            style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
-          >
-            <Avatar component={Link} href={`/profile/${person.profile_user_id}`} radius="xl" color="blue">
-              {initials(`${person.first_name} ${person.last_name}`)}
-            </Avatar>
-            <Box flex={1} miw={0}>
-              <Anchor component={Link} href={`/profile/${person.profile_user_id}`}>
-                <Text size="sm" fw={800} truncate>
-                  {person.first_name} {person.last_name}
+        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => {
+          const { data } = supabase.storage
+            .from("profile_pictures")
+            .getPublicUrl(person?.profile_pic_path ?? '');
+
+          return (
+            <Group
+              key={person.profile_user_id}
+              py="sm"
+              wrap="nowrap"
+              style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
+            >
+              <Avatar 
+                component={Link} 
+                href={`/profile/${person.profile_user_id}`} 
+                radius="xl" 
+                color="blue"
+                src={data.publicUrl}
+              >
+                {initials(`${person.first_name} ${person.last_name}`)}
+              </Avatar>
+              <Box flex={1} miw={0}>
+                <Anchor component={Link} href={`/profile/${person.profile_user_id}`}>
+                  <Text size="sm" fw={800} truncate>
+                    {person.first_name} {person.last_name}
+                  </Text>
+                </Anchor>
+                <Text size="xs" c="dimmed" truncate>
+                  {person.occupation || person.workplace || "Researcher"}
                 </Text>
-              </Anchor>
-              <Text size="xs" c="dimmed" truncate>
-                {person.occupation || person.workplace || "Researcher"}
-              </Text>
-              <Badge size="xs" color="green" variant="light" mt={4}>
-                {Math.round(person.cosine_similarity * 100)}% match
-              </Badge>
-            </Box>
-            <PostFollowButton
-              currentUserId={currentUserId ?? null}
-              targetUserId={person.profile_user_id}
-            />
-          </Group>
-        ))}
+                <Badge size="xs" color="green" variant="light" mt={4}>
+                  {Math.round(person.cosine_similarity * 100)}% match
+                </Badge>
+              </Box>
+              <PostFollowButton
+                currentUserId={currentUserId ?? null}
+                targetUserId={person.profile_user_id}
+              />
+            </Group>
+          )
+        })}
         {collaboratorsQuery.isLoading ? (
           <Text size="sm" c="dimmed">
             Loading collaborators...

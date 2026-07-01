@@ -51,7 +51,6 @@ import type {
   UpdatePostAction,
 } from "@/components/feed/home-feed.types";
 import type {
-  EditProfileHeroProps,
   FollowProfileHeroProps,
   ProfileMediaUploadProps,
   ProfilePostActionsResult,
@@ -244,7 +243,7 @@ const LSProfileMobileLayout = ({
   return (
     <Stack p={8} gap="lg">
       <LSProfileHero
-        profileUser={profile!}
+        profile={profile!}
         isOwnProfile={isOwnProfile}
         onProfilePicSelect={mediaUpload?.onProfilePicSelect}
         isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}
@@ -377,7 +376,7 @@ const LSProfileDesktopLayout = ({
           {
             profile ?
             <LSProfileHero
-              profileUser={profile}
+              profile={profile}
               isOwnProfile={isOwnProfile}
               onProfilePicSelect={mediaUpload?.onProfilePicSelect}
               isUploadingProfilePic={mediaUpload?.isUploadingProfilePic}

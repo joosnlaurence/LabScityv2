@@ -8,10 +8,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
-import type { loginAction } from "@/lib/actions/auth";
 import { useIsMobile } from "@/app/use-is-mobile";
-
-type LoginAction = typeof loginAction;
+import { createClient } from "@/supabase/client";
 
 const inputStyles = {
   height: "2rem",
@@ -23,10 +21,8 @@ const inputStyles = {
 };
 
 export function LSLoginForm({
-  loginAction,
   showBannedMessage = false,
 }: {
-  loginAction: LoginAction;
   showBannedMessage?: boolean;
 }) {
   const router = useRouter();
@@ -46,19 +42,38 @@ export function LSLoginForm({
     setServerError(null); // Clear previous errors
 
     try {
-      const formData = new FormData();
-      formData.append("email", data.email);
-      formData.append("password", data.password);
-      const result = await loginAction(formData);
-      if (result.success) {
-        setSignInSuccess(true);
-        router.push("/home");
-      } else if (result.error) {
+      const supabase = createClient();
+      const { data: login, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
+      });
+
+      if(error) {
         setSignInSuccess(false);
-        setServerError(result.error);
+        setServerError(error.message);
+        return;
       }
-    } catch (error) {
-      setServerError("An unexpected error occurred. Please try again.");
+
+      if(login.user) {
+        const { data: user } = await supabase
+          .from("users")
+          .select("is_banned")
+          .eq("user_id", login.user.id)
+          .maybeSingle();
+
+          if(user?.is_banned) {
+            await supabase.auth.signOut();
+            setSignInSuccess(false);
+            setServerError("This account has been banned");
+            return;
+          }
+      }
+
+      setSignInSuccess(true);
+      router.refresh();
+      router.push("/home");
+    } catch {
+      setServerError("An unexpected error occurred. Please try again.")
     }
   };
 
