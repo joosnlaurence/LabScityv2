@@ -1,6 +1,6 @@
 import { FeedCommentItem, User } from '@/lib/types/feed'
 import { PublicationType } from './publication';
-import { ProductType } from '../constants/product';
+import { OpenAlexWorkType } from './openalex';
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -65,7 +65,7 @@ export interface Product {
   images: ProductImage[];
   contributors: string[] | null;
   is_featured: boolean;
-  product_type: ProductType | null;
+  product_type: OpenAlexWorkType | null;
   topics: string[] | null;
 }
 

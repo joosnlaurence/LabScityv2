@@ -1,5 +1,7 @@
+import { OPENALEX_TYPE_VALUES } from "../constants/openalex";
 import { ProductType } from "../constants/product";
 import { Product } from "./data";
+import { OPENALEX_TYPE_DESIGNATIONS } from "./openalex";
 
 export interface ProductFilters {
   search: string;
@@ -21,3 +23,5 @@ export interface InfiniteProducts {
     product_id: number
   } | null
 }
+
+export const PRODUCT_TYPES = OPENALEX_TYPE_DESIGNATIONS

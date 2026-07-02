@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "src/lib/constants/openalex.tsx"  ],
   "exclude": ["node_modules", "components_new"]
 }

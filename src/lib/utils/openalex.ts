@@ -1,4 +1,5 @@
-import { OPENALEX_TYPE_MAP } from "../constants/publications";
+import { OPENALEX_TYPE_MAP } from "../constants/openalex";
+import { OPENALEX_TYPE_DESIGNATIONS as OPENALEX_TYPE_DESIGNATIONS, OpenAlexTypeDesignation, OpenAlexWorkType } from "../types/openalex";
 import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
 import { doiSchema } from "../validations/publication";
 
@@ -46,6 +47,11 @@ export function sanitizeTitle(title: string | null): string {
     .replace(/\s+([)\]}])/g, "$1")
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function resolveOpenAlexTypeDesignation(raw: string): OpenAlexTypeDesignation {
+  const typeDesignation = OPENALEX_TYPE_MAP[raw] ?? 'publication';
+  return OPENALEX_TYPE_DESIGNATIONS[typeDesignation];
 }
 
 export function parseOpenAlexWork(work: OpenAlexWork): ParsedOpenAlexWork {

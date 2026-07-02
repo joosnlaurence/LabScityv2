@@ -17,41 +17,26 @@ import {
 import { Carousel } from "@mantine/carousel"
 import NextImage from "next/image";
 import { 
-  IconAppWindow,
   IconBrandGithub,
-  IconCpu, 
   IconDots, 
   IconEdit, 
   IconExternalLink, 
-  IconFile, 
-  IconFlask,  
   IconLink,  
   IconPin, 
   IconPinFilled, 
   IconStarFilled,
-  IconTool,
   IconTrash,
   IconWorld,
-  ReactNode, 
 } from "@tabler/icons-react"
 // import NextLink from 'next/link';
 import { useDisclosure } from "@mantine/hooks";
 import { Product } from "@/lib/types/data";
 import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 import classes from './ls-product.module.css';
+import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
 
 const visibleAuthors = ['Barbara J. Sharanowski', 'Jason Laureano', 'Bob Christ']
 const authorOverflow = 0;
-
-const TYPE_ICON_PROPS = { size: "0.85rem", color: "var(--mantine-color-indigo-8)" };
-
-const TYPE_ICONS: Record<string, ReactNode> = {
-  tool: <IconTool {...TYPE_ICON_PROPS} />,
-  ai_tool: <IconCpu {...TYPE_ICON_PROPS} />,
-  platform: <IconAppWindow {...TYPE_ICON_PROPS} />,
-  simulation: <IconFlask {...TYPE_ICON_PROPS} />,
-  other: <IconFile {...TYPE_ICON_PROPS}/>
-};
 
 export default function LSProduct(
   { 
@@ -74,7 +59,7 @@ export default function LSProduct(
 )  {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
-  const typeIcon = TYPE_ICONS[product.product_type ?? 'other'];
+  const typeIcon = PUB_PRODUCT_TYPE_ICONS[product.product_type ?? 'other'];
   const websiteLink = product.links.find((link) => link.kind === 'website');
   const githubLink = product.links.find((link) => link.kind === 'github');
   const otherLinks = product.links.filter((link) => link.kind === 'other');
@@ -182,7 +167,7 @@ export default function LSProduct(
               lh='1rem'
               leftSection={typeIcon}
             >
-              {PRODUCT_TYPE_LABELS[product.product_type ?? 'other']}
+              {OPENALEX_WORK_TYPE_LABELS[product.product_type ?? 'other']}
             </Badge>
           </Group>
 

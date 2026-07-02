@@ -3,7 +3,8 @@ import { createClient } from "@/supabase/server";
 import { ApiResponse } from "@/lib/types/api";
 import { OpenAlexWork, ParsedOpenAlexWork } from "@/lib/types/publication";
 import { orcidSchema } from "@/lib/validations/publication";
-import { parseOpenAlexWork } from "@/lib/utils/openalex";
+import { parseOpenAlexWork, resolveOpenAlexTypeDesignation } from "@/lib/utils/openalex";
+import { OPENALEX_TYPE_DESIGNATIONS } from "@/lib/types/openalex";
 
 export async function POST(request: Request) {
   const { orcid, profile_user_id } = await request.json();
@@ -135,8 +136,12 @@ export async function GET(request: Request) {
     const data = await res.json();
     const parsedWorks: ParsedOpenAlexWork[] = 
       (data.results ?? [])
-      .map((raw: OpenAlexWork) => parseOpenAlexWork(raw))
-      .filter((work: ParsedOpenAlexWork) => work.doi !== null);
+      .map((raw: OpenAlexWork) => {
+        const parsed = parseOpenAlexWork(raw);
+        const typeDesignation = OPENALEX_TYPE_DESIGNATIONS[parsed.type] ?? 'product';
+        return typeDesignation === 'publication' || typeDesignation === 'publication_product' ? parsed : null; 
+      })
+      .filter((work: ParsedOpenAlexWork | null): work is ParsedOpenAlexWork => work !== null && work.doi !== null);
 
     return NextResponse.json<ApiResponse<ParsedOpenAlexWork[]>>({
       success: true,
