@@ -5,6 +5,7 @@ import type { Publication } from "@/lib/types/data";
 
 // GET /api/publications/all?userId={userId}
 // returns all publications that belong to the specified user 
+// merges the updates from user_publications jsonb on top of the existing publication data
 // query params = userId
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
         .select(`
           user_id,
           is_featured,
+          updates,
           publications (
             publication_id,
             title,
@@ -46,6 +48,7 @@ export async function GET(request: Request) {
         .returns<{
           user_id: string;
           is_featured: boolean;
+          updates: Record<string, unknown> | null;
           publications: (Publication & {
             publication_tags: { tags: { name: string } | null }[];
           }) | null;
@@ -63,8 +66,9 @@ export async function GET(request: Request) {
             success: true, 
             data: (data ?? [])
               .filter((row) => row.publications !== null)
-              .map(({ is_featured, publications }) => ({
+              .map(({ is_featured, updates, publications }) => ({
                 ...publications!,
+                ...updates,
                 is_featured,
                 topics: (publications?.publication_tags ?? [])
                   .map((pt) => pt.tags?.name)

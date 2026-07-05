@@ -247,7 +247,8 @@ export async function createPublication(
 // gets the logged in user, returns early if not authenticated
 // make sure the publicationId is a valid positive integer
 // confirms that the user owns the publication, and returns unauthorized otherwise
-// returns the updated publication row
+// user updates go to user_publications updates (jsonb) column
+// returns the existing publication row with the user specific updates merged on top
 
 export async function updatePublication(
     publicationId: number,
@@ -294,7 +295,7 @@ export async function updatePublication(
             };
         }
 
-        const updateData = Object.fromEntries(
+        const updates = Object.fromEntries(
             Object.entries({
                 title: parsed.title,
                 doi: parsed.doi,
@@ -308,12 +309,12 @@ export async function updatePublication(
             }).filter(([, value]) => value !== undefined)
         );
 
-        const { data: publication, error: updateError } = await supabase
-            .from("publications")
-            .update(updateData)
-            .eq("publication_id", publicationId)
-            .select()
-            .single();
+        const { error: updateError } = await supabase
+            .from("user_publications")
+            .update({ updates })
+            .eq("user_id", authData.user.id)
+            .eq("publication_id", publicationId);
+
 
         if (updateError){
             return {
@@ -322,9 +323,22 @@ export async function updatePublication(
             };
         }    
 
+        const { data: publication, error: fetchError } = await supabase
+            .from("publications")
+            .select("*")
+            .eq("publication_id", publicationId)
+            .single();
+
+        if (fetchError || !publication) {
+            return {
+                success: false,
+                error: fetchError?.message ?? "Failed to fetch publication"
+            };
+        }
+
         return {
             success: true,
-            data: publication,
+            data: { ...publication, ...updates },
         };
 
     } catch (error){
