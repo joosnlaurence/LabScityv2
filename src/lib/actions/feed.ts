@@ -16,6 +16,7 @@ import {
 } from "@/lib/validations/post";
 import { parsePostContent } from "@/lib/utils/post-content";
 import { createClient } from "@/supabase/server";
+import type { DataResponse } from "@/lib/types/data";
 
 const idSchema = z.string().min(1, "ID is required");
 const postMediaBucket = "post_images";
@@ -1091,4 +1092,85 @@ export async function getPostDetail(
     }
     return { success: false, error: "Failed to fetch post" };
   }
+}
+
+
+export async function savePost(
+  postId: string
+): Promise<DataResponse<void>> {
+    try {
+        const supabase = await createClient();
+        const { data: authData } = await supabase.auth.getUser();
+
+        if (!authData.user) {
+            return { 
+              success: false, 
+              error: "Authentication required" 
+            };
+        }
+
+        idSchema.parse(postId);
+
+        const { error } = await supabase
+            .from("saved_posts")
+            .insert({
+                profile_user_id: authData.user.id,
+                post_id: parseInt(postId)
+            });
+
+        if (error) {
+            return { 
+              success: false, 
+              error: error.message 
+            };
+        }
+
+        return {
+           success: true 
+          };
+    } catch {
+        return { 
+          success: false, 
+          error: "Failed to save post" 
+        };
+    }
+}
+
+export async function unsavePost(
+  postId: string
+): Promise<DataResponse<void>> {
+    try {
+        const supabase = await createClient();
+        const { data: authData } = await supabase.auth.getUser();
+
+        if (!authData.user) {
+            return { 
+              success: false, 
+              error: "Authentication required" 
+            };
+        }
+
+        idSchema.parse(postId);
+
+        const { error } = await supabase
+            .from("saved_posts")
+            .delete()
+            .eq("profile_user_id", authData.user.id)
+            .eq("post_id", parseInt(postId));
+
+        if (error) {
+            return { 
+              success: false, 
+              error: error.message 
+            };
+        }
+
+        return { 
+          success: true 
+        };
+    } catch {
+        return {
+          success: false, 
+          error: "Failed to unsave post" };
+    }
 }
