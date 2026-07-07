@@ -549,20 +549,33 @@ export async function removeJobSkill(
         };
     }
 }
-export async function saveJob(jobID:number): Promise<DataResponse<void>>
-{
+export async function saveJob(
+    jobId: number
+): Promise<DataResponse<void>>{
     try {
         const supabase = await createClient();
 
         const { data: authData } = await supabase.auth.getUser();
 
         if (!authData.user){
-            return { success: false, error: "Authenication required"}
+            return { 
+                success: false, 
+                error: "Authenication required"
+            }
+        }
+
+        if(!Number.isInteger(jobId) || jobId <= 0){
+            return {
+                success: false,
+                error: 'Invalid job id'
+            };
         }
         
-        const { error: jobError } = await supabase.from("saved_jobs").insert({
-            profile_user_id: authData.user.id,
-            jobs_id: jobID
+        const { error: jobError } = await supabase
+            .from("saved_jobs")
+            .insert({
+                profile_user_id: authData.user.id,
+                jobs_id: jobId
         });
 
         if (jobError) {
@@ -575,45 +588,56 @@ export async function saveJob(jobID:number): Promise<DataResponse<void>>
         return {
             success: true
         }
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return{
-                success: false,
-                error: error.issues[0]?.message ?? "Validation failed",
-            }
+    } catch {
+        return {
+            success: false,
+            error: 'Failed to save job'
         }
-        return {success: false, error: "Failed to save job"};
     }
 }
 
-export async function unsaveJob(jobID: number): Promise<DataResponse<void>> {
+export async function unsaveJob(
+    jobId: number
+): Promise<DataResponse<void>> {
     try {
         const supabase = await createClient();
 
         const { data: authData } = await supabase.auth.getUser();
 
         if (!authData.user) {
-            return { success: false, error: "Authentication required" };
+            return { 
+                success: false, 
+                error: "Authentication required" 
+            };
+        }
+
+        if(!Number.isInteger(jobId) || jobId <= 0){
+            return {
+                success: false,
+                error: 'Invalid job id'
+            };
         }
 
         const { error } = await supabase
             .from("saved_jobs")
             .delete()
             .eq("profile_user_id", authData.user.id)
-            .eq("jobs_id", jobID);
+            .eq("jobs_id", jobId);
 
         if (error) {
-            return { success: false, error: error.message };
+            return { 
+                success: false, 
+                error: error.message 
+            };
         }
 
-        return { success: true };
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return{
-                success: false,
-                error: error.issues[0]?.message ?? "Validation failed",
-            }
+        return { 
+            success: true 
+        };
+    } catch {
+        return {
+            success: false,
+            error: 'Failed to unsave job'
         }
-        return { success: false, error: "Failed to unsave job" };
     }
 }
