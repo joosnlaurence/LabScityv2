@@ -1,4 +1,4 @@
-import { FeedCommentItem, User } from '@/lib/types/feed'
+import { FeedCommentItem, FeedPostItem, User } from '@/lib/types/feed'
 import { PublicationType } from './publication';
 import { OpenAlexWorkType } from './openalex';
 
@@ -16,6 +16,7 @@ export interface Post {
   scientific_field?: string | null;
   like_amount: number;
   isLiked?: boolean;
+  isSaved?: boolean;
   comments?: FeedCommentItem[];
 }
 

@@ -102,6 +102,7 @@ export const postSchema = z.object({
   scientific_field: z.string().nullable().optional(),
   like_amount: z.number().min(0, "Like amount cannot be negative"),
   isLiked: z.boolean().optional(),
+  isSaved: z.boolean().optional(),
   comments: z.array(commentItemSchema).optional(),
 });
 

@@ -251,7 +251,7 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
   );
 }
 
-function JobCard({ job }: { job: JobViewModel }) {
+export function JobCard({ job }: { job: JobViewModel }) {
   const [saved, setSaved] = useState(false);
 
   return (

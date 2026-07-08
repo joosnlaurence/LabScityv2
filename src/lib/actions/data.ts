@@ -142,7 +142,8 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
         media_width,
         media_height,
         like_amount,
-        likes(user_id)
+        likes(user_id),
+        saved_posts(profile_user_id)
       `);
 
     // Step 4: Apply filters
@@ -210,7 +211,7 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
     // Fetch comments for each post
     const postsWithComments = await Promise.all(
       (posts ?? []).map(async (post: any) => {
-        const { likes, ...rest } = post;
+        const { likes, saved_posts, ...rest } = post;
         const { data: comments } = await supabase
           .from("comment")
           .select(`
@@ -224,12 +225,16 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
           .eq("post_id", post.post_id)
           .eq("taken_down", false)
           .order("created_at", { ascending: false });
+        
 
         return {
           ...rest,
           isLiked: currentUserId
             ? (likes ?? []).some((l: any) => l.user_id === currentUserId)
             : false,
+          isSaved: currentUserId
+            ? (saved_posts ?? []).some((s: any) => s.profile_user_id === currentUserId)
+            : false, 
           comments: (comments ?? []).map((c: any) => ({
             id: String(c.comment_id),
             userId: c.user_id,
@@ -321,8 +326,6 @@ function formatQuery(query: string) {
   const formattedQuery = words.map(w => `${w}'':*`).join(' & ');
   return formattedQuery;
 }
-
-// TODO: ADD pagination for search
 
 /**
  * Retrieves a list user generated content (Users, Posts, Articles, and Groups)

@@ -1,0 +1,6 @@
+.tab:hover {
+  background-color: var(--mantine-color-gray-2);
+}
+.tabLabel[data-active] {
+  text-shadow: 0.02em 0 0 currentColor;
+}

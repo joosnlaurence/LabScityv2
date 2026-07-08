@@ -58,22 +58,6 @@ export const groupKeys = {
   popular: (limit: number) => [...groupKeys.all, "popular", limit] as const,
 };
 
-export const dataKeys = {
-  all: ["data"] as const,
-  post: (postId: number) => [...dataKeys.all, "post", postId] as const,
-  userPosts: (userId: string, cursor?: string) =>
-    [...dataKeys.all, "userPosts", userId, cursor] as const,
-  search: (query: string, limit?: number) =>
-    [...dataKeys.all, "search", query, limit] as const,
-  searchUsers: (query: string, limit?: number) =>
-    [...dataKeys.all, "searchUsers", query, limit] as const,
-  searchPosts: (query: string, limit?: number) =>
-    [...dataKeys.all, "searchPosts", query, limit] as const,
-  searchGroups: (query: string, limit?: number) =>
-    [...dataKeys.all, "searchGroups", query, limit] as const,
-  user: (userId: string) => [...dataKeys.all, "user", userId] as const,
-};
-
 export const publicationKeys = {
   all: ["publications"] as const,
   lists: () => [...publicationKeys.all, 'list'] as const,
@@ -93,4 +77,10 @@ export const productKeys = {
 export const tagKeys = {
   all: ["tags"] as const,
   search: (q: string) => [...tagKeys.all, 'search', q] as const,
+}
+
+export const bookmarkKeys = {
+  all: ["bookmarks"] as const,
+  list: (userId: string) => [...bookmarkKeys.all, userId],
+  counts: (userId: string) => [...bookmarkKeys.all, "counts", userId]
 }

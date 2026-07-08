@@ -29,7 +29,7 @@ import classes from "./ls-profile-view.module.css"
  * @param date - ISO date string or parseable date.
  * @returns "just now", "5m ago", "3h ago", "2d ago", or toLocaleDateString() for older dates.
  */
-function getTimeAgo(date: string): string {
+export function getTimeAgo(date: string): string {
   const now = new Date();
   const postDate = new Date(date);
   const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
@@ -75,6 +75,8 @@ import LSProductsList from "./products/ls-products-list";
 import { getLegacyPostText } from "@/lib/utils/post-content";
 import { FeedPostCard, RecommendedCollabsCard } from "../feed/home-feed";
 import StickyBox from "react-sticky-box";
+import { LSBookmarks } from "./bookmarks/ls-bookmarks";
+import { useSetSavedPost } from "../feed/use-feed";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -356,7 +358,9 @@ const LSProfileDesktopLayout = ({
     })),
     isLiked: post.isLiked ?? false,
     likeCount: post.like_amount ?? 0,
+    isSaved: post.isSaved ?? false
   }));
+  const setSaved = useSetSavedPost(userId);
 
   if (profileQuery.status === "pending") {
     return (
@@ -421,6 +425,10 @@ const LSProfileDesktopLayout = ({
               <Tabs.Tab value="posts">Posts</Tabs.Tab>
               <Tabs.Tab value="publications">Publications</Tabs.Tab>
               <Tabs.Tab value="products">Research Products</Tabs.Tab>
+              {
+                isOwnProfile &&
+                <Tabs.Tab value="bookmarks">Bookmarks</Tabs.Tab>
+              }
             </Tabs.List>
 
             <Tabs.Panel value="posts">
@@ -436,7 +444,6 @@ const LSProfileDesktopLayout = ({
                       key={post.id}
                       post={post}
                       currentUserId={currentUserId}
-                      isPinned={false}
                       commentOpen={activeCommentPostId === post.id}
                       onToggleComments={() =>
                         setActiveCommentPostId((c) => (c === post.id ? null : post.id))
@@ -444,8 +451,7 @@ const LSProfileDesktopLayout = ({
                       onAddComment={async (postId, values) => await actions.handleAddComment(postId, values)}
                       onLike={() => actions.handleTogglePostLike(post.id)}
                       onDelete={() => actions.handleDeletePost(post.id)}
-                      onTogglePinned={() => {}}
-                      hidePin
+                      onSetSaved={(postId, save) => setSaved.mutate({ postId, save })}
                       hideYourPostBadge
                     />
                   ))}
@@ -471,6 +477,10 @@ const LSProfileDesktopLayout = ({
 
             <Tabs.Panel value='products'>
               <LSProductsList userId={userId}/>
+            </Tabs.Panel>
+
+            <Tabs.Panel value='bookmarks'>
+              <LSBookmarks userId={userId}/>
             </Tabs.Panel>
 
           </Tabs>
@@ -500,7 +510,7 @@ const LSProfileDesktopLayout = ({
  */
 export function LSProfileView(props: LSProfileViewProps) {
   const isMobile = useIsMobile();
-  const { actions, editProfile, followProfile, mediaUpload } =
+  const { actions, followProfile, mediaUpload } =
     useLSProfileView(props);
 
   const [reportOverlayOpen, setReportOverlayOpen] = useState(false);
