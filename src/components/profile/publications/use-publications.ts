@@ -1,6 +1,8 @@
+import { setSavedPublication } from "@/lib/actions/bookmarks";
 import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
-import { publicationKeys } from "@/lib/query-keys";
+import { bookmarkKeys, publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
+import { SavedItemsData } from "@/lib/types/bookmarks";
 import { InfinitePublications, ParsedOpenAlexWork, PubFilters, PublicationFacets } from "@/lib/types/publication";
 import { notifications } from "@mantine/notifications";
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -163,6 +165,77 @@ export function useGetPublicationFacets(userId: string) {
       const apiResponse: ApiResponse<PublicationFacets> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error);
       return apiResponse.data;
+    }
+  })
+}
+
+export function useSetSavedPublication(userId: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ publicationId, isSaved }: { publicationId: number, isSaved: boolean}) => {
+      const res = await setSavedPublication(publicationId, isSaved);
+      if(!res.success) throw new Error(res.error);
+      return res.success;
+    },
+    onMutate: async ({ publicationId, isSaved }) => {
+      await queryClient.cancelQueries({ queryKey: publicationKeys.all });
+      await queryClient.cancelQueries({ queryKey: bookmarkKeys.all });
+      const snapshot = [
+        ...queryClient.getQueriesData({ queryKey: publicationKeys.all }),
+        ...queryClient.getQueriesData({ queryKey: bookmarkKeys.all })
+      ];
+
+      queryClient.setQueriesData({ queryKey: publicationKeys.lists() }, (old) => {
+        const data = old as { pages?: InfinitePublications[]; pageParams?: any } | undefined;
+        if(!data?.pages) return old;
+        return {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            publications: page.publications.map((pub) => 
+              String(pub.publication_id) === String(publicationId) ? { ...pub, isSaved} : pub,
+            ),
+          })),
+        }
+      });
+
+      queryClient.setQueriesData({ queryKey: bookmarkKeys.all }, (old) => {
+        const data = old as SavedItemsData | undefined;
+        if(!Array.isArray(data?.publications)) return old;
+        return {
+          ...data,
+          publications: data.publications.map(row => 
+            String(row.publication_id) === String(publicationId) 
+            ? 
+            { ...row, publications: { ...row.publications, isSaved } }
+            : row,
+          ),
+        }
+      });
+
+      return { snapshot };
+    },
+    onSuccess: (_data, { publicationId, isSaved}) => {
+      if(!isSaved) {
+        queryClient.setQueriesData({ queryKey: bookmarkKeys.list(userId) }, (old) => {
+          const data = old as SavedItemsData | undefined;
+          if(!Array.isArray(data?.publications)) return old;
+          return { ...data, publications: data.publications.filter(pub => pub.publication_id !== publicationId) }
+        });
+      }
+      notifications.show({color: 'green', message: `Publication ${isSaved ? 'saved' : 'unsaved'}!`});
+    },
+    onError: (error, _vars, context) => {
+      if(context?.snapshot) {
+        for (const [key, data] of context.snapshot) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+      notifications.show({ color: "red", title: "Error saving publication", message: error.message });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
     }
   })
 }

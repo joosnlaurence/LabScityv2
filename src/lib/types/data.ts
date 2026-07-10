@@ -83,6 +83,7 @@ export interface Publication {
   type: PublicationType | null;
   is_featured: boolean;
   topics: Array<string> | null;
+  isSaved: boolean;
 }
 
 export interface JobTag {

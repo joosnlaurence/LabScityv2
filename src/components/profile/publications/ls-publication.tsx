@@ -18,6 +18,7 @@ import {
 } from "@mantine/core"
 import { 
   IconBook, 
+  IconBookmark, 
   IconChevronRight,  
   IconDots, 
   IconEdit, 
@@ -36,8 +37,19 @@ import classes from './ls-publications.module.css';
 import { Publication } from "@/lib/types/data";
 import { useDisclosure } from "@mantine/hooks";
 import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICON_PROPS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
+import { warnOptionHasBeenMovedOutOfExperimental } from "next/dist/server/config";
 
 const ICON_SIZE = "0.85rem";
+
+interface LSPublicationProps { 
+  pub: Publication, 
+  isOwner: boolean, 
+  onDeleteClick?: () => void, 
+  isDeleting?: boolean,
+  onFeaturedClick?: () => void,
+  featureBtnDisabled?: boolean,
+  onSaveClick?: () => void,
+} 
 
 export default function LSPublication(
   { 
@@ -46,17 +58,9 @@ export default function LSPublication(
     onDeleteClick, 
     isDeleting, 
     onFeaturedClick,
-    featureBtnDisabled
-  }
-  : 
-  { 
-    pub: Publication, 
-    isOwner: boolean, 
-    onDeleteClick?: () => void, 
-    isDeleting?: boolean,
-    onFeaturedClick?: () => void,
-    featureBtnDisabled?: boolean,
-  } 
+    featureBtnDisabled,
+    onSaveClick,
+  }: LSPublicationProps
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
@@ -373,12 +377,23 @@ export default function LSPublication(
             }
           </Group>
 
+          <Group gap='xs'>
+          {
+            !!onSaveClick &&
+            <ActionIcon
+              variant='subtle'
+              size='lg'
+              onClick={onSaveClick}
+            >
+              <IconBookmark size='1.5rem' stroke='1.5' fill={pub.isSaved ? 'currentColor' : 'none'}/>
+            </ActionIcon>
+          }
           {/* Update Buttons */}
           {
             isOwner &&             
             <Menu position="top-end" shadow="md">
               <Menu.Target>
-                <ActionIcon bdrs='md' variant='outline' size='lg'>
+                <ActionIcon bdrs='md' variant='subtle' size='lg'>
                   <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
                 </ActionIcon>
               </Menu.Target>
@@ -397,6 +412,7 @@ export default function LSPublication(
               </Menu.Dropdown>
             </Menu>
           }
+          </Group>
         </Group>
       </Stack>
     </Card>

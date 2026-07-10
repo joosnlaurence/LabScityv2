@@ -6,6 +6,7 @@ import LSPublication from "../publications/ls-publication";
 import LSProduct from "../products/ls-product";
 import { JobCard } from "@/components/jobs/jobs-page";
 import { IconBookmarkOff } from "@tabler/icons-react";
+import { useSetSavedPublication } from "../publications/use-publications";
 
 function EmptyBookmarksList({label}: {label: string}) {
   return (
@@ -25,6 +26,9 @@ export default function LSBookmarksList({
   category: BookmarkCategory,
   data: SavedItemsData | undefined
 }) {
+  const setSavedPost = useSetSavedPost(userId);
+  const setSavedPub = useSetSavedPublication(userId);
+  
   switch (category) {
     case "posts":
       const savedPosts = (data?.posts ?? []).map(post => ({
@@ -50,7 +54,6 @@ export default function LSBookmarksList({
         likeCount: post.likeCount ?? 0,
         isSaved: post.isSaved
       }));
-      const setSaved = useSetSavedPost(userId);
 
       if(savedPosts.length === 0) {
         return <EmptyBookmarksList label='posts'/>;
@@ -67,22 +70,27 @@ export default function LSBookmarksList({
               onLike={()=>{}}
               onDelete={()=>{}}
               onAddComment={async ()=>{}}
-              onSetSaved={(postId, save) => setSaved.mutate({ postId, save })}
+              onSetSaved={(postId, save) => setSavedPost.mutate({ postId, save: false })}
             />
           ))
         }
         </Stack>
       );
     case "publications":
-      const savedPublications = [];
+      const savedPublications = data?.publications ?? [];
       if(savedPublications.length === 0) {
         return <EmptyBookmarksList label='publications'/>;
       }
-
+      
       return (
         <Stack>
           {(data?.publications ?? []).map((row) => (
-            <LSPublication key={row.publication_id} pub={row.publications} isOwner={false} />
+            <LSPublication 
+              key={row.publication_id} 
+              pub={{...row.publications, isSaved: row.publications.isSaved ?? true}} 
+              isOwner={false} 
+              onSaveClick={() => setSavedPub.mutate({ publicationId: row.publication_id, isSaved: false})}
+            />
           ))}
         </Stack>
       );
@@ -107,9 +115,9 @@ export default function LSBookmarksList({
 
       return (
         <Stack>
-          {(data?.jobs ?? []).map((row) => (
+          {/* {(data?.jobs ?? []).map((row) => (
             <JobCard key={row.jobs_id} job={row.jobs} />
-          ))}
+          ))} */}
         </Stack>
       );
   }

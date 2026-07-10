@@ -3,6 +3,7 @@ import { createClient } from "@/supabase/server";
 import type { ApiResponse } from "@/lib/types/api";
 import type { Publication } from "@/lib/types/data";
 import { InfinitePublications } from "@/lib/types/publication";
+import { userIdSchema } from "@/lib/validations/moderation";
 
 const PAGE_SIZE = 10;
 
@@ -39,6 +40,8 @@ export async function GET(request: Request) {
       );
 
     const supabase = await createClient();
+    // const { data: authData } = await supabase.auth.getUser();
+    // const currentUserId = authData?.user?.id ?? null;
 
     const hasFilters = !!(search || year || tagId || type);
     const descending = sort !== 'oldest';
@@ -147,6 +150,29 @@ export async function GET(request: Request) {
       page = featuredPubs.concat(page);
     }
     
+    let savedIds = new Set<number>();
+    if(page.length > 0) {
+      const { data: savedRows, error: savedError } = await supabase
+        .from("saved_publications")
+        .select("publication_id")
+        .eq("profile_user_id", userId)
+        .in("publication_id", page.map(pub => pub.publication_id));
+      
+      if (savedError) {
+        return NextResponse.json<ApiResponse<Publication[]>>(
+          { success: false, error: savedError.message },
+          { status: 500 },
+        );
+      }
+
+      savedIds = new Set((savedRows ?? []).map((r) => r.publication_id));
+    }
+
+    page = page.map(pub => ({
+      ...pub,
+      isSaved: savedIds.has(pub.publication_id)
+    }));
+
     return NextResponse.json<ApiResponse<InfinitePublications>>({ 
       success: true, 
       data: {

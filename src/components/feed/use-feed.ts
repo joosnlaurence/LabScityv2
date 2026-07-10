@@ -1,4 +1,4 @@
-import { setSavedPost } from "@/lib/actions/feed";
+import { setSavedPost } from "@/lib/actions/bookmarks";
 import { bookmarkKeys, feedKeys, postKeys, profileKeys } from "@/lib/query-keys";
 import { FeedPostItem } from "@/lib/types/feed";
 import { restorePostCaches, snapshotPostCaches, syncSavedState as syncSavedPostState } from "@/lib/utils/feed";

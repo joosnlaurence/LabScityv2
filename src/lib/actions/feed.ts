@@ -16,8 +16,7 @@ import {
 } from "@/lib/validations/post";
 import { parsePostContent } from "@/lib/utils/post-content";
 import { createClient } from "@/supabase/server";
-import type { DataResponse } from "@/lib/types/data";
-import { formatFeedPost, getTimeAgo } from "../utils/feed";
+import { formatFeedPost } from "../utils/feed";
 
 const idSchema = z.string().min(1, "ID is required");
 const postMediaBucket = "post_images";
@@ -986,61 +985,5 @@ export async function getPostDetail(
       };
     }
     return { success: false, error: "Failed to fetch post" };
-  }
-}
-
-
-export async function setSavedPost(postId: string, save: boolean): Promise<DataResponse<void>> {
-  try {
-    const supabase = await createClient();
-    const { data: authData } = await supabase.auth.getUser();
-
-    if (!authData.user) {
-      return { 
-        success: false, 
-        error: "Authentication required" 
-      };
-    }
-    
-    if(save) {
-      const { error } = await supabase
-        .from("saved_posts")
-        .upsert(
-          { profile_user_id: authData.user.id, post_id: parseInt(postId) }, 
-          { onConflict: "profile_user_id,post_id", ignoreDuplicates: true }
-        );
-      if (error) {
-        return { 
-          success: false, 
-          error: error.message 
-        };
-      }
-    }
-    else {
-      const { error } = await supabase
-        .from("saved_posts")
-        .delete()
-        .eq("profile_user_id", authData.user.id)
-        .eq("post_id", parseInt(postId));
-      if (error) {
-        return { 
-          success: false, 
-          error: error.message 
-        };
-      }
-    }
-
-    return { 
-      success: true 
-    };
-  } catch (error){
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? "Invalid post id" };
-    }
-    console.error("setSavePost failed:", error)
-    return { 
-      success: false, 
-      error: "Failed to set save status of post" 
-    };
   }
 }

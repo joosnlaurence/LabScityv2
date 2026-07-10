@@ -3,10 +3,14 @@ import { FeedPostItem } from "./feed";
 
 export type BookmarkCategory = "posts" | "publications" | "products" | "jobs";
 
-export type SavedPublication = { publication_id: string; created_at: string; publications: Publication };
-export type SavedProduct = { product_id: string; created_at: string; products: Product };
-export type SavedPost = { post_id: string; created_at: string; posts: FeedPostItem };
-export type SavedJob = { jobs_id: string; created_at: string; jobs: Job };
+export type SavedPublication = { 
+  publication_id: number; 
+  created_at: string; 
+  publications: Publication
+};
+export type SavedProduct = { product_id: number; created_at: string; products: Product };
+export type SavedPost = { post_id: number; created_at: string; posts: FeedPostItem };
+export type SavedJob = { jobs_id: number; created_at: string; jobs: Job };
 
 export type SavedItemsData = {
   publications: SavedPublication[];
@@ -30,10 +34,10 @@ export type PostAuthor = {
 };
 
 export type SavedPostRow = {
-  post_id: string;
+  post_id: number;
   created_at: string;
   posts: {
-    post_id: string;
+    post_id: number;
     user_id: string;
     text: string | null;
     scientific_field: string | null;

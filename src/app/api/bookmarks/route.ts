@@ -6,6 +6,7 @@ import type {
   SavedItemsData, SavedJob, SavedProduct, SavedPublication,
 } from "@/lib/types/bookmarks";
 import { formatFeedPost } from "@/lib/utils/feed";
+import { Publication } from "@/lib/types/data";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,10 +25,14 @@ export async function GET(request: Request) {
   const [publications, products, posts, jobs] = await Promise.all([
     supabase
       .from("saved_publications")
-      .select("publication_id, created_at, publications(*)")
+      .select("publication_id, created_at, publications(*, publication_tags(tags(name)))")
       .eq("profile_user_id", userId)
       .order("created_at", { ascending: false })
-      .returns<SavedPublication[]>(),
+      .returns<{ 
+        publication_id: number; 
+        created_at: string; 
+        publications: Publication & { publication_tags: { tags: { name: string } }[] }
+      }[]>(),
     supabase
       .from("saved_products")
       .select("product_id, created_at, products(*)")
@@ -75,7 +80,17 @@ export async function GET(request: Request) {
   return NextResponse.json<ApiResponse<SavedItemsData>>({
     success: true,
     data: {
-      publications: publications.data ?? [],
+      publications: (publications.data ?? []).map((row) => {
+        const { publication_tags, ...pub } = row.publications;
+        return {
+          ...row,
+          publications: {
+            ...pub,
+            topics: (publication_tags ?? []).map((pt: any) => pt.tags.name),
+            isSaved: true,
+          },
+        };
+      }),
       products: products.data ?? [],
       posts: formattedPosts,
       jobs: jobs.data ?? [],
