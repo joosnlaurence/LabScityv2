@@ -33,6 +33,9 @@ import { useMemo, useState } from "react";
 import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import { getJobPreviewHtml, JOB_TYPE_OPTIONS } from "./job-display";
 import type { JobViewModel } from "./job-view-model";
+import { useQuery } from "@tanstack/react-query";
+import { toJobViewModel } from "./job-view-model";
+import type { Job } from "@/lib/types/data";
 
 interface JobsPageProps {
   jobs: JobViewModel[];
@@ -45,10 +48,29 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
   const [jobType, setJobType] = useState<string | null>("All types");
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [similar, setSimilar] = useState(false);
+  const [sortByRelevance, setSortByRelevance] = useState(false);
+
+  const recommendedQuery = useQuery({
+    queryKey: ["jobs", "recommended"],
+      queryFn: async () => {
+        const res = await fetch("/api/jobs/recommendations");
+        if (!res.ok) {
+          throw new Error(`Failed to recommended jobs: ${res.status}`);
+        }
+        const json = await res.json();
+        if (!json.success) {
+          throw new Error(json.error);
+        }
+        return (json.data ?? []).map((job: Job) => toJobViewModel(job));
+      },
+      enabled: sortByRelevance,
+  });
+
+  const displayJobs = sortByRelevance ? (recommendedQuery.data ?? []) : jobs;
 
   const filtered = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-    return jobs.filter((job) => {
+    return displayJobs.filter((job: JobViewModel) => {
       const matchesSearch =
         !normalizedSearch ||
         job.title.toLowerCase().includes(normalizedSearch) ||
@@ -61,7 +83,7 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
 
       return matchesSearch && matchesType && matchesRemote && matchesProfile;
     });
-  }, [jobType, jobs, remoteOnly, search, similar]);
+  }, [jobType, displayJobs , remoteOnly, search, similar]);
 
   const myPostings = useMemo(() => {
     if (!currentUserId) return [];
@@ -144,10 +166,10 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
               </Text>
               <Button
                 variant="subtle"
-                color="gray"
+                color={sortByRelevance ? "navy" : "gray"}
                 size="compact-sm"
                 rightSection={<IconChevronDown size={14} />}
-                disabled
+                onClick={() => setSortByRelevance((prev) => !prev)}
               >
                 Sort: Relevance
               </Button>
@@ -172,7 +194,7 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
               </Card>
             ) : null}
 
-            {filtered.map((job) => (
+            {filtered.map((job: JobViewModel) => (
               <JobCard key={job.id} job={job} />
             ))}
 
