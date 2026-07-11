@@ -7,6 +7,7 @@ import LSProduct from "../products/ls-product";
 import { JobCard } from "@/components/jobs/jobs-page";
 import { IconBookmarkOff } from "@tabler/icons-react";
 import { useSetSavedPublication } from "../publications/use-publications";
+import { useSetSavedProduct } from "../products/use-products";
 
 function EmptyBookmarksList({label}: {label: string}) {
   return (
@@ -28,7 +29,8 @@ export default function LSBookmarksList({
 }) {
   const setSavedPost = useSetSavedPost(userId);
   const setSavedPub = useSetSavedPublication(userId);
-  
+  const setSavedProduct = useSetSavedProduct(userId);
+
   switch (category) {
     case "posts":
       const savedPosts = (data?.posts ?? []).map(post => ({
@@ -95,7 +97,7 @@ export default function LSBookmarksList({
         </Stack>
       );
     case "products":
-      const savedProducts = [];
+      const savedProducts = data?.products ?? [];
       if(savedProducts.length === 0) {
         return <EmptyBookmarksList label='research products'/>;
       }
@@ -103,7 +105,12 @@ export default function LSBookmarksList({
       return (
         <Stack>
           {(data?.products ?? []).map((row) => (
-            <LSProduct key={row.product_id} product={row.products} isOwner={false} />
+            <LSProduct 
+              key={row.product_id} 
+              product={{...row.products, isSaved: row.products.isSaved ?? true}} 
+              isOwner={false} 
+              onSaveClick={() => setSavedProduct.mutate({ productId: row.product_id, isSaved: false})}
+            />
           ))}
         </Stack>
       );

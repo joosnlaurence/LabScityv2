@@ -17,6 +17,7 @@ import {
 import { Carousel } from "@mantine/carousel"
 import NextImage from "next/image";
 import { 
+  IconBookmark,
   IconBrandGithub,
   IconDots, 
   IconEdit, 
@@ -45,7 +46,8 @@ export default function LSProduct(
     onDeleteClick, 
     isDeleting, 
     onFeaturedClick,
-    featureBtnDisabled
+    featureBtnDisabled,
+    onSaveClick,
   }
   : 
   { 
@@ -55,6 +57,7 @@ export default function LSProduct(
     isDeleting?: boolean,
     onFeaturedClick?: () => void,
     featureBtnDisabled?: boolean,
+    onSaveClick?: () => void,
   } 
 )  {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
@@ -329,30 +332,38 @@ export default function LSProduct(
             }
           </Group>
 
-          {/* Update Buttons */}
-          {
-            isOwner &&             
-            <Menu position="top-end" shadow="md">
-              <Menu.Target>
-                <ActionIcon bdrs='md' variant='outline' size='lg'>
-                  <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item leftSection={<IconEdit size='1rem' />}>
-                  Edit
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  color="red"
-                  leftSection={<IconTrash size='1rem' />}
-                  onClick={openConfirm}
-                >
-                  Delete
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+          <Group>
+            {
+            !!onSaveClick &&
+            <ActionIcon variant='subtle' size='lg' onClick={onSaveClick}>
+              <IconBookmark size='1.25rem' stroke='1.5' fill={product.isSaved ? 'currentColor' : 'none'}/>
+            </ActionIcon>
           }
+            {/* Update Buttons */}
+            {
+              isOwner &&             
+              <Menu position="top-end" shadow="md">
+                <Menu.Target>
+                  <ActionIcon variant='subtle' size='lg'>
+                    <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item leftSection={<IconEdit size='1rem' />}>
+                    Edit
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    color="red"
+                    leftSection={<IconTrash size='1rem' />}
+                    onClick={openConfirm}
+                  >
+                    Delete
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            }
+          </Group>
         </Group>
       </Stack>
     </Card>

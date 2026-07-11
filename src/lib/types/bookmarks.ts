@@ -3,11 +3,7 @@ import { FeedPostItem } from "./feed";
 
 export type BookmarkCategory = "posts" | "publications" | "products" | "jobs";
 
-export type SavedPublication = { 
-  publication_id: number; 
-  created_at: string; 
-  publications: Publication
-};
+export type SavedPublication = { publication_id: number; created_at: string; publications: Publication };
 export type SavedProduct = { product_id: number; created_at: string; products: Product };
 export type SavedPost = { post_id: number; created_at: string; posts: FeedPostItem };
 export type SavedJob = { jobs_id: number; created_at: string; jobs: Job };

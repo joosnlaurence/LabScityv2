@@ -27,7 +27,7 @@ import {
   IconPdf, 
   IconPin, 
   IconPinFilled, 
-  IconStarFilled,
+  IconStarFilled, 
   IconTrash,
 } from "@tabler/icons-react"
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications"
@@ -37,7 +37,6 @@ import classes from './ls-publications.module.css';
 import { Publication } from "@/lib/types/data";
 import { useDisclosure } from "@mantine/hooks";
 import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICON_PROPS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
-import { warnOptionHasBeenMovedOutOfExperimental } from "next/dist/server/config";
 
 const ICON_SIZE = "0.85rem";
 
@@ -385,7 +384,7 @@ export default function LSPublication(
               size='lg'
               onClick={onSaveClick}
             >
-              <IconBookmark size='1.5rem' stroke='1.5' fill={pub.isSaved ? 'currentColor' : 'none'}/>
+              <IconBookmark size='1.25rem' stroke='1.5' fill={pub.isSaved ? 'currentColor' : 'none'}/>
             </ActionIcon>
           }
           {/* Update Buttons */}

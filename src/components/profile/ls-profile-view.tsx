@@ -304,6 +304,9 @@ interface LSProfileDesktopLayoutProps {
   currentUserId: string | null;
 }
 
+const MAX_PROFILE_PAGE_WIDTH = 1660; // in pixels
+const PROFILE_PAGE_PADDING_X = 190;
+
 /**
  * Desktop profile layout — hero and a column of friends, following, then groups;
  * the post feed renders below a divider at a narrower width.
@@ -374,8 +377,16 @@ const LSProfileDesktopLayout = ({
   }
 
   return (
-    <Stack gap='lg' maw={1660} mx="auto" px='clamp(16px, 11vw, 190px)' pt='3vh' pb='200'>
-      <Flex p={0} direction="row" w="100%" gap={24} align="flex-start">
+    <Stack 
+      gap='lg' 
+      maw={MAX_PROFILE_PAGE_WIDTH} 
+      mx="auto" 
+      // On screen shrink, use the x padding first, then clamp at 16px
+      px={`clamp(16px, calc((100vw - ${MAX_PROFILE_PAGE_WIDTH - 2 * PROFILE_PAGE_PADDING_X}px) / 2), ${PROFILE_PAGE_PADDING_X}px)`} 
+      pt='3vh' 
+      pb='200'
+    >
+      <Flex p={0} direction="row" w="100%" gap={{ base: 24, sm: 0, md: 24 }} align="flex-start">
         <Stack flex={6}>
           {
             profile ?

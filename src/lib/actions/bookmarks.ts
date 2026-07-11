@@ -120,3 +120,66 @@ export async function setSavedPublication(
     };
   }
 }
+
+export async function setSavedProduct(
+  productId: number, save: boolean
+): Promise<DataResponse<void>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return {
+        success: false,
+        error: "Authenication required"
+      }
+    }
+
+    if (!Number.isInteger(productId) || productId <= 0) {
+      return {
+        success: false,
+        error: "Invalid product id"
+      };
+    }
+
+    if (save) {
+      const { error } = await supabase
+        .from("saved_products")
+        .upsert(
+          { profile_user_id: authData.user.id, product_id: productId },
+          { onConflict: "profile_user_id,product_id", ignoreDuplicates: true }
+        );
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message
+        }
+      }
+    }
+    else {
+      const { error } = await supabase
+        .from("saved_products")
+        .delete()
+        .eq("profile_user_id", authData.user.id)
+        .eq("product_id", productId);
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+
+    return {
+      success: true
+    }
+  } catch {
+    return {
+      success: false,
+      error: "Failed to save product"
+    };
+  }
+}

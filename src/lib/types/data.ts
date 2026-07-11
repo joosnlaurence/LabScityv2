@@ -68,6 +68,7 @@ export interface Product {
   is_featured: boolean;
   product_type: OpenAlexWorkType | null;
   topics: string[] | null;
+  isSaved: boolean;
 }
 
 export interface Publication {

@@ -11,7 +11,7 @@ import {
   type UpdateProductValues,
 } from "@/lib/validations/product";
 
-import type { DataResponse, Product, ProductImageDraft } from "@/lib/types/data";
+import type { DataResponse, Product } from "@/lib/types/data";
 import type { ProductImageUploadData } from "@/lib/types/api";
 import { MAX_PRODUCT_IMAGE_BYTES, PRODUCT_IMAGE_BUCKET, extensionFromMime } from "@/lib/utils/storage";
 import { MAX_IMAGE_UPLOADS as MAX_PRODUCT_PREVIEWS } from "../constants/product";
@@ -635,97 +635,5 @@ export async function deleteProduct(
       success: false,
       error: "Failed to delete product",
     };
-  }
-}
-
-export async function saveProduct(
-  productId: number
-): Promise<DataResponse<void>>{
-  try {
-    const supabase = await createClient();
-
-    const { data: authData } = await supabase.auth.getUser();
-
-    if (!authData.user){
-      return {
-        success: false, 
-        error: 'Authentication required'
-      }
-    }
-
-    if(!Number.isInteger(productId) || productId <= 0){
-      return {
-        success: false,
-        error: 'Invalid product id'
-      };
-    }
-
-    const { error: productError } = await supabase
-      .from("saved_products")
-      .insert({
-        profile_user_id: authData.user.id,
-        product_id: productId
-      });
-
-      if(productError){
-        return {
-          success: false,
-          error: productError.message
-        }
-      }
-      return {
-        success: true
-      };
-  } catch {
-    return {
-      success: false,
-      error: 'Failed to save product'
-    }
-  }
-}
-
-export async function unsaveProduct(
-  productId: number
-): Promise<DataResponse<void>>{
-  try {
-    const supabase = await createClient();
-
-    const { data: authData } = await supabase.auth.getUser();
-
-    if (!authData.user){
-      return {
-        success: false, 
-        error: 'Authentication required'
-      }
-    }
-
-    if(!Number.isInteger(productId) || productId <= 0){
-      return {
-        success: false,
-        error: 'Invalid product id'
-      };
-    }
-
-    const { error: productError } = await supabase
-      .from("saved_products")
-      .delete()
-      .eq("profile_user_id", authData.user.id)
-      .eq("product_id", productId);
-      
-
-      if(productError){
-        return {
-          success: false,
-          error: productError.message
-        }
-      }
-      return {
-        success: true
-      };
-  } catch {
-      return {
-        success: false,
-        error: 'Failed to unsave product'
-      }
   }
 }

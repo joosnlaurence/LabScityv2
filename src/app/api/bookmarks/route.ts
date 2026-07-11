@@ -3,10 +3,13 @@ import { createClient } from "@/supabase/server";
 import type { ApiResponse } from "@/lib/types/api";
 import type { FeedPostItem } from "@/lib/types/feed";
 import type {
-  SavedItemsData, SavedJob, SavedProduct, SavedPublication,
+  SavedItemsData, SavedJob,
+  SavedProduct,
+  SavedPublication,
 } from "@/lib/types/bookmarks";
 import { formatFeedPost } from "@/lib/utils/feed";
-import { Publication } from "@/lib/types/data";
+import { Product, Publication } from "@/lib/types/data";
+import { PRODUCT_IMAGE_BUCKET } from "@/lib/constants/product";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -35,10 +38,16 @@ export async function GET(request: Request) {
       }[]>(),
     supabase
       .from("saved_products")
-      .select("product_id, created_at, products(*)")
+      .select("product_id, created_at, products(*, product_tags(tags(name)), product_images(image_path, width, height))")
       .eq("profile_user_id", userId)
       .order("created_at", { ascending: false })
-      .returns<SavedProduct[]>(),
+      .returns<{ 
+        product_id: number; 
+        created_at: string; 
+        products: Product & 
+          { product_tags: { tags: { name: string } }[] } & 
+          { product_images: { image_path: string; width: number; height: number }[] }
+      }[]>(),
     supabase
       .from("saved_posts")
       .select(
@@ -77,21 +86,40 @@ export async function GET(request: Request) {
     formatFeedPost(supabase, row.posts, [], authData.user?.id ?? null),
   );
 
+  const pubs: SavedPublication[] = (publications.data ?? []).map((row) => {
+    const { publication_tags, ...pub } = row.publications;
+    return {
+      ...row,
+      publications: {
+        ...pub,
+        topics: (publication_tags ?? []).map((pt: any) => pt.tags.name),
+        isSaved: true,
+      },
+    };
+  })
+
+  const prods: SavedProduct[] = (products.data ?? []).map((row) => {
+    const { product_tags, product_images, ...pub } = row.products;
+    return {
+      ...row,
+      products: {
+        ...pub,
+        topics: (product_tags ?? []).map((pt: any) => pt.tags.name),
+        isSaved: true,
+        images: product_images?.map((pi) => ({
+          url: supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(pi.image_path).data.publicUrl,
+          width: pi.width,
+          height: pi.height
+        })) ?? []
+      },
+    };
+  })
+
   return NextResponse.json<ApiResponse<SavedItemsData>>({
     success: true,
     data: {
-      publications: (publications.data ?? []).map((row) => {
-        const { publication_tags, ...pub } = row.publications;
-        return {
-          ...row,
-          publications: {
-            ...pub,
-            topics: (publication_tags ?? []).map((pt: any) => pt.tags.name),
-            isSaved: true,
-          },
-        };
-      }),
-      products: products.data ?? [],
+      publications: pubs,
+      products: prods,
       posts: formattedPosts,
       jobs: jobs.data ?? [],
     },
