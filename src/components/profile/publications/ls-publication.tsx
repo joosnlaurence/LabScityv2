@@ -105,7 +105,7 @@ export default function LSPublication(
     <Card
       w='100%'
       p='0'
-      bdrs='0.75rem'
+      bdrs='md'
       style={{
         border: pub.is_featured ? '1px solid var(--mantine-color-blue-3)'  : '1px solid var(--mantine-color-gray-3)',
         borderTop: pub.is_featured ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-gray-3)',

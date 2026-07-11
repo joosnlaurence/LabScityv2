@@ -75,7 +75,7 @@ import LSProductsList from "./products/ls-products-list";
 import { getLegacyPostText } from "@/lib/utils/post-content";
 import { FeedPostCard, RecommendedCollabsCard } from "../feed/home-feed";
 import StickyBox from "react-sticky-box";
-import { LSBookmarks } from "./bookmarks/ls-bookmarks";
+import { LSBookmarksTab } from "./bookmarks/ls-bookmarks";
 import { useSetSavedPost } from "../feed/use-feed";
 
 type UpdateProfileAction = typeof updateProfileAction;
@@ -491,7 +491,7 @@ const LSProfileDesktopLayout = ({
             </Tabs.Panel>
 
             <Tabs.Panel value='bookmarks'>
-              <LSBookmarks userId={userId}/>
+              <LSBookmarksTab userId={userId}/>
             </Tabs.Panel>
 
           </Tabs>

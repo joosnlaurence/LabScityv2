@@ -1,23 +1,21 @@
-import { Box, Button, Card, Center, Divider, Group, Loader, Stack, Text, UnstyledButton } from "@mantine/core";
-import LSPublicationsList from "../publications/ls-publications-list";
+import { Badge, Box, Card, Center, Flex, Group, Loader, Stack, Text, UnstyledButton } from "@mantine/core";
 import { IconArticle, IconBox, IconBriefcase, IconMessageCircle, IconProps } from "@tabler/icons-react";
 import { ComponentType, useState } from "react";
-import { BookmarkCategory, SavedItemsData, SavedPostRow } from "@/lib/types/bookmarks";
+import { BookmarkCategory } from "@/lib/types/bookmarks";
 import { useBookmarkCounts, useBookmarks } from "./use-bookmarks";
 import classes from './ls-bookmarks.module.css';
-import LSPublication from "../publications/ls-publication";
-import LSProduct from "../products/ls-product";
-import { JobCard } from "@/components/jobs/jobs-page";
-import { FeedPostCard } from "@/components/feed/home-feed";
-import { getTimeAgo } from "../ls-profile-view";
-import { FeedPostItem } from "@/lib/types/feed";
-import { useSetSavedPost } from "@/components/feed/use-feed";
 import LSBookmarksList from "./ls-bookmarks-list";
 
 function ItemCount({count}: {count: number}) {
   return (
-    <Box bg='navy.5' bdrs='100' px='6'>
-      <Text fz='xs' c='white'>{count > 99 ? "99+" : count}</Text>
+    <Box
+      bg="navy.5"
+      bdrs="100"
+      px='6'
+      h='20'
+      miw="20"
+    >
+      <Text fz='xs' c='white' ta='center'>{count > 99 ? "99+" : count}</Text>
     </Box>
   )
 }
@@ -33,7 +31,7 @@ const BOOKMARK_TABS: {
   { category: "jobs", label: "Jobs", icon: IconBriefcase},
 ];
 
-export function LSBookmarks({userId}: {userId: string}) {
+export function LSBookmarksTab({userId}: {userId: string}) {
   const [activeTab, setActiveTab] = useState<BookmarkCategory>("posts");
 
   const bookmarkCounts = useBookmarkCounts(userId);
@@ -48,7 +46,7 @@ export function LSBookmarks({userId}: {userId: string}) {
   }
 
   return (
-    <Group wrap='nowrap' w='100%' align='start' pb='300'>
+    <Group wrap='nowrap' w='100%' align='start'>
       <Card
         p='xs'
         bd='1px solid gray.3'

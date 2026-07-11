@@ -14,6 +14,7 @@ export interface JobViewModel {
   description: string;
   summary: string | null;
   applyUrl: string | null;
+  isSaved: boolean;
 }
 
 function formatTimeAgo(value: string) {
@@ -57,5 +58,6 @@ export function toJobViewModel(job: DbJob): JobViewModel {
     description: job.description,
     summary: job.summary,
     applyUrl: job.application_link,
+    isSaved: job.isSaved
   };
 }

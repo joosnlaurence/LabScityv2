@@ -93,4 +93,6 @@ export const jobKeys = {
   mine: () => [...jobKeys.all, "mine"] as const,
   details: () => [...jobKeys.all, "detail"] as const,
   detail: (id: number) => [...jobKeys.details(), id] as const,
+  // TODO: Think about using this for some sort of dedicated saved jobs page or card
+  saved: () => [...jobKeys.all, "saved"] as const,
 };

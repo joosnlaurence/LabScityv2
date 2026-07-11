@@ -8,6 +8,8 @@ import { JobCard } from "@/components/jobs/jobs-page";
 import { IconBookmarkOff } from "@tabler/icons-react";
 import { useSetSavedPublication } from "../publications/use-publications";
 import { useSetSavedProduct } from "../products/use-products";
+import { toJobViewModel } from "@/components/jobs/job-view-model";
+import { useSetSavedJob } from "@/components/jobs/use-jobs";
 
 function EmptyBookmarksList({label}: {label: string}) {
   return (
@@ -30,6 +32,7 @@ export default function LSBookmarksList({
   const setSavedPost = useSetSavedPost(userId);
   const setSavedPub = useSetSavedPublication(userId);
   const setSavedProduct = useSetSavedProduct(userId);
+  const setSavedJob = useSetSavedJob(userId);
 
   switch (category) {
     case "posts":
@@ -115,16 +118,19 @@ export default function LSBookmarksList({
         </Stack>
       );
     case "jobs":
-      const savedJobs = [];
+      const savedJobs = data?.jobs ?? [];
       if(savedJobs.length === 0) {
         return <EmptyBookmarksList label='jobs'/>;
       }
 
       return (
         <Stack>
-          {/* {(data?.jobs ?? []).map((row) => (
-            <JobCard key={row.jobs_id} job={row.jobs} />
-          ))} */}
+          {(data?.jobs ?? []).map((row) => (
+            <JobCard 
+              key={row.job_id} 
+              job={toJobViewModel(row.jobs)}
+              onSaveClick={() => setSavedJob.mutate({ jobId: row.job_id, isSaved: false })}/>
+          ))}
         </Stack>
       );
   }

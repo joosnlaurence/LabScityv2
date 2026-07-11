@@ -8,12 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function JobsRoutePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return (
-    <JobsPage currentUserId={user?.id ?? null} />
+    <JobsPage />
   );
 }

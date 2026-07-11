@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
 
-  const [publications, products, posts, jobs] = await Promise.all([
+  const [pubRows, productRows, postRows, jobRows] = await Promise.all([
     supabase
       .from("saved_publications")
       .select("publication_id, created_at, publications(*, publication_tags(tags(name)))")
@@ -74,14 +74,14 @@ export async function GET(request: Request) {
       .returns<{
         job_id: number;
         created_at: string;
-        jobs: Job
-        // jobs: Job & 
-          // { jobs_tags: { tags: { name: string } } } &
-          // { jobs_skills: { skills: { name: string } } }
+        // jobs: Job
+        jobs: Job & 
+          { jobs_tags: { tags: { name: string } } } &
+          { jobs_skills: { skills: { name: string } } }
       }[]>(),
   ]);
 
-  const err = [publications, products, posts, jobs].find((r) => r.error)?.error;
+  const err = [pubRows, productRows, postRows, jobRows].find((r) => r.error)?.error;
   if (err) {
     return NextResponse.json<ApiResponse<null>>(
       { success: false, error: err.message },
@@ -89,11 +89,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const formattedPosts: FeedPostItem[] = (posts.data ?? []).map((row) =>
+  const formattedPosts: FeedPostItem[] = (postRows.data ?? []).map((row) =>
     formatFeedPost(supabase, row.posts, [], authData.user?.id ?? null),
   );
 
-  const pubs: SavedPublication[] = (publications.data ?? []).map((row) => {
+  const publications: SavedPublication[] = (pubRows.data ?? []).map((row) => {
     const { publication_tags, ...pub } = row.publications;
     return {
       ...row,
@@ -105,12 +105,12 @@ export async function GET(request: Request) {
     };
   })
 
-  const prods: SavedProduct[] = (products.data ?? []).map((row) => {
-    const { product_tags, product_images, ...pub } = row.products;
+  const products: SavedProduct[] = (productRows.data ?? []).map((row) => {
+    const { product_tags, product_images, ...product } = row.products;
     return {
       ...row,
       products: {
-        ...pub,
+        ...product,
         topics: (product_tags ?? []).map((pt: any) => pt.tags.name),
         isSaved: true,
         images: product_images?.map((pi) => ({
@@ -122,13 +122,27 @@ export async function GET(request: Request) {
     };
   })
 
+  // TODO: Add topics to jobs once those are wired up properly
+  const jobs: SavedJob[] = (jobRows.data ?? []).map((row) => {
+    // const { job_tags, ...job } = row.jobs;
+    const { ...job } = row.jobs;
+    return {
+      ...row,
+      jobs: {
+        ...job,
+        // topics: (job_tags ?? []).map((pt: any) => pt.tags.name),
+        isSaved: true,
+      },
+    };
+  })
+
   return NextResponse.json<ApiResponse<SavedItemsData>>({
     success: true,
     data: {
-      publications: pubs,
-      products: prods,
+      publications: publications,
+      products: products,
       posts: formattedPosts,
-      jobs: jobs.data ?? [],
+      jobs: jobs,
     },
   });
 }

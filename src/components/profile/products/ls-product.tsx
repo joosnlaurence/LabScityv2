@@ -32,7 +32,7 @@ import {
 // import NextLink from 'next/link';
 import { useDisclosure } from "@mantine/hooks";
 import { Product } from "@/lib/types/data";
-import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
+import { MAX_FEATURED_PRODUCTS } from "@/lib/constants/product";
 import classes from './ls-product.module.css';
 import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
 

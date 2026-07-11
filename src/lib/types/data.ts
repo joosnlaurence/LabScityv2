@@ -130,6 +130,7 @@ export interface Job {
   job_type: "full-time" | "part-time" | "internship" | "contract" | null;
   academia_role: "postdoc" | "faculty" | "phd" | "grad_student"  | null;
   application_link: string | null;
+  isSaved: boolean;
 }
 
 /** Extended post with optional author information */

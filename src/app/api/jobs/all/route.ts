@@ -18,11 +18,13 @@ export async function GET(request: Request){
     const organization = searchParams.get('organization')
 
     const supabase = await createClient()
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id;
 
     let query = supabase
         .from('jobs')
         .select('*')
-        .order('id', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
         
     // frontend client keeps track of the id and sends it with the next request
@@ -60,13 +62,38 @@ export async function GET(request: Request){
         query = query.eq('academia_role', academia_role)
     }
 
-    const { data, error } = await query
+    const { data: jobs, error } = await query.returns<Job[]>();
+
     if (error) return NextResponse.json<ApiResponse<null>>(
         { success: false, error: error.message },
         { status: 500 }
     )
 
+    let savedIds = new Set<number>();
+    if((jobs?.length ?? []) > 0) {
+      console.log(jobs);
+      const { data: savedRows, error: savedError } = await supabase
+        .from("saved_jobs")
+        .select("job_id")
+        .eq("profile_user_id", userId)
+        .in("job_id", jobs.map(job => job.id ?? -1));
+      
+      if (savedError) {
+        return NextResponse.json<ApiResponse<Job[]>>(
+          { success: false, error: savedError.message },
+          { status: 500 },
+        );
+      }
+  
+      savedIds = new Set((savedRows ?? []).map((r) => r.job_id));
+    }
+  
+    const savedJobs = jobs.map(job => ({
+      ...job,
+      isSaved: savedIds.has(job.id)
+    }));
+
     return NextResponse.json<ApiResponse<Job[]>>(
-        { success: true, data: data ?? [] }
+        { success: true, data: savedJobs ?? [] }
     )
 }

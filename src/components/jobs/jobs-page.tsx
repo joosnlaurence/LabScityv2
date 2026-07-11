@@ -34,12 +34,13 @@ import { useMemo, useState } from "react";
 import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import { getJobPreviewHtml, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from "./job-display";
 import { toJobViewModel, type JobViewModel } from "./job-view-model";
-import { useJobs, useMyJobs } from "./use-jobs";
+import { useJobs, useMyJobs, useSetSavedJob } from "./use-jobs";
 import { useDebouncedValue } from "@mantine/hooks";
 import { JobType, WorkMode } from "@/lib/constants/job";
 import { JobFilters } from "@/lib/types/jobs";
+import { useAuth } from "../auth/use-auth";
 
-export function JobsPage({ currentUserId }: { currentUserId: string | null }) {
+export function JobsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [jobType, setJobType] = useState<JobType | null>(null);
@@ -53,8 +54,12 @@ export function JobsPage({ currentUserId }: { currentUserId: string | null }) {
     };
   }, [debouncedSearch, jobType, workMode]);
 
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+
   const jobsQuery = useJobs(filters);
   const myJobsQuery = useMyJobs(!!currentUserId);
+  const setSavedJob = useSetSavedJob(currentUserId ?? '');
 
   const jobs = useMemo(
     () => (jobsQuery.data?.pages.flat() ?? []).map(toJobViewModel),
@@ -154,7 +159,7 @@ export function JobsPage({ currentUserId }: { currentUserId: string | null }) {
 
             {
               jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
+                <JobCard key={job.id} job={job} onSaveClick={() => setSavedJob.mutate({ jobId: job.id, isSaved: !job.isSaved })}/>
               ))
             }
 
@@ -204,9 +209,13 @@ export function JobsPage({ currentUserId }: { currentUserId: string | null }) {
   );
 }
 
-export function JobCard({ job }: { job: JobViewModel }) {
-  const [saved, setSaved] = useState(false);
-
+export function JobCard({ 
+  job, 
+  onSaveClick 
+}: { 
+  job: JobViewModel,
+  onSaveClick: () => void
+}) {
   return (
     <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
       <Group align="flex-start" justify="space-between" gap="md" wrap="nowrap">
@@ -302,20 +311,23 @@ export function JobCard({ job }: { job: JobViewModel }) {
                 Apply
               </Button>
             )}
-            <Button
-              variant={saved ? "light" : "outline"}
-              color={saved ? "navy" : "gray"}
-              radius="md"
-              leftSection={
-                <IconBookmark
-                  size={15}
-                  fill={saved ? "currentColor" : "none"}
-                />
-              }
-              onClick={() => setSaved((current) => !current)}
-            >
-              {saved ? "Saved" : "Save"}
-            </Button>
+            {
+              !!onSaveClick && 
+              <Button
+                variant={job.isSaved ? "light" : "outline"}
+                color={job.isSaved ? "navy" : "gray"}
+                radius="md"
+                leftSection={
+                  <IconBookmark
+                    size={15}
+                    fill={job.isSaved ? "currentColor" : "none"}
+                  />
+                }
+                onClick={onSaveClick}
+              >
+                {job.isSaved ? "Saved" : "Save"}
+              </Button>
+            }
             <Button ml="auto" variant="subtle" color="gray" px="xs" disabled>
               <IconShare3 size={16} />
             </Button>
