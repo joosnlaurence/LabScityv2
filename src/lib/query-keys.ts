@@ -1,6 +1,7 @@
 import type { FeedFilterValues } from "@/lib/validations/post";
 import { PubFilters } from "./types/publication";
 import { ProductFilters } from "./types/products";
+import { JobFilters } from "./types/jobs";
 
 /**
  * Query key factory for the feed.
@@ -82,5 +83,14 @@ export const tagKeys = {
 export const bookmarkKeys = {
   all: ["bookmarks"] as const,
   list: (userId: string) => [...bookmarkKeys.all, userId],
-  counts: (userId: string) => [...bookmarkKeys.all, "counts", userId]
+  counts: (userId: string) => [...bookmarkKeys.all, "counts", userId],
 }
+
+export const jobKeys = {
+  all: ["jobs"] as const,
+  lists: () => [...jobKeys.all, "list"] as const,
+  list: (filters: JobFilters) => [...jobKeys.lists(), filters] as const,
+  mine: () => [...jobKeys.all, "mine"] as const,
+  details: () => [...jobKeys.all, "detail"] as const,
+  detail: (id: number) => [...jobKeys.details(), id] as const,
+};

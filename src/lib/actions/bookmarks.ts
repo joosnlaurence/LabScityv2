@@ -183,3 +183,66 @@ export async function setSavedProduct(
     };
   }
 }
+
+export async function setSavedJob(
+  jobId: number, save: boolean
+): Promise<DataResponse<void>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return {
+        success: false,
+        error: "Authenication required"
+      }
+    }
+
+    if (!Number.isInteger(jobId) || jobId <= 0) {
+      return {
+        success: false,
+        error: "Invalid job id"
+      };
+    }
+
+    if (save) {
+      const { error } = await supabase
+        .from("saved_jobs")
+        .upsert(
+          { profile_user_id: authData.user.id, job_id: jobId },
+          { onConflict: "profile_user_id,job_id", ignoreDuplicates: true }
+        );
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message
+        }
+      }
+    }
+    else {
+      const { error } = await supabase
+        .from("saved_jobs")
+        .delete()
+        .eq("profile_user_id", authData.user.id)
+        .eq("job_id", jobId);
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+
+    return {
+      success: true
+    }
+  } catch {
+    return {
+      success: false,
+      error: "Failed to save job"
+    };
+  }
+}

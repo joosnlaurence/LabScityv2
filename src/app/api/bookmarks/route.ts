@@ -8,7 +8,7 @@ import type {
   SavedPublication,
 } from "@/lib/types/bookmarks";
 import { formatFeedPost } from "@/lib/utils/feed";
-import { Product, Publication } from "@/lib/types/data";
+import { Job, Product, Publication } from "@/lib/types/data";
 import { PRODUCT_IMAGE_BUCKET } from "@/lib/constants/product";
 
 export async function GET(request: Request) {
@@ -68,10 +68,17 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false }),
     supabase
       .from("saved_jobs")
-      .select("jobs_id, created_at, jobs(*)")
+      .select("job_id, created_at, jobs(*)")
       .eq("profile_user_id", userId)
       .order("created_at", { ascending: false })
-      .returns<SavedJob[]>(),
+      .returns<{
+        job_id: number;
+        created_at: string;
+        jobs: Job
+        // jobs: Job & 
+          // { jobs_tags: { tags: { name: string } } } &
+          // { jobs_skills: { skills: { name: string } } }
+      }[]>(),
   ]);
 
   const err = [publications, products, posts, jobs].find((r) => r.error)?.error;

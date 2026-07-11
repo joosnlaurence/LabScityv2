@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { toJobViewModel } from "@/components/jobs/job-view-model";
 import { JobsPage } from "@/components/jobs/jobs-page";
-import { listJobs } from "@/lib/actions/job";
 import { createClient } from "@/supabase/server";
 
 export const metadata: Metadata = {
@@ -15,17 +13,7 @@ export default async function JobsRoutePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const result = await listJobs();
-
   return (
-    <JobsPage
-      jobs={
-        result.success && result.data ? result.data.map(toJobViewModel) : []
-      }
-      currentUserId={user?.id ?? null}
-      loadError={
-        result.success ? null : (result.error ?? "Failed to load jobs")
-      }
-    />
+    <JobsPage currentUserId={user?.id ?? null} />
   );
 }

@@ -438,7 +438,7 @@ const LSProfileDesktopLayout = ({
               <Tabs.Tab value="products">Research Products</Tabs.Tab>
               {
                 isOwnProfile &&
-                <Tabs.Tab value="bookmarks">Bookmarks</Tabs.Tab>
+                <Tabs.Tab value="bookmarks">Saved</Tabs.Tab>
               }
             </Tabs.List>
 

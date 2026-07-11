@@ -2,8 +2,7 @@ import type { Job as DbJob } from "@/lib/types/data";
 import { formatJobTypeLabel, formatWorkModeLabel } from "./job-display";
 
 export interface JobViewModel {
-  id: string;
-  numericId: number;
+  id: number;
   posterId: string;
   title: string;
   org: string;
@@ -46,8 +45,7 @@ function toRemoteLabel(
 
 export function toJobViewModel(job: DbJob): JobViewModel {
   return {
-    id: String(job.id),
-    numericId: job.id,
+    id: job.id,
     posterId: job.poster_id,
     title: job.title,
     org: job.organization?.trim() || "Organization not specified",
