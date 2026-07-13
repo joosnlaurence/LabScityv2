@@ -13,7 +13,7 @@ export const productImagePathSchema = z
   .string()
   .min(1, { message: "Image path is required" });
 
-export const  createProductSchema = z.object({
+export const createProductSchema = z.object({
     title: z
         .string()
         .min(1, {

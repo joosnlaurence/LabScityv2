@@ -48,6 +48,8 @@ export interface Post {
   created_at: string;
 }
 
+// TODO: Replace instances of the Post type with FeedPost instead
+
 /**
  * Comment type from the comments table
  */
@@ -100,6 +102,7 @@ export interface FeedPostItem {
   isLiked?: boolean;
   likeCount?: number;
   audienceLabel?: string | null;
+  isSaved?: boolean;
 }
 
 export interface FeedCommentItem {

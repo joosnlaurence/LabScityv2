@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { ProductFilters } from "@/lib/types/products";
 import LSProduct from "./ls-product";
 import LSAddProductModal from "./ls-add-product-modal";
-import { useDeleteProduct, useGetProductFacets, useProducts, useSetFeaturedProduct } from "./use-products";
+import { useDeleteProduct, useGetProductFacets, useProducts, useSetFeaturedProduct, useSetSavedProduct } from "./use-products";
 import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 import { useUserProfile } from "../use-profile";
 
@@ -52,6 +52,8 @@ export default function LSProductsList({ userId }: { userId: string }) {
     isFetching: isFetchingProducts
   } = useProducts(userId, activeFilters);
   const products = userProducts?.pages.flatMap((p) => p.products) ?? [];
+
+  const setSavedProduct = useSetSavedProduct(userId);
 
   const { ref: scrollRef, entry } = useIntersection({
     rootMargin: "200px",
@@ -184,6 +186,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
                   isDeleting={deleteProduct.isPending}
                   onFeaturedClick={() => setFeaturedProduct.mutate({ productId: p.product_id, isFeatured: !p.is_featured })}
                   featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS && !p.is_featured}
+                  onSaveClick={() => setSavedProduct.mutate({ productId: p.product_id, isSaved: !p.isSaved })}
                 />
               )
             }

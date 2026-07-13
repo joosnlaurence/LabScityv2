@@ -36,6 +36,7 @@ import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import { PostFollowButton } from "@/components/feed/post-follow-button";
 import { derivePostTagsFromDetail, initials } from "@/components/feed/post-detail-card.utils";
 import { parsePostContent } from "@/lib/utils/post-content";
+import { useSetSavedPost } from "./use-feed";
 
 interface PostDetailCardProps {
   post: {
@@ -52,6 +53,7 @@ interface PostDetailCardProps {
     comments: Array<{ id: string }>;
     isLiked?: boolean;
     likeCount?: number;
+    isSaved?: boolean;
   };
   currentUserId: string | null;
   onLike: () => void;
@@ -75,7 +77,6 @@ export function PostDetailCard({
   children,
 }: PostDetailCardProps) {
   const isOwnPost = currentUserId != null && currentUserId === post.userId;
-  const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [confirmDeleteOpen, confirmDeleteHandlers] = useDisclosure(false);
   const [editOpen, editHandlers] = useDisclosure(false);
@@ -119,6 +120,7 @@ export function PostDetailCard({
       // Parent mutation handles notifications.
     }
   };
+  const setSaved = useSetSavedPost(currentUserId ?? '');
 
   return (
     <>
@@ -173,6 +175,7 @@ export function PostDetailCard({
                 draftContent.trim().length === 0 ||
                 draftContent.trim() === parsedContent.bodyText.trim()
               }
+
             >
               Save
             </Button>
@@ -403,11 +406,12 @@ export function PostDetailCard({
                 leftSection={
                   <IconBookmark
                     size={16}
-                    fill={saved ? "currentColor" : "none"}
+                    fill={post.isSaved ? "currentColor" : "none"}
                   />
                 }
                 px={0}
-                onClick={() => setSaved((current) => !current)}
+                disabled={!currentUserId}
+                onClick={() => setSaved.mutate({ postId: String(post.id), save: !post.isSaved })}
               >
                 Save
               </Button>

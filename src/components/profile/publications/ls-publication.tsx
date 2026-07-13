@@ -18,6 +18,7 @@ import {
 } from "@mantine/core"
 import { 
   IconBook, 
+  IconBookmark, 
   IconChevronRight,  
   IconDots, 
   IconEdit, 
@@ -26,7 +27,7 @@ import {
   IconPdf, 
   IconPin, 
   IconPinFilled, 
-  IconStarFilled,
+  IconStarFilled, 
   IconTrash,
 } from "@tabler/icons-react"
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications"
@@ -39,6 +40,16 @@ import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICON_PROPS, PUB_PRODUCT_TYP
 
 const ICON_SIZE = "0.85rem";
 
+interface LSPublicationProps { 
+  pub: Publication, 
+  isOwner: boolean, 
+  onDeleteClick?: () => void, 
+  isDeleting?: boolean,
+  onFeaturedClick?: () => void,
+  featureBtnDisabled?: boolean,
+  onSaveClick?: () => void,
+} 
+
 export default function LSPublication(
   { 
     pub, 
@@ -46,17 +57,9 @@ export default function LSPublication(
     onDeleteClick, 
     isDeleting, 
     onFeaturedClick,
-    featureBtnDisabled
-  }
-  : 
-  { 
-    pub: Publication, 
-    isOwner: boolean, 
-    onDeleteClick?: () => void, 
-    isDeleting?: boolean,
-    onFeaturedClick?: () => void,
-    featureBtnDisabled?: boolean,
-  } 
+    featureBtnDisabled,
+    onSaveClick,
+  }: LSPublicationProps
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
@@ -102,7 +105,7 @@ export default function LSPublication(
     <Card
       w='100%'
       p='0'
-      bdrs='0.75rem'
+      bdrs='md'
       style={{
         border: pub.is_featured ? '1px solid var(--mantine-color-blue-3)'  : '1px solid var(--mantine-color-gray-3)',
         borderTop: pub.is_featured ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-gray-3)',
@@ -191,7 +194,7 @@ export default function LSPublication(
 
           {/* Make Featured */}
           {
-            isOwner &&
+            (isOwner && !!onFeaturedClick) &&
             <Tooltip label={`You can feature up to ${MAX_FEATURED_PUBLICATIONS} publications`} disabled={!featureBtnDisabled}> 
               <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
                 {
@@ -373,12 +376,23 @@ export default function LSPublication(
             }
           </Group>
 
+          <Group gap='xs'>
+          {
+            !!onSaveClick &&
+            <ActionIcon
+              variant='subtle'
+              size='lg'
+              onClick={onSaveClick}
+            >
+              <IconBookmark size='1.25rem' stroke='1.5' fill={pub.isSaved ? 'currentColor' : 'none'}/>
+            </ActionIcon>
+          }
           {/* Update Buttons */}
           {
             isOwner &&             
             <Menu position="top-end" shadow="md">
               <Menu.Target>
-                <ActionIcon bdrs='md' variant='outline' size='lg'>
+                <ActionIcon bdrs='md' variant='subtle' size='lg'>
                   <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
                 </ActionIcon>
               </Menu.Target>
@@ -397,6 +411,7 @@ export default function LSPublication(
               </Menu.Dropdown>
             </Menu>
           }
+          </Group>
         </Group>
       </Stack>
     </Card>

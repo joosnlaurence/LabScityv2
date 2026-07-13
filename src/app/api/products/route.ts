@@ -19,7 +19,7 @@ function decodeCursor(raw: string | null) {
 
 /**
  * GET /api/products?userId=...&cursorCreatedAt=...&cursorProductId=...
- * Returns the next 10 publications for a user after the specified cursor
+ * Returns the next 10 products for a user after the specified cursor
  * query params = userId 
  */
 export async function GET(request: Request) {
@@ -155,6 +155,29 @@ export async function GET(request: Request) {
 
     page = featuredProducts.concat(page);
   }
+
+  let savedIds = new Set<number>();
+  if(page.length > 0) {
+    const { data: savedRows, error: savedError } = await supabase
+      .from("saved_products")
+      .select("product_id")
+      .eq("profile_user_id", userId)
+      .in("product_id", page.map(product => product.product_id));
+    
+    if (savedError) {
+      return NextResponse.json<ApiResponse<Product[]>>(
+        { success: false, error: savedError.message },
+        { status: 500 },
+      );
+    }
+
+    savedIds = new Set((savedRows ?? []).map((r) => r.product_id));
+  }
+
+  page = page.map(product => ({
+    ...product,
+    isSaved: savedIds.has(product.product_id)
+  }));
 
   return NextResponse.json<ApiResponse<InfiniteProducts>>({ 
     success: true, 

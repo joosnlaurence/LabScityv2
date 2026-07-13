@@ -262,7 +262,7 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
               <Text size="sm" fw={800} mb="sm">
                 Similar Jobs
               </Text>
-              {similarJobs.length > 0 ? (
+              {/* {similarJobs.length > 0 ? (
                 similarJobs.map((similarJob) => (
                   <Link
                     key={similarJob.id}
@@ -290,7 +290,11 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                   More similar jobs will appear here as additional listings are
                   posted.
                 </Text>
-              )}
+              )} */}
+              <Text size='sm' c='dimmed'>
+                Similar jobs will be displayed here once the frontend for them 
+                is wired up
+              </Text>
             </Card>
           </Stack>
         </Flex>

@@ -10,15 +10,30 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const { id: rawId } = await params;
     const id = Number(rawId);
 
-    if (isNaN(id)) 
+    if (!Number.isInteger(id) || id <= 0) 
         return NextResponse.json<ApiResponse<Job>>({ success: false, error: "Invalid job id" }, { status: 400 });
 
     const supabase = await createClient();
 
-    const { data, error } = await supabase.from("jobs").select("*").eq("id", id).single();
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
 
-    if (error) 
-        return NextResponse.json<ApiResponse<Job>>({ success: false, error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json<ApiResponse<Job>>(
+        { success: false, error: error.message }, 
+        { status: 500 }
+      );
+    }
+
+    if(!data) {
+      return NextResponse.json<ApiResponse<Job>>(
+        { success: false, error: "Job not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json<ApiResponse<Job>>({ success: true, data });
 }

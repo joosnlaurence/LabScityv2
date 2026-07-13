@@ -1,4 +1,4 @@
-import { FeedCommentItem, User } from '@/lib/types/feed'
+import { FeedCommentItem, FeedPostItem, User } from '@/lib/types/feed'
 import { PublicationType } from './publication';
 import { OpenAlexWorkType } from './openalex';
 
@@ -16,6 +16,7 @@ export interface Post {
   scientific_field?: string | null;
   like_amount: number;
   isLiked?: boolean;
+  isSaved?: boolean;
   comments?: FeedCommentItem[];
 }
 
@@ -67,6 +68,7 @@ export interface Product {
   is_featured: boolean;
   product_type: OpenAlexWorkType | null;
   topics: string[] | null;
+  isSaved: boolean;
 }
 
 export interface Publication {
@@ -82,6 +84,7 @@ export interface Publication {
   type: PublicationType | null;
   is_featured: boolean;
   topics: Array<string> | null;
+  isSaved: boolean;
 }
 
 export interface JobTag {
@@ -127,6 +130,7 @@ export interface Job {
   job_type: "full-time" | "part-time" | "internship" | "contract" | null;
   academia_role: "postdoc" | "faculty" | "phd" | "grad_student"  | null;
   application_link: string | null;
+  isSaved: boolean;
 }
 
 /** Extended post with optional author information */
