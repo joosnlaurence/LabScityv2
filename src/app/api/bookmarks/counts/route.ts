@@ -3,6 +3,9 @@ import type { BookmarkCounts } from "@/lib/types/bookmarks";
 import { createClient } from "@/supabase/server";
 import { NextResponse } from "next/server";
 
+// The reason this file exists is in case we want to change this to be bookmark facets (so
+// users can filter through their bookmarks like on the rest on their profile)
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");

@@ -194,7 +194,7 @@ export default function LSPublication(
 
           {/* Make Featured */}
           {
-            isOwner &&
+            (isOwner && !!onFeaturedClick) &&
             <Tooltip label={`You can feature up to ${MAX_FEATURED_PUBLICATIONS} publications`} disabled={!featureBtnDisabled}> 
               <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
                 {

@@ -176,7 +176,7 @@ export default function LSProduct(
 
           {/* Make Featured */}
           {
-            isOwner &&
+            (isOwner && !!onFeaturedClick) &&
             <Tooltip label={`You can feature up to ${MAX_FEATURED_PRODUCTS} products`} disabled={!featureBtnDisabled}> 
               <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
                 {
@@ -334,11 +334,11 @@ export default function LSProduct(
 
           <Group>
             {
-            !!onSaveClick &&
-            <ActionIcon variant='subtle' size='lg' onClick={onSaveClick}>
-              <IconBookmark size='1.25rem' stroke='1.5' fill={product.isSaved ? 'currentColor' : 'none'}/>
-            </ActionIcon>
-          }
+              !!onSaveClick &&
+              <ActionIcon variant='subtle' size='lg' onClick={onSaveClick}>
+                <IconBookmark size='1.25rem' stroke='1.5' fill={product.isSaved ? 'currentColor' : 'none'}/>
+              </ActionIcon>
+            }
             {/* Update Buttons */}
             {
               isOwner &&             

@@ -148,6 +148,8 @@ export function useDeleteProduct(userId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
       queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.counts(userId) });
       notifications.show({color: 'green', message: 'Product successfully deleted!'})
     },
     onError: (err) => {
@@ -184,6 +186,7 @@ export function useSetFeaturedProduct(userId: string) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.list(userId) });
     }
   });
 }
