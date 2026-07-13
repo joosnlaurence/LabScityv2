@@ -3,6 +3,8 @@
  * Based on Supabase database schema
  */
 
+import { Skill } from "./data";
+
 export type PostCategory = "formal" | "natural" | "social" | "applied" | "general";
 
 /**
@@ -22,11 +24,13 @@ export interface User {
   about?: string | null;
   occupation?: string | null;
   workplace?: string | null;
-  skills?: string[] | null;
+  skills?: Skill[] | null;
   /** Profile articles (title + URL). From public.profile.articles jsonb. */
   articles?: { title: string; url: string }[] | null;
-  banner_pic_url?: string | null;
   profile_header_url?: string | null;
+  timezone?: string | null;
+  lab_department?: string | null;
+  location?: string | null;
 }
 
 /**
@@ -43,6 +47,8 @@ export interface Post {
   link: string | null;
   created_at: string;
 }
+
+// TODO: Replace instances of the Post type with FeedPost instead
 
 /**
  * Comment type from the comments table
@@ -96,6 +102,7 @@ export interface FeedPostItem {
   isLiked?: boolean;
   likeCount?: number;
   audienceLabel?: string | null;
+  isSaved?: boolean;
 }
 
 export interface FeedCommentItem {

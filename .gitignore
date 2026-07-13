@@ -47,3 +47,6 @@ test-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#test files for server actions
+src/app/api/test/

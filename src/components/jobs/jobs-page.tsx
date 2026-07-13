@@ -1,13 +1,14 @@
 "use client";
 
 import {
+  Autocomplete,
   Badge,
   Box,
   Button,
   Card,
-  Checkbox,
   Flex,
   Group,
+  Loader,
   Select,
   Stack,
   Text,
@@ -21,6 +22,7 @@ import {
   IconBuilding,
   IconChevronDown,
   IconChevronRight,
+  IconClock,
   IconExternalLink,
   IconMapPin,
   IconPlus,
@@ -29,62 +31,88 @@ import {
   IconTrendingUp,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import type { JobViewModel } from "./job-view-model";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
+import { getJobPreviewHtml, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from "./job-display";
+import { toJobViewModel, type JobViewModel } from "./job-view-model";
+import { useJobs, useMyJobs, useSetSavedJob } from "./use-jobs";
+import { useDebouncedValue } from "@mantine/hooks";
+import { JobType, WorkMode } from "@/lib/constants/job";
+import { JobFilters } from "@/lib/types/jobs";
+import { useAuth } from "../auth/use-auth";
+import { useLocationSearch } from "../profile/use-profile-search";
 
-interface JobsPageProps {
-  jobs: JobViewModel[];
-  currentUserId: string | null;
-  loadError?: string | null;
-}
-
-export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
+export function JobsPage() {
   const [search, setSearch] = useState("");
-  const [jobType, setJobType] = useState<string | null>("All types");
-  const [remoteOnly, setRemoteOnly] = useState(false);
-  const [similar, setSimilar] = useState(false);
+  const [debouncedSearch] = useDebouncedValue(search, 300);
+  const [location, setLocation] = useState("");
+  const [debouncedLocation] = useDebouncedValue(location, 300);
+  const [jobType, setJobType] = useState<JobType | null>(null);
+  const [workMode, setWorkMode] = useState<WorkMode | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const locationSearchQuery = useLocationSearch(debouncedLocation);
+  const locationOptions = useMemo(
+    () => (locationSearchQuery.data ?? []).map((result) => result.display_name),
+    [locationSearchQuery.data],
+  );
 
-  const filtered = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-    return jobs.filter((job) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        job.title.toLowerCase().includes(normalizedSearch) ||
-        job.org.toLowerCase().includes(normalizedSearch) ||
-        job.dept.toLowerCase().includes(normalizedSearch) ||
-        job.description.toLowerCase().includes(normalizedSearch);
-      const matchesType = jobType === "All types" || job.type === jobType;
-      const matchesRemote = !remoteOnly || job.remote === "Remote";
-      const matchesProfile = !similar || job.remote !== "On-site";
+  const filters = useMemo<JobFilters>(() => {
+    return {
+      search: debouncedSearch.trim() || undefined,
+      location: debouncedLocation.trim() || undefined,
+      job_type: jobType ?? undefined,
+      work_mode: workMode ?? undefined,
+    };
+  }, [debouncedLocation, debouncedSearch, jobType, workMode]);
 
-      return matchesSearch && matchesType && matchesRemote && matchesProfile;
-    });
-  }, [jobType, jobs, remoteOnly, search, similar]);
+  const { user } = useAuth();
+  const currentUserId = user?.id;
 
-  const myPostings = useMemo(() => {
-    if (!currentUserId) return [];
-    return jobs.filter((job) => job.posterId === currentUserId);
-  }, [currentUserId, jobs]);
+  const jobsQuery = useJobs(filters);
+  const myJobsQuery = useMyJobs(!!currentUserId);
+  const setSavedJob = useSetSavedJob(currentUserId ?? '');
+
+  const jobs = useMemo(
+    () => (jobsQuery.data?.pages.flat() ?? []).map(toJobViewModel),
+    [jobsQuery.data],
+  );
+  const myPostings = useMemo(
+    () => (myJobsQuery.data ?? []).map(toJobViewModel),
+    [myJobsQuery.data],
+  );
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !jobsQuery.hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (
+          entry?.isIntersecting &&
+          jobsQuery.hasNextPage &&
+          !jobsQuery.isFetchingNextPage
+        ) {
+          void jobsQuery.fetchNextPage();
+        }
+      },
+      { rootMargin: "360px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [jobsQuery.fetchNextPage, jobsQuery.hasNextPage, jobsQuery.isFetchingNextPage]);
 
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
       <Box maw={1320} mx="auto" px={{ base: "sm", md: "xl" }} py="xl">
         <Group justify="space-between" align="flex-end" mb="lg">
           <Box>
-            <Text component="h1" fz={28} fw={800} c="gray.9" m={0}>
-              Jobs
-            </Text>
+            <Text component="h1" fz={28} fw={800} c="gray.9" m={0}>Jobs</Text>
             <Text size="sm" c="dimmed">
               Discover research, academic, and industry opportunities.
             </Text>
           </Box>
-          <Button
-            component={Link}
-            href="/jobs/new"
-            leftSection={<IconPlus size={16} />}
-            color="navy"
-            radius="md"
-          >
+          <Button component={Link} href="/jobs/new" leftSection={<IconPlus size={16} />} color="navy" radius="md">
             Post a Job
           </Button>
         </Group>
@@ -93,49 +121,46 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
           <Flex gap="sm" align="center" wrap="wrap">
             <TextInput
               value={search}
-              onChange={(event) => setSearch(event.currentTarget.value)}
-              placeholder="Search jobs, organizations, or departments..."
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              placeholder="Search by job title, organization, or department..."
               leftSection={<IconSearch size={16} />}
               radius="md"
               style={{ flex: "1 1 280px" }}
             />
+            <Autocomplete
+              value={location}
+              onChange={setLocation}
+              data={locationOptions}
+              placeholder="Location"
+              clearable
+              leftSection={<IconMapPin size={16} />}
+              rightSection={
+                locationSearchQuery.isFetching ? <Loader size={14} /> : undefined
+              }
+              radius="md"
+              style={{ flex: "1 1 220px" }}
+            />
             <Select
               value={jobType}
-              onChange={setJobType}
-              data={[
-                "All types",
-                "Postdoc",
-                "Faculty",
-                "PhD",
-                "Grad Student",
-                "Full-time",
-                "Part-time",
-                "Internship",
-                "Contract",
-                "General",
-              ]}
+              onChange={(v) => setJobType(v as JobType | null)}
+              data={JOB_TYPE_OPTIONS.map(option => ({ value: option.value, label: option.label }))}
+              placeholder="Job type"
+              clearable
               leftSection={<IconBriefcase size={16} />}
               rightSection={<IconChevronDown size={16} />}
               w={180}
             />
-            <Checkbox
-              checked={remoteOnly}
-              onChange={(event) => setRemoteOnly(event.currentTarget.checked)}
-              label="Remote only"
+            <Select
+              value={workMode}
+              onChange={(v) => setWorkMode(v as WorkMode | null)}
+              data={WORK_MODE_OPTIONS.map(option => ({ value: option.value, label: option.label }))}
+              placeholder="Work mode"
+              clearable
+              w={180}
+              leftSection={<IconMapPin size={16}/>}
+              rightSection={<IconChevronDown size={16} />}
             />
-            <Checkbox
-              checked={similar}
-              onChange={(event) => setSimilar(event.currentTarget.checked)}
-              label="Flexible work modes"
-              color="violet"
-            />
-            <Button
-              variant="outline"
-              color="gray"
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
-              ml="auto"
-              disabled
-            >
+            <Button variant="outline" color="gray" leftSection={<IconAdjustmentsHorizontal size={16} />} ml="auto" disabled>
               More filters
             </Button>
           </Flex>
@@ -144,108 +169,75 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
         <Flex gap="lg" align="flex-start">
           <Stack flex={1} gap="md" miw={0}>
             <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                {filtered.length} results
-              </Text>
-              <Button
-                variant="subtle"
-                color="gray"
-                size="compact-sm"
-                rightSection={<IconChevronDown size={14} />}
-                disabled
-              >
+              <Text size="sm" c="dimmed">{jobs.length} loaded</Text>
+              <Button variant="subtle" color="gray" size="compact-sm" rightSection={<IconChevronDown size={14} />} disabled>
                 Sort: Relevance
               </Button>
             </Group>
 
-            {loadError ? (
-              <Card radius="md" shadow="xs" padding="lg" withBorder>
-                <Text fw={700} c="red.7">
-                  {loadError}
-                </Text>
-              </Card>
+            {
+              jobsQuery.isError ? (
+                <Card radius="md" shadow="xs" padding="lg" withBorder>
+                  <Text fw={700} c="red.7">
+                    {jobsQuery.error?.message ?? "Failed to load jobs"}
+                  </Text>
+                </Card>
+              ) : null
+            }
+
+            {
+              jobsQuery.isLoading ? (
+                <Group justify="center" py="xl"><Loader /></Group>
+              ) : null
+            }
+
+            {
+              !jobsQuery.isLoading && !jobsQuery.isError && jobs.length === 0 ? (
+                <Card radius="md" shadow="xs" padding="lg" withBorder>
+                  <Text fw={700} c="gray.8">No jobs found</Text>
+                  <Text size="sm" c="dimmed" mt={4}>
+                    Be the first to post a listing for this area.
+                  </Text>
+                </Card>
+              ) : null
+            }
+
+            {
+              jobs.map((job) => (
+                <JobCard key={job.id} job={job} onSaveClick={() => setSavedJob.mutate({ jobId: job.id, isSaved: !job.isSaved })}/>
+              ))
+            }
+
+            {jobsQuery.hasNextPage ? <Box ref={loadMoreRef} h={1} /> : null}
+            {jobsQuery.isFetchingNextPage ? (
+              <Group justify="center" py="md">
+                <Loader size="sm" />
+              </Group>
             ) : null}
-
-            {!loadError && filtered.length === 0 ? (
-              <Card radius="md" shadow="xs" padding="lg" withBorder>
-                <Text fw={700} c="gray.8">
-                  No jobs found
-                </Text>
-                <Text size="sm" c="dimmed" mt={4}>
-                  Try a broader search, or post the first listing for this area.
-                </Text>
-              </Card>
-            ) : null}
-
-            {filtered.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-
-            <Button variant="default" radius="md" disabled>
-              Load more jobs
-            </Button>
           </Stack>
 
           <Stack w={300} gap="md" visibleFrom="lg">
-            <SidebarCard title="Recent Jobs" icon={<IconBookmark size={17} />}>
-              {jobs.slice(0, 3).map((job) => (
-                <SidebarRow
-                  key={job.id}
-                  title={job.title}
-                  subtitle={job.org}
-                  href={`/jobs/${job.id}`}
-                />
-              ))}
+            <SidebarCard title="Recently Viewed" icon={<IconClock size={17} />}>
+              <Text size="sm" c="dimmed">Jobs you view will show up here.</Text>
             </SidebarCard>
 
-            <SidebarCard
-              title="Your Postings"
-              icon={<IconBuilding size={17} />}
-            >
+            <SidebarCard title="Your Postings" icon={<IconBuilding size={17} />}>
               {myPostings.length > 0 ? (
-                myPostings
-                  .slice(0, 3)
-                  .map((job) => (
-                    <SidebarRow
-                      key={job.id}
-                      title={job.title}
-                      subtitle={job.org}
-                      href={`/jobs/${job.id}`}
-                    />
-                  ))
+                myPostings.slice(0, 3).map((job) => (
+                  <SidebarRow key={job.id} title={job.title} subtitle={job.org} href={`/jobs/${job.id}`} />
+                ))
               ) : (
-                <Text size="sm" c="dimmed">
-                  Post a job to see your listings here.
-                </Text>
+                <Text size="sm" c="dimmed">Post a job to see your listings here.</Text>
               )}
-              <Button
-                component={Link}
-                href="/jobs/new"
-                mt="sm"
-                fullWidth
-                variant="outline"
-                color="gray"
-                leftSection={<IconPlus size={15} />}
-              >
+              <Button component={Link} href="/jobs/new" mt="sm" fullWidth variant="outline" color="gray" leftSection={<IconPlus size={15} />}>
                 Post a new job
               </Button>
             </SidebarCard>
 
-            <SidebarCard
-              title="Trending Fields"
-              icon={<IconTrendingUp size={17} />}
-            >
+            <SidebarCard title="Trending Fields" icon={<IconTrendingUp size={17} />}>
               <Group gap={6}>
-                {[
-                  "Deep Learning",
-                  "Holography",
-                  "Phase Imaging",
-                  "Computational Imaging",
-                  "Scientific Software",
-                ].map((tag) => (
-                  <Badge key={tag} variant="light" color="gray" radius="xl">
-                    {tag}
-                  </Badge>
+                {["Deep Learning", "Holography", "Phase Imaging", "Computational Imaging", "Scientific Software"].map((tag) => (
+                  <Badge key={tag} variant="light" color="gray" radius="xl">{tag}</Badge>
                 ))}
               </Group>
             </SidebarCard>
@@ -256,9 +248,13 @@ export function JobsPage({ jobs, currentUserId, loadError }: JobsPageProps) {
   );
 }
 
-function JobCard({ job }: { job: JobViewModel }) {
-  const [saved, setSaved] = useState(false);
-
+export function JobCard({ 
+  job, 
+  onSaveClick 
+}: { 
+  job: JobViewModel,
+  onSaveClick: () => void
+}) {
   return (
     <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
       <Group align="flex-start" justify="space-between" gap="md" wrap="nowrap">
@@ -309,9 +305,12 @@ function JobCard({ job }: { job: JobViewModel }) {
             </Text>
           </Group>
 
-          <Text size="sm" c="gray.7" lineClamp={2} mb="sm">
-            {job.summary?.trim() || job.description}
-          </Text>
+          <Box mb="sm">
+            <PostRichTextContent
+              html={getJobPreviewHtml(job.summary, job.description)}
+              maxHeight={52}
+            />
+          </Box>
 
           <Badge variant="light" color="gray" radius="xl" mb="md">
             {job.remote}
@@ -351,20 +350,23 @@ function JobCard({ job }: { job: JobViewModel }) {
                 Apply
               </Button>
             )}
-            <Button
-              variant={saved ? "light" : "outline"}
-              color={saved ? "navy" : "gray"}
-              radius="md"
-              leftSection={
-                <IconBookmark
-                  size={15}
-                  fill={saved ? "currentColor" : "none"}
-                />
-              }
-              onClick={() => setSaved((current) => !current)}
-            >
-              {saved ? "Saved" : "Save"}
-            </Button>
+            {
+              !!onSaveClick && 
+              <Button
+                variant={job.isSaved ? "light" : "outline"}
+                color={job.isSaved ? "navy" : "gray"}
+                radius="md"
+                leftSection={
+                  <IconBookmark
+                    size={15}
+                    fill={job.isSaved ? "currentColor" : "none"}
+                  />
+                }
+                onClick={onSaveClick}
+              >
+                {job.isSaved ? "Saved" : "Save"}
+              </Button>
+            }
             <Button ml="auto" variant="subtle" color="gray" px="xs" disabled>
               <IconShare3 size={16} />
             </Button>

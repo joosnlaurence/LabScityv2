@@ -1,7 +1,6 @@
 "use client";
 
 import { 
-  Button,
   createTheme, 
   CSSVariablesResolver, 
 } from "@mantine/core";
@@ -37,14 +36,8 @@ export const theme = createTheme({
     ],
   },
   primaryColor: "navy",  
-  components: {
-    Button: Button.extend({
-      defaultProps: {
-        color: 'var(--mantine-color-navy-7)',
-        bdrs: 'md'
-      }
-    })
-  }
+  primaryShade: 7,
+  defaultRadius: 'md'
 });
 
 export const cssVariablesResolver: CSSVariablesResolver = () => ({

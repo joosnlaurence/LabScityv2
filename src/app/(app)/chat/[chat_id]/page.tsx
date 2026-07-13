@@ -70,7 +70,7 @@ const MessageBubble = memo(function MessageBubble({
   };
 
   return (
-    <Box style={{ maxWidth: "70%" }} ml={isMe ? "auto" : 0}>
+    <Box style={{ maxWidth: "72%" }} ml={isMe ? "auto" : 0}>
       <Group
         justify={isMe ? "flex-end" : "flex-start"}
         align="flex-end"
@@ -79,15 +79,18 @@ const MessageBubble = memo(function MessageBubble({
         <Paper
           p="sm"
           px="md"
-          radius="lg"
-          bg={isMe ? "gray.6" : "navy.3"}
-          c={isMe ? "navy.0" : "navy.7"}
-          shadow="sm"
+          radius="xl"
+          bg={isMe ? "#1F3A5F" : "#FFFFFF"}
+          c={isMe ? "#F8FAFC" : "#123257"}
+          withBorder={!isMe}
+          shadow="xs"
           style={{ opacity: isSending ? 0.7 : 1 }}
         >
-          <Text size="sm">{msg.content}</Text>
+          <Text size="sm" lh={1.6} style={{ whiteSpace: "pre-wrap" }}>
+            {msg.content}
+          </Text>
           {isSending && (
-            <Text fz="10px" c={isMe ? "navy.1" : "dimmed"} mt={4}>
+            <Text fz="10px" c={isMe ? "#CBD5E1" : "dimmed"} mt={4}>
               Sending...
             </Text>
           )}
@@ -368,44 +371,55 @@ export default function ChatPage() {
     );
 
   return (
-    <Stack h="100%" gap={0} bg="gray.1" style={{ overflow: "hidden" }}>
+    <Stack
+      h="100%"
+      gap={0}
+      bg="gray.0"
+      style={{
+        overflow: "hidden",
+        background: "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
+      }}
+    >
       {/* HEADER */}
       <Paper
-        p={isMobile ? "sm" : "md"}
-        shadow="sm"
+        p={isMobile ? "sm" : "lg"}
         radius={0}
         withBorder
-        bg="gray.2"
-        style={{ zIndex: 10, flexShrink: 0, position: "relative" }}
+        bg="white"
+        style={{
+          zIndex: 10,
+          flexShrink: 0,
+          position: "relative",
+          borderBottomColor: "#E5E7EB",
+        }}
       >
-        <Group justify="center" align="center" gap="xs">
-          <Title order={4} c="navy.7" style={{ margin: 0 }}>
-            {chatTitle || `Chat #${chat_id}`}
-          </Title>
-          <Indicator
-            color={isConnected ? "green" : "yellow"}
-            size={8}
-            processing
-          />
-        </Group>
-        <Box
-          style={{
-            position: "absolute",
-            right: isMobile ? 8 : 16,
-            top: "50%",
-            transform: "translateY(-50%)",
-          }}
-        >
+        <Group justify="space-between" align="center" gap="md">
+          <Box>
+            <Group gap="xs" align="center">
+              <Title order={3} c="#123257" style={{ margin: 0 }}>
+                {chatTitle || `Chat #${chat_id}`}
+              </Title>
+              <Indicator
+                color={isConnected ? "green" : "yellow"}
+                size={8}
+                processing
+              />
+            </Group>
+            <Text size="sm" c="#64748B">
+              {isConnected ? "Live conversation" : "Reconnecting..."}
+            </Text>
+          </Box>
           <ActionIcon
-            variant="subtle"
-            color="navy.7"
+            variant="light"
+            color="blue"
             radius="xl"
             size="lg"
             onClick={() => setInfoModalOpen(true)}
+            style={{ background: "#EFF6FF", color: "#1D4ED8" }}
           >
             <IconInfoCircle size="1.2rem" />
           </ActionIcon>
-        </Box>
+        </Group>
       </Paper>
 
       {/* INFO MODAL */}
@@ -534,21 +548,23 @@ export default function ChatPage() {
       >
         <Stack gap="md" p={isMobile ? "sm" : "md"}>
           {hasMore && messages.length > 0 && (
-            <Center mb="sm">
-              <Button
-                variant="subtle"
-                size="xs"
-                loading={isLoadingMore}
-                onClick={loadMore}
-              >
-                Load older messages
-              </Button>
-            </Center>
+          <Center mb="sm">
+            <Button
+              variant="light"
+              radius="xl"
+              size="xs"
+              loading={isLoadingMore}
+              style={{ background: "#EFF6FF", color: "#1D4ED8" }}
+              onClick={loadMore}
+            >
+              Load older messages
+            </Button>
+          </Center>
           )}
 
           {messages.length === 0 && (
             <Center h={200}>
-              <Text c="dimmed" size="sm">
+              <Text c="#64748B" size="sm">
                 No messages yet. Say hello!
               </Text>
             </Center>
@@ -579,11 +595,11 @@ export default function ChatPage() {
 
       {/* INPUT */}
       <Paper
-        p={isMobile ? "sm" : "md"}
+        p={isMobile ? "sm" : "lg"}
         withBorder
         radius={0}
-        bg="gray.2"
-        style={{ flexShrink: 0 }}
+        bg="white"
+        style={{ flexShrink: 0, borderTopColor: "#E5E7EB" }}
       >
         <Group align="flex-end">
           <TextInput
@@ -592,17 +608,19 @@ export default function ChatPage() {
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             style={{ flex: 1 }}
-            radius="md"
+            radius="xl"
             size="md"
             disabled={!isConnected}
+            styles={{ input: { borderColor: "#E5E7EB", minHeight: 46 } }}
           />
           <ActionIcon
-            size="lg"
+            size="xl"
             variant="filled"
-            color="navy.7"
+            color="blue"
             radius="xl"
             onClick={handleSend}
             disabled={!inputText.trim() || !isConnected}
+            style={{ background: "#1F3A5F" }}
           >
             <IconSend size="1.1rem" />
           </ActionIcon>

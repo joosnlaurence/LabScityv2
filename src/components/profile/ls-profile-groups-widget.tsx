@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Avatar,
   Badge,
@@ -17,6 +18,8 @@ import { useAuth } from "@/components/auth/use-auth";
 import { useProfileGroups } from "@/components/profile/use-profile";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import { groupsPath } from "@/lib/utils/groups-url";
+import { IconUsersGroup } from "@tabler/icons-react";
+import classes from './ls-profile-groups-widget.module.css'
 
 function groupInitials(name: string) {
   return (name || "?")
@@ -28,12 +31,8 @@ function groupInitials(name: string) {
     .toUpperCase();
 }
 
-const MAX_INLINE_GROUPS = 6;
+const COLLAPSED_COUNT = 3;
 
-/**
- * Profile sidebar widget: groups this user belongs to (public-only for visitors).
- * Hidden when the viewer is not signed in.
- */
 export function LSProfileGroupsWidget({
   userId,
   isOwnProfile,
@@ -42,17 +41,15 @@ export function LSProfileGroupsWidget({
   isOwnProfile: boolean;
 }) {
   const { user } = useAuth();
-  const { data, isPending, isError, error, isFetching } =
-    useProfileGroups(userId);
+  const { data, isPending, isError, error, isFetching } = useProfileGroups(userId);
+  const [expanded, setExpanded] = useState(false);
 
-  if (!user?.id) {
-    return null;
-  }
+  if (!user?.id) return null;
 
   if (isPending && isFetching) {
     return (
-      <Card shadow="sm" padding="lg" radius="md">
-        <Center py="md">
+      <Card shadow="sm" padding="md" radius="md" bd="1px solid gray.3">
+        <Center py="sm">
           <LSSpinner />
         </Center>
       </Card>
@@ -61,7 +58,7 @@ export function LSProfileGroupsWidget({
 
   if (isError) {
     return (
-      <Card shadow="sm" padding="lg" radius="md">
+      <Card shadow="sm" padding="md" radius="md" bd="1px solid gray.3">
         <Text size="sm" c="red">
           {error instanceof Error ? error.message : "Could not load groups"}
         </Text>
@@ -70,101 +67,102 @@ export function LSProfileGroupsWidget({
   }
 
   const groups = data ?? [];
-  const visibleGroups = groups.slice(0, MAX_INLINE_GROUPS);
+  const hasOverflow = groups.length > COLLAPSED_COUNT;
+  const visibleGroups = expanded ? groups : groups.slice(0, COLLAPSED_COUNT);
 
   return (
-    <Card shadow="sm" padding="lg" radius="md">
-      <Center mb={8}>
-        <Text c="navy.7" fw={600} size="xl">
-          Groups
-        </Text>
-      </Center>
-      <Stack gap={12}>
-        {groups.length > 0 ? (
-          <Stack gap={12}>
-            {visibleGroups.map((g) => (
-              <UnstyledButton
-                key={g.group_id}
-                component={Link}
-                href={groupsPath({ tab: "mine", groupId: g.group_id })}
-                w="100%"
-              >
-                <Box
-                  p="sm"
-                  bg="white"
-                  style={{
-                    borderRadius: "var(--mantine-radius-md)",
-                    border: "1px solid var(--mantine-color-navy-1)",
-                    boxShadow: "var(--mantine-shadow-xs)",
-                  }}
-                >
-                  <Group
-                    justify="flex-start"
-                    wrap="nowrap"
-                    gap="sm"
-                    align="flex-start"
-                  >
-                    <Avatar
-                      size={40}
-                      radius="md"
-                      color="navy.7"
-                      bg={g.avatar_url ? undefined : "navy.7"}
-                      src={g.avatar_url ?? undefined}
-                    >
-                      {groupInitials(g.name)}
-                    </Avatar>
-                    <Box style={{ flex: 1, minWidth: 0 }}>
-                      <Group justify="space-between" wrap="nowrap" gap="xs">
-                        <Text fw={600} c="navy.7" size="sm" lineClamp={2}>
-                          {g.name}
-                        </Text>
-                        {isOwnProfile && g.privacy === "private" ? (
-                          <Badge size="xs" variant="light" color="gray">
-                            Private
-                          </Badge>
-                        ) : null}
-                      </Group>
-                      <Text size="xs" c="dimmed" mt={4}>
-                        {g.memberCount} member{g.memberCount === 1 ? "" : "s"}
-                      </Text>
-                    </Box>
-                  </Group>
-                </Box>
-              </UnstyledButton>
-            ))}
-          </Stack>
-        ) : (
-          <Center>
-            <Text size="sm" c="navy.6">
-              Nothing to see here!
-            </Text>
-          </Center>
+    <Card shadow="xs" padding="md" radius="md" bd="1px solid gray.3">
+      <Group justify="space-between" align="center" mb={8}>
+        <Group>
+          <Box
+            w={22}
+            h={22}
+            bg="navy.3"
+            style={{
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <IconUsersGroup size="1rem" />
+          </Box>
+          <Text c="navy.7" fw={900} size="sm">
+            Groups
+          </Text>
+        </Group>        
+        {groups.length > 0 && (
+          <Text c="dimmed" size="xs">
+            {groups.length}
+          </Text>
         )}
-        <Stack gap={4} align="center">
-          {isOwnProfile && groups.length > 0 ? (
-            <Button
+      </Group>
+
+      {groups.length > 0 ? (
+        <Stack gap={6}>
+          {visibleGroups.map((g) => (
+            <UnstyledButton
+              key={g.group_id}
               component={Link}
-              href={groupsPath({ tab: "mine" })}
-              variant="subtle"
-              color="navy"
-              size="xs"
+              href={groupsPath({ tab: "mine", groupId: g.group_id })}
+              w="100%"
+              className={classes.groupRow}
             >
-              {groups.length > MAX_INLINE_GROUPS
-                ? `See all ${groups.length} in Groups`
-                : "See all in Groups"}
-            </Button>
-          ) : null}
+              <Group wrap="nowrap" gap="xs" align="center">
+                <Avatar
+                  size={28}
+                  radius="md"
+                  color="navy.7"
+                  bg={g.avatar_url ? undefined : "navy.7"}
+                  src={g.avatar_url ?? undefined}
+                >
+                  {groupInitials(g.name)}
+                </Avatar>
+                <Box style={{ flex: 1, minWidth: 0 }}>
+                  <Group wrap="nowrap" gap={6} align="center">
+                    <Text fw={600} c="navy.7" size="sm" lineClamp={1}>
+                      {g.name}
+                    </Text>
+                    {isOwnProfile && g.privacy === "private" && (
+                      <Badge size="xs" variant="light" color="gray">
+                        Private
+                      </Badge>
+                    )}
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    {g.memberCount} member{g.memberCount === 1 ? "" : "s"}
+                  </Text>
+                </Box>
+              </Group>
+            </UnstyledButton>
+          ))}
+
+          {hasOverflow && (
+            <UnstyledButton onClick={() => setExpanded((v) => !v)}>
+              <Text c="navy.6" size="xs" fw={600} ta="center">
+                {expanded ? "Show less" : `+${groups.length - COLLAPSED_COUNT} more`}
+              </Text>
+            </UnstyledButton>
+          )}
+
           <Button
             component={Link}
-            href={groupsPath({ tab: "discover" })}
+            href={groupsPath({ tab: isOwnProfile ? "mine" : "discover" })}
             variant="subtle"
             color="navy"
             size="xs"
+            mt={2}
           >
-            Browse groups
+            {isOwnProfile ? "See all in Groups" : "Browse groups"}
           </Button>
         </Stack>
-      </Stack>
+      ) : (
+        <Center py="xs">
+          <Text size="sm" c="navy.6">
+            Nothing to see here!
+          </Text>
+        </Center>
+      )}
     </Card>
   );
 }

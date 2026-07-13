@@ -20,11 +20,13 @@ import {
   SegmentedControl,
   Slider,
   Stack,
-  Switch,
   Text,
   Textarea,
   TextInput,
   ThemeIcon,
+  Image,
+  Spoiler,
+  Anchor
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
@@ -38,20 +40,19 @@ import {
   IconHeart,
   IconPhoto,
   IconMessageCircle,
-  IconPin,
-  IconPinFilled,
   IconPlus,
   IconQuote,
   IconShare3,
   IconStarFilled,
   IconTrash,
-  IconTrendingUp,
   IconUsers,
+  IconHeartFilled,
 } from "@tabler/icons-react";
+import StickyBox from "react-sticky-box";
 import { useQuery } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
 import { useEditor } from "@tiptap/react";
-import Image from "next/image";
+import NextImage from "next/image";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
@@ -74,6 +75,10 @@ import type { CreatePostValues } from "@/lib/validations/post";
 import type { HomeFeedProps } from "./home-feed.types";
 import { PostFollowButton } from "./post-follow-button";
 import { useHomeFeed } from "./use-home-feed";
+import { useGetUser } from "../data/use-data";
+import { createClient } from "@/supabase/client";
+import { FeedPostItem } from "@/lib/types/feed";
+import { useSetSavedPost } from "./use-feed";
 
 const DEFAULT_EDITOR_TEXT_COLOR = "#000000";
 const DEFAULT_EDITOR_FONT_SIZE = "16px";
@@ -140,25 +145,6 @@ export function HomeFeed(props: HomeFeedProps) {
     }
   }, [currentUserId]);
 
-  const togglePinnedPost = (postId: string) => {
-    if (!currentUserId) {
-      return;
-    }
-
-    setPinnedPostIds((current) => {
-      const next = current.includes(postId)
-        ? current.filter((id) => id !== postId)
-        : [postId, ...current];
-
-      window.localStorage.setItem(
-        `${PINNED_POSTS_STORAGE_PREFIX}:${currentUserId}`,
-        JSON.stringify(next),
-      );
-
-      return next;
-    });
-  };
-
   const addFeedTag = (tag: string) => {
     const nextTag = tag.trim();
 
@@ -219,6 +205,8 @@ export function HomeFeed(props: HomeFeedProps) {
       return left.index - right.index;
     });
 
+  const setSaved = useSetSavedPost(currentUserId ?? '');
+
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
       <Flex
@@ -276,7 +264,6 @@ export function HomeFeed(props: HomeFeedProps) {
             <FeedPostCard
               key={post.id}
               currentUserId={currentUserId}
-              isPinned={isPinned}
               post={post}
               commentOpen={activeCommentPostId === post.id}
               onToggleComments={() =>
@@ -286,8 +273,8 @@ export function HomeFeed(props: HomeFeedProps) {
               }
               onAddComment={handleAddComment}
               onLike={() => handleTogglePostLike(post.id)}
+              onSetSaved={(postId, save) => setSaved.mutate({ postId: post.id, save: !post.isSaved })}
               onDelete={() => handleDeletePost(post.id)}
-              onTogglePinned={() => togglePinnedPost(post.id)}
             />
           ))}
 
@@ -295,7 +282,7 @@ export function HomeFeed(props: HomeFeedProps) {
             <Button
               variant="default"
               radius="md"
-              onClick={() => void fetchNextPage()}
+              onClick={() => fetchNextPage()}
               loading={isFetchingNextPage}
             >
               Load more posts
@@ -304,11 +291,13 @@ export function HomeFeed(props: HomeFeedProps) {
         </Stack>
 
         {!isMobile ? (
-          <HomeRightRail
-            {...props}
-            activeFeedTags={activeFeedTags}
-            onTrendClick={addFeedTag}
-          />
+          <StickyBox offsetTop={60 + 26} offsetBottom={16}>
+            <HomeRightRail
+              {...props}
+              activeFeedTags={activeFeedTags}
+              onTrendClick={addFeedTag}
+            />
+          </StickyBox>
         ) : null}
       </Flex>
     </Box>
@@ -369,12 +358,10 @@ function CreatePostCard({
   const productsQuery = useQuery({
     queryKey: ["home", "composer", "products", currentUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/products?userId=${currentUserId}`);
+      const response = await fetch(`/api/products/all?userId=${currentUserId}`);
+      if(!response.ok) throw new Error("Failed to load products");
       const payload = (await response.json()) as ApiResponse<Product[]>;
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error ?? "Failed to load products");
-      }
+      if (!payload.success) throw new Error(payload.error);
 
       return payload.data ?? [];
     },
@@ -385,12 +372,10 @@ function CreatePostCard({
   const publicationsQuery = useQuery({
     queryKey: ["home", "composer", "publications", currentUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/publications?userId=${currentUserId}`);
+      const response = await fetch(`/api/publications/all?userId=${currentUserId}`);
+      if(!response.ok) throw new Error("Failed to load products");
       const payload = (await response.json()) as ApiResponse<Publication[]>;
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error ?? "Failed to load publications");
-      }
+      if (!payload.success) throw new Error(payload.error);
 
       return payload.data ?? [];
     },
@@ -399,6 +384,8 @@ function CreatePostCard({
       composerMode === "publication" &&
       Boolean(currentUserId),
   });
+
+  const { data: profile } = useGetUser(currentUserId ?? '');
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -740,7 +727,7 @@ function CreatePostCard({
         <Stack gap="md">
         <Group justify="space-between" align="center">
           <Group gap="sm">
-            <Avatar radius="xl" color="navy.7" size={36}>
+            <Avatar radius="xl" color="navy.7" size={36} src={profile?.avatar_url}>
               {initials(currentUserName)}
             </Avatar>
             <Box>
@@ -1110,6 +1097,7 @@ function CreatePostCard({
                   }}
                 >
                   <Image
+                    component={NextImage}
                     src={mediaPreviewUrl}
                     alt="Selected post image"
                     fill
@@ -1131,17 +1119,6 @@ function CreatePostCard({
                 endpoint for creating those linked post types.
               </Alert>
             ) : null}
-
-            <Switch
-              checked={isFeaturedPost}
-              onChange={(event) =>
-                setIsFeaturedPost(event.currentTarget.checked)
-              }
-              color="yellow"
-              label="Feature this post for everyone"
-              description="Featured posts get the highlighted styling and stay near the top of every user's home feed."
-              disabled={composerMode !== "normal"}
-            />
 
             <Group justify="space-between" wrap="wrap">
               <Group gap="xs" wrap="wrap">
@@ -1187,58 +1164,34 @@ function CreatePostCard({
   );
 }
 
-function FeedPostCard({
+export function FeedPostCard({
   post,
   currentUserId,
-  isPinned,
   commentOpen,
   onToggleComments,
   onAddComment,
   onLike,
+  onSetSaved,
   onDelete,
-  onTogglePinned,
+  hideYourPostBadge
 }: {
-  post: {
-    id: string;
-    userId: string;
-    userName: string;
-    avatarUrl?: string | null;
-    scientificField: string;
-    content: string;
-    timeAgo: string;
-    mediaUrl?: string | null;
-    mediaWidth?: number;
-    mediaHeight?: number;
-    comments: Array<{
-      id: string;
-      userId: string;
-      userName: string;
-      avatarUrl?: string | null;
-      content: string;
-      createdAt?: string;
-      timeAgo: string;
-      parentCommentId?: string | null;
-    }>;
-    isLiked?: boolean;
-    likeCount?: number;
-  };
+  post: FeedPostItem;
   currentUserId: string | null;
-  isPinned: boolean;
-  commentOpen: boolean;
-  onToggleComments: () => void;
+  commentOpen?: boolean;
+  onToggleComments?: () => void;
   onAddComment: (postId: string, values: { content: string }) => Promise<void>;
   onLike: () => void;
+  onSetSaved: (postId: string, save: boolean) => void;
   onDelete: () => void;
-  onTogglePinned: () => void;
+  hideYourPostBadge?: boolean;
 }) {
   const isOwnPost = currentUserId != null && currentUserId === post.userId;
-  const [saved, setSaved] = useState(false);
   const [comment, setComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [copied, setCopied] = useState(false);
   const parsedContent = parsePostContent(post.content);
   const title = parsedContent.title;
-  const description = deriveDescription(parsedContent.bodyText);
+  const description = parsedContent.bodyText;
   const inferredTags =
     parsedContent.tags.length > 0
       ? parsedContent.tags
@@ -1247,65 +1200,22 @@ function FeedPostCard({
           content: parsedContent.bodyText,
           mediaUrl: post.mediaUrl,
         });
-  const isFeatured = parsedContent.isFeatured;
-  const hasHighlightedStyling = isPinned || isFeatured;
   const isCitable =
     parsedContent.kind === "publication" || inferredTags.includes("Article");
 
+  const spoilerControlRef = useRef<HTMLButtonElement>(null);
   return (
     <Card
       radius="xl"
+      shadow='xs'
       withBorder
       bg="white"
       p="lg"
-      style={{
-        borderColor: "#E5E7EB",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-      }}
     >
       <Stack gap="md">
-        {hasHighlightedStyling ? (
-          <Box
-            h={8}
-            mx={-24}
-            mt={-24}
-            style={{
-              background:
-                "linear-gradient(90deg, #1F3A5F 0%, #2A65C7 55%, #67C7C0 100%)",
-            }}
-          />
-        ) : null}
         <Group justify="space-between" align="flex-start" wrap="nowrap">
           <Group gap="xs" wrap="wrap">
-            {isFeatured ? (
-              <Badge
-                radius="xl"
-                variant="light"
-                leftSection={<IconStarFilled size={10} color="#A16207" />}
-                style={{
-                  background: "#FEF3C7",
-                  color: "#92400E",
-                  border: "1px solid #FCD34D",
-                }}
-              >
-                Featured
-              </Badge>
-            ) : null}
-            {isPinned ? (
-              <Badge
-                radius="xl"
-                variant="light"
-                leftSection={<IconPinFilled size={10} color="#A16207" />}
-                style={{
-                  background: "#FEF3C7",
-                  color: "#92400E",
-                  border: "1px solid #FCD34D",
-                }}
-              >
-                Pinned
-              </Badge>
-            ) : null}
-            {isOwnPost ? (
+            {isOwnPost && !hideYourPostBadge? (
               <Badge
                 radius="xl"
                 variant="light"
@@ -1338,14 +1248,6 @@ function FeedPostCard({
             ))}
           </Group>
           <Group gap={4} wrap="nowrap">
-            <ActionIcon
-              variant="subtle"
-              color={isPinned ? "yellow" : "gray"}
-              aria-label={isPinned ? "Unpin post" : "Pin post"}
-              onClick={onTogglePinned}
-            >
-              {isPinned ? <IconPinFilled size={18} /> : <IconPin size={18} />}
-            </ActionIcon>
             {isOwnPost ? (
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -1372,21 +1274,22 @@ function FeedPostCard({
         </Group>
 
         <Stack gap={8}>
-          <Text
-            component={Link}
-            href={`/posts/${post.id}`}
-            fw={700}
-            fz={17}
-            c="#111827"
-            style={{
-              textDecoration: "none",
-              lineHeight: 1.4,
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {title}
-          </Text>
+          <Box>
+            <Anchor
+              component={Link}
+              href={`/posts/${post.id}`}
+              fw={700}
+              fz={17}
+              c="#111827"
+              style={{
+                lineHeight: 1.4,
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+              }}
+            >
+              {title}
+            </Anchor>
+          </Box>
           {parsedContent.bodyHtml ? (
             <Box c="#475569">
               <PostRichTextContent
@@ -1395,47 +1298,67 @@ function FeedPostCard({
               />
             </Box>
           ) : (
-            <Text
-              size="sm"
+            <Spoiler
+              controlRef={spoilerControlRef}
+              fz="sm"
               c="#475569"
               lh={1.6}
-              style={{
-                whiteSpace: "pre-wrap",
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
+              maxHeight={176} // Enough for about 8 lines worth of content
+              showLabel='Show more'
+              hideLabel='Hide'
+              style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+              styles={{
+                control: {
+                  color: 'var(--mantine-color-blue-7)',
+                  fontSize: 'var(--mantine-font-size-sm)',
+                  fontWeight: 600
+                }
               }}
             >
               {description}
-            </Text>
+            </Spoiler>
           )}
         </Stack>
 
         <Group justify="space-between" align="center" wrap="wrap" gap="sm">
           <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-            <Avatar.Group spacing="sm">
-              <Avatar size={28} src={post.avatarUrl ?? undefined} color="blue">
-                {initials(post.userName)}
-              </Avatar>
-              <Avatar size={28} color="cyan">
-                {(post.scientificField || "GE").slice(0, 2).toUpperCase()}
-              </Avatar>
-            </Avatar.Group>
+            <Avatar 
+              size={28} 
+              src={post.avatarUrl ?? undefined} 
+              color="blue"
+              component={Link}
+              href={`/profile/${post.userId}`}
+            >
+              {initials(post.userName)}
+            </Avatar>
+            
             <Text
               size="sm"
-              c="#1F2937"
-              fw={600}
               style={{
                 minWidth: 0,
                 overflowWrap: "anywhere",
                 wordBreak: "break-word",
               }}
             >
-              {post.userName}
+              <Anchor
+                component={Link}
+                href={`/profile/${post.userId}`}
+                underline="hover"
+              >
+                <Text 
+                  span
+                  c="#1F2937"
+                  fw={600}
+                >
+                  {post.userName}
+                </Text>
+              </Anchor>
               <Text span c="#64748B" fw={400}>
                 {" "}
                 · {post.timeAgo}
               </Text>
             </Text>
+            
             {!isOwnPost ? (
               <PostFollowButton
                 currentUserId={currentUserId}
@@ -1448,41 +1371,27 @@ function FeedPostCard({
           </Text>
         </Group>
 
-        {inferredTags.length > 0 ? (
-          <Group gap={6} wrap="wrap">
-            {inferredTags.map((tag) => (
-              <Button
-                key={`pill-${tag}`}
-                variant="light"
-                radius="xl"
-                size="compact-sm"
-                style={{
-                  background: "#EFF6FF",
-                  color: "#1D4ED8",
-                  border: "1px solid #BFDBFE",
-                }}
-              >
-                {tag}
-              </Button>
-            ))}
-          </Group>
-        ) : null}
-
         {post.mediaUrl ? (
           <Box
+            pos="relative"
+            mah={600}
+            maw='100%'
+            fw={600}
             style={{
+              aspectRatio: `${(post.mediaWidth ?? 1) / (post.mediaHeight ?? 1)}`,
               overflow: "hidden",
-              borderRadius: 16,
-              border: "1px solid #E5E7EB",
-              aspectRatio: "16 / 9",
-              position: "relative",
+              letterSpacing: "0.3px",
             }}
           >
             <Image
+              component={NextImage}
               src={post.mediaUrl}
               alt="Post attachment"
+              bdrs="lg"
+              bg='navy.0'
               fill
-              style={{ objectFit: "cover", display: "block" }}
+              mah={600}
+              style={{ objectFit: "contain" }}
             />
           </Box>
         ) : null}
@@ -1494,7 +1403,7 @@ function FeedPostCard({
             <Button
               variant="subtle"
               color={post.isLiked ? "red" : "gray"}
-              leftSection={<IconHeart size={16} />}
+              leftSection={post.isLiked ? <IconHeartFilled size={16}/> : <IconHeart size={16} />}
               px={0}
               onClick={onLike}
             >
@@ -1515,11 +1424,11 @@ function FeedPostCard({
               leftSection={
                 <IconBookmark
                   size={16}
-                  fill={saved ? "currentColor" : "none"}
+                  fill={post.isSaved ? "currentColor" : "none"}
                 />
               }
               px={0}
-              onClick={() => setSaved((current) => !current)}
+              onClick={() => onSetSaved?.(String(post.id), !post.isSaved)}
             >
               Save
             </Button>
@@ -1699,18 +1608,7 @@ function HomeLeftRail({ currentUser }: HomeFeedProps) {
   );
 }
 
-function HomeRightRail({
-  currentUserId,
-  trendingTags,
-  activeFeedTags,
-  onTrendClick,
-  searchPublicGroupsAction,
-  joinGroupAction,
-  getGroupsAction,
-}: HomeFeedProps & {
-  activeFeedTags: string[];
-  onTrendClick: (tag: string) => void;
-}) {
+export function RecommendedCollabsCard({ currentUserId }: { currentUserId: string | null }) {
   const collaboratorsQuery = useQuery({
     queryKey: ["home", "collaborators", currentUserId],
     queryFn: async () => {
@@ -1718,33 +1616,49 @@ function HomeRightRail({
       if (!res.ok) {
         throw new Error("Failed to fetch collaborators");
       }
-      return (await res.json()) as GetCollaboratorsResult[];
+      const data = (await res.json()) as GetCollaboratorsResult[];
+      console.log(data);
+      return data;
     },
     enabled: Boolean(currentUserId),
   });
+  
+  const supabase = createClient();
 
   return (
-    <Stack w={320} gap="md" pos="sticky" top={80}>
-      <SectionCard
-        title="Recommended Collaborators"
-        icon={<IconUsers size={18} />}
-        actionLabel="See all"
-      >
-        <Stack gap={0}>
-          {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => (
+    <SectionCard
+      title="Recommended Collaborators"
+      icon={<IconUsers size={18} />}
+      actionLabel="See all"
+    >
+      <Stack gap={0}>
+        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => {
+          const { data } = supabase.storage
+            .from("profile_pictures")
+            .getPublicUrl(person?.profile_pic_path ?? '');
+
+          return (
             <Group
               key={person.profile_user_id}
               py="sm"
               wrap="nowrap"
               style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
             >
-              <Avatar radius="xl" color="blue">
+              <Avatar 
+                component={Link} 
+                href={`/profile/${person.profile_user_id}`} 
+                radius="xl" 
+                color="blue"
+                src={data.publicUrl}
+              >
                 {initials(`${person.first_name} ${person.last_name}`)}
               </Avatar>
               <Box flex={1} miw={0}>
-                <Text size="sm" fw={800} truncate>
-                  {person.first_name} {person.last_name}
-                </Text>
+                <Anchor component={Link} href={`/profile/${person.profile_user_id}`}>
+                  <Text size="sm" fw={800} truncate>
+                    {person.first_name} {person.last_name}
+                  </Text>
+                </Anchor>
                 <Text size="xs" c="dimmed" truncate>
                   {person.occupation || person.workplace || "Researcher"}
                 </Text>
@@ -1757,24 +1671,43 @@ function HomeRightRail({
                 targetUserId={person.profile_user_id}
               />
             </Group>
-          ))}
-          {collaboratorsQuery.isLoading ? (
-            <Text size="sm" c="dimmed">
-              Loading collaborators...
-            </Text>
-          ) : null}
-        </Stack>
-      </SectionCard>
+          )
+        })}
+        {collaboratorsQuery.isLoading ? (
+          <Text size="sm" c="dimmed">
+            Loading collaborators...
+          </Text>
+        ) : null}
+      </Stack>
+    </SectionCard>
+  )
+} 
 
-      <SectionCard
+function HomeRightRail({
+  currentUserId,
+  trendingTags,
+  activeFeedTags,
+  onTrendClick,
+  searchPublicGroupsAction,
+  joinGroupAction,
+  getGroupsAction,
+}: HomeFeedProps & {
+  activeFeedTags: string[];
+  onTrendClick: (tag: string) => void;
+}) {
+  return (
+    <Stack w={320} gap="md" pos="sticky" top={80}>
+      <RecommendedCollabsCard currentUserId={currentUserId} />
+
+      {/* <SectionCard
         title="Trending Research"
         icon={<IconTrendingUp size={18} />}
         accent="teal"
       >
         <Stack gap={4}>
-          {(trendingTags ?? []).slice(0, 5).map((tag) => (
+          {(trendingTags ?? []).slice(0, 5).map((tag, i) => (
             <Button
-              key={String(tag)}
+              key={`${tag}${i}}`}
               variant={
                 activeFeedTags.some(
                   (activeTag) => activeTag.toLowerCase() === String(tag).toLowerCase(),
@@ -1799,7 +1732,7 @@ function HomeRightRail({
             </Button>
           ))}
         </Stack>
-      </SectionCard>
+      </SectionCard> */}
 
       {searchPublicGroupsAction && joinGroupAction && getGroupsAction ? (
         <LSPopularGroupsHomeStrip
@@ -1905,18 +1838,18 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function deriveDescription(content: string) {
-  const trimmed = content.trim();
-  if (!trimmed) {
-    return "No description available.";
-  }
+// function deriveDescription(content: string) {
+//   const trimmed = content.trim();
+//   if (!trimmed) {
+//     return "No description available.";
+//   }
 
-  if (trimmed.length <= 180) {
-    return trimmed;
-  }
+//   if (trimmed.length <= 180) {
+//     return trimmed;
+//   }
 
-  return `${trimmed.slice(0, 177).trim()}...`;
-}
+//   return `${trimmed.slice(0, 177).trim()}...`;
+// }
 
 function escapeHtml(value: string) {
   return value
@@ -1933,8 +1866,8 @@ function derivePostTags(post: {
   mediaUrl?: string | null;
 }) {
   const tags: string[] = [];
-  const normalizedContent = post.content.toLowerCase();
-  const normalizedField = post.scientificField.trim().toLowerCase();
+  const normalizedContent = (post.content ?? '').toLowerCase();
+  const normalizedField = (post.scientificField ?? '').trim().toLowerCase();
 
   const looksLikeArticle =
     normalizedContent.includes("doi.org/") ||

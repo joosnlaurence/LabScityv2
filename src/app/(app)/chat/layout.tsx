@@ -5,6 +5,7 @@ import {
   Badge,
   Box,
   Button,
+  Card,
   Center,
   Drawer,
   Flex,
@@ -88,44 +89,58 @@ export default function ChatLayout({
   }, [isMobile, activeChatId]);
 
   const sidebarContent = (
-    <Stack gap={0} h="100dvh">
-      <Box
-        p="md"
-        style={{ borderBottom: "1px solid var(--mantine-color-navy-1)" }}
+    <Stack gap="md" h="100dvh" p="md">
+      <Card
+        radius="xl"
+        p="lg"
+        withBorder
+        bg="white"
+        style={{
+          borderColor: "#E5E7EB",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+        }}
       >
-        <Group justify="space-between" align="flex-start">
+        <Stack gap="md">
           <Box>
-            <Title order={4} c="navy.7">
+            <Title order={3} c="#123257">
               Chats
             </Title>
-            <Text size="sm" c="dimmed">
-              Your conversations
+            <Text size="sm" c="#64748B">
+              Your active conversations across collaborators and groups.
             </Text>
           </Box>
           <Button
-            variant="light"
-            size="compact-sm"
+            radius="xl"
             leftSection={<IconPlus size={14} />}
             onClick={() => {
               setNewChatModalOpen(true);
               setDrawerOpened(false);
             }}
+            style={{ background: "#1F3A5F" }}
           >
-            New
+            New Chat
           </Button>
-        </Group>
-      </Box>
+        </Stack>
+      </Card>
 
       <ScrollArea h="100%">
-        <Stack gap={0}>
+        <Stack gap="sm">
           {isLoading ? (
             <Center h={100}>
               <Loader size="sm" />
             </Center>
           ) : chats.length === 0 ? (
-            <Text size="sm" c="dimmed" p="md">
-              No chats yet. Start a conversation!
-            </Text>
+            <Card
+              radius="xl"
+              p="lg"
+              withBorder
+              bg="white"
+              style={{ borderColor: "#E5E7EB" }}
+            >
+              <Text size="sm" c="#64748B">
+                No chats yet. Start a conversation!
+              </Text>
+            </Card>
           ) : (
             chats.map((chat) => (
               <NavLink
@@ -135,13 +150,25 @@ export default function ChatLayout({
                 active={chat.conversation_id + "" === activeChatId}
                 styles={{
                   root: {
-                    "--nav-active-bg": "var(--mantine-color-navy-3)",
+                    "--nav-active-bg": "transparent",
                   },
                 }}
-                c="navy.7"
+                c="#123257"
                 p="md"
                 style={{
-                  borderBottom: "1px solid var(--mantine-color-navy-1)",
+                  border:
+                    chat.conversation_id + "" === activeChatId
+                      ? "1px solid #BFDBFE"
+                      : "1px solid #E5E7EB",
+                  background:
+                    chat.conversation_id + "" === activeChatId
+                      ? "#EFF6FF"
+                      : "#FFFFFF",
+                  borderRadius: 20,
+                  boxShadow:
+                    chat.conversation_id + "" === activeChatId
+                      ? "0 10px 24px rgba(37,99,235,0.12)"
+                      : "0 1px 4px rgba(0,0,0,0.04)",
                 }}
                 label={
                   <Text fw={600} truncate>
@@ -157,8 +184,8 @@ export default function ChatLayout({
                   <Avatar
                     radius="xl"
                     size="md"
-                    color="navy.7"
-                    bg="navy.7"
+                    color="blue"
+                    bg="#1F3A5F"
                     src={chat.profile_pic_url}
                   />
                 }
@@ -201,7 +228,11 @@ export default function ChatLayout({
             direction="column"
             h="calc(100dvh - 60px - 60px)"
             bg="gray.0"
-            style={{ overflow: "hidden" }}
+            style={{
+              overflow: "hidden",
+              background:
+                "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
+            }}
           >
             <Box p="xs" style={{ flexShrink: 0 }}>
               <Button
@@ -221,15 +252,23 @@ export default function ChatLayout({
           </Flex>
         </>
       ) : (
-        <Flex h="calc(100vh - 60px)" bg="gray.0" style={{ overflow: "hidden" }}>
+        <Flex
+          h="calc(100vh - 60px)"
+          bg="gray.0"
+          style={{
+            overflow: "hidden",
+            background:
+              "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
+          }}
+        >
           <Paper
             w={320}
             miw={320}
             radius={0}
             h="100%"
-            bg="gray.1"
+            bg="#F8FAFC"
             style={{
-              borderRight: "1px solid var(--mantine-color-gray-3)",
+              borderRight: "1px solid #E2E8F0",
             }}
           >
             {sidebarContent}
@@ -262,6 +301,7 @@ export default function ChatLayout({
             onChange={(e) => setQuery(e.target.value)}
             radius="xl"
             size="md"
+            styles={{ input: { borderColor: "#E5E7EB" } }}
           />
 
           {searching && (
@@ -289,8 +329,8 @@ export default function ChatLayout({
                       <Avatar
                         radius="xl"
                         size="md"
-                        color="navy.7"
-                        bg="navy.7"
+                        color="blue"
+                        bg="#1F3A5F"
                         src={user.avatar_url}
                       />
                     }
@@ -324,11 +364,11 @@ export default function ChatLayout({
 
           <Button
             fullWidth
-            color="navy.7"
             variant="filled"
             radius="xl"
             loading={createChatMutation.isPending}
             disabled={selectedUsers.length === 0}
+            style={{ background: "#1F3A5F" }}
             onClick={() =>
               createChatMutation.mutate(
                 selectedUsers.map((u) => u.user_id),

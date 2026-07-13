@@ -385,9 +385,9 @@ export default function PostDetailPage() {
               radius="xl"
               withBorder
               p="md"
-              bg="white"
-              style={{ borderColor: "#E5E7EB" }}
-            >
+            bg="white"
+            style={{ borderColor: "#E5E7EB" }}
+          >
               <PostCommentThread
                 comments={post.comments}
                 postId={post.id}

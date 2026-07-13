@@ -1,13 +1,11 @@
 import { z } from "zod";
-import { PUBLICATION_TYPE_VALUES } from "../constants/publications";
+import { OPENALEX_TYPE_VALUES } from "../constants/openalex";
 
 export const createPublicationSchema = z.object({
     title: z
         .string()
         .min(1, { 
-            message: "Title is required" })
-        .max(120, { 
-            message: "Title must be less than 120 characters" }),
+            message: "Title is required" }),
     doi: z
         .string()
         .optional(),
@@ -25,7 +23,7 @@ export const createPublicationSchema = z.object({
             message: "At least one author is required",
        }), // must contain 1 or more items
     publicationType: z
-       .enum(PUBLICATION_TYPE_VALUES),
+       .enum(OPENALEX_TYPE_VALUES),
 
     previewPath: z
       .string()
@@ -52,7 +50,44 @@ export const doiSchema = z
     )  
   );
 
+export const parsedOpenAlexWorkSchema = z.object({
+  title: z
+      .string()
+      .min(1),
+  doi: z.string(),
+  journal: z
+      .string()
+      .nullable(),
+  publicationDate: z
+      .iso.date()
+      .nullable(),
+  authors:  z
+      .array(z.string().min(1))
+      .min(1),
+  type: z
+      .enum(OPENALEX_TYPE_VALUES),
+  isOA: z
+      .boolean(),
+  pdfUrl: z
+      .string()
+      .nullable(),
+  openAlexTopicIds: z
+      .array(z.string())
+      .nullable()
+})
+
 export const updatePublicationSchema = createPublicationSchema.partial();
+
+export const orcidSchema = z
+  .string()
+  .trim()
+  .transform((s) => s.replace(/^(https?:\/\/(www\.)?)?orcid\.org\//i, '').toUpperCase())
+  .pipe(
+    z.string().regex(
+      /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/,
+      "Invalid ORCID iD Format"
+    )
+  );
 
 export const doiFormSchema = z.object({ doi: doiSchema });
 

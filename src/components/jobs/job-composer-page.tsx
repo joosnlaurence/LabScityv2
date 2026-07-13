@@ -2,6 +2,7 @@
 
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -13,6 +14,7 @@ import {
   TagsInput,
   Text,
   TextInput,
+  Loader,
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
@@ -28,10 +30,17 @@ import {
 } from "@tabler/icons-react";
 import { useEditor } from "@tiptap/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { useDebouncedValue } from "@mantine/hooks";
 import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
 import type { createJob } from "@/lib/actions/job";
+import { useLocationSearch } from "@/components/profile/use-profile-search";
+import {
+  formatJobTypeLabel,
+  formatWorkModeLabel,
+  JOB_TYPE_OPTIONS,
+  WORK_MODE_OPTIONS,
+} from "./job-display";
 
 export interface JobDraft {
   title: string;
@@ -39,15 +48,15 @@ export interface JobDraft {
   department: string;
   location: string;
   type:
-    | "Postdoc"
-    | "Faculty"
-    | "PhD"
-    | "Grad Student"
-    | "Full-time"
-    | "Part-time"
-    | "Internship"
-    | "Contract";
-  remote: "On-site" | "Hybrid" | "Remote";
+    | "postdoc"
+    | "faculty"
+    | "phd"
+    | "grad_student"
+    | "full-time"
+    | "part-time"
+    | "internship"
+    | "contract";
+  remote: "on-site" | "hybrid" | "remote";
   contactEmail: string;
   applyUrl: string;
   description: string;
@@ -59,15 +68,14 @@ interface JobComposerPageProps {
 }
 
 export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [draft, setDraft] = useState<JobDraft>({
     title: "",
     organization: "",
     department: "",
     location: "",
-    type: "Postdoc",
-    remote: "On-site",
+    type: "postdoc",
+    remote: "on-site",
     contactEmail: "",
     applyUrl: "",
     description: "",
@@ -77,6 +85,12 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
   const [publishNow, setPublishNow] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [debouncedLocation] = useDebouncedValue(draft.location, 500);
+  const locationSearchQuery = useLocationSearch(debouncedLocation);
+  const locationOptions = useMemo(
+    () => (locationSearchQuery.data ?? []).map((result) => result.display_name),
+    [locationSearchQuery.data],
+  );
 
   const updateDraft = <K extends keyof JobDraft>(
     key: K,
@@ -116,28 +130,37 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
     [draft],
   );
 
+  const hasPublishableDescription = useMemo(() => {
+    const plainText = draft.description
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .trim();
+
+    return plainText.length > 0;
+  }, [draft.description]);
+
   const handlePublish = () => {
     setErrorMessage(null);
 
     startTransition(async () => {
       const roleValue =
-        draft.type === "Postdoc" ||
-        draft.type === "Faculty" ||
-        draft.type === "PhD" ||
-        draft.type === "Grad Student"
+        draft.type === "postdoc" ||
+        draft.type === "faculty" ||
+        draft.type === "phd" ||
+        draft.type === "grad_student"
           ? draft.type
           : undefined;
       const jobTypeValue =
-        draft.type === "Full-time" ||
-        draft.type === "Part-time" ||
-        draft.type === "Internship" ||
-        draft.type === "Contract"
+        draft.type === "full-time" ||
+        draft.type === "part-time" ||
+        draft.type === "internship" ||
+        draft.type === "contract"
           ? draft.type
           : undefined;
       const workMode: "remote" | "hybrid" | "on-site" =
-        draft.remote === "Remote"
+        draft.remote === "remote"
           ? "remote"
-          : draft.remote === "Hybrid"
+          : draft.remote === "hybrid"
             ? "hybrid"
             : "on-site";
 
@@ -158,8 +181,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
         return;
       }
 
-      router.push(`/jobs/${result.data.id}`);
-      router.refresh();
+      window.location.assign(`/jobs/${result.data.id}`);
     });
   };
 
@@ -222,14 +244,16 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                 />
               </Flex>
               <Flex gap="md" direction={{ base: "column", sm: "row" }}>
-                <TextInput
+                <Autocomplete
                   label="Location"
                   placeholder="City, State or Remote"
                   value={draft.location}
-                  onChange={(event) =>
-                    updateDraft("location", event.currentTarget.value)
-                  }
+                  onChange={(value) => updateDraft("location", value)}
+                  data={locationOptions}
                   leftSection={<IconMapPin size={16} />}
+                  rightSection={
+                    locationSearchQuery.isFetching ? <Loader size={14} /> : undefined
+                  }
                   style={{ flex: 1 }}
                 />
                 <Select
@@ -238,10 +262,13 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   onChange={(value) =>
                     updateDraft(
                       "remote",
-                      (value as JobDraft["remote"] | null) ?? "On-site",
+                      (value as JobDraft["remote"] | null) ?? "on-site",
                     )
                   }
-                  data={["On-site", "Hybrid", "Remote"]}
+                  data={WORK_MODE_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
                   style={{ flex: 1 }}
                 />
               </Flex>
@@ -250,27 +277,18 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   Job Type
                 </Text>
                 <Group gap="xs">
-                  {[
-                    "Postdoc",
-                    "Faculty",
-                    "PhD",
-                    "Grad Student",
-                    "Full-time",
-                    "Part-time",
-                    "Internship",
-                    "Contract",
-                  ].map((type) => (
+                  {JOB_TYPE_OPTIONS.map((type) => (
                     <Button
-                      key={type}
+                      key={type.value}
                       size="compact-sm"
                       radius="xl"
-                      variant={draft.type === type ? "filled" : "outline"}
-                      color={draft.type === type ? "navy" : "gray"}
+                      variant={draft.type === type.value ? "filled" : "outline"}
+                      color={draft.type === type.value ? "navy" : "gray"}
                       onClick={() =>
-                        updateDraft("type", type as JobDraft["type"])
+                        updateDraft("type", type.value)
                       }
                     >
-                      {type}
+                      {type.label}
                     </Button>
                   ))}
                 </Group>
@@ -443,8 +461,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   disabled={
                     !publishNow ||
                     draft.title.trim().length === 0 ||
-                    !descriptionEditor ||
-                    descriptionEditor.isEmpty
+                    !hasPublishableDescription
                   }
                 >
                   Publish Job
@@ -508,14 +525,14 @@ function MiniPreviewCard({ draft }: { draft: JobDraft }) {
       </Group>
       <Group gap={6} mt={8}>
         <Button size="compact-xs" variant="light" color="gray">
-          {draft.type}
+          {formatJobTypeLabel(draft.type)}
         </Button>
         <Button
           size="compact-xs"
           variant="light"
-          color={draft.remote === "Remote" ? "green" : "blue"}
+          color={draft.remote === "remote" ? "green" : "blue"}
         >
-          {draft.remote}
+          {formatWorkModeLabel(draft.remote)}
         </Button>
       </Group>
       {draft.tags.length > 0 ? (

@@ -182,10 +182,10 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 -- Data for Name: profile; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO "public"."profile" ("profession", "age", "about", "skill", "first_name", "user_id", "last_name", "header_pic_path", "occupation", "workplace", "articles", "banner_pic_url", "orcid", "timezone") VALUES
-	(NULL, NULL, 'I love music ', '{Other,Money,Economics}', 'Bob', '22222222-2222-4222-8222-222222222222', 'Brown', NULL, 'Postdoctoral Fellow', 'University of Central Florida', NULL, NULL, NULL, NULL),
-	(NULL, NULL, 'I am Carol Carlsen. I love planes', '{Other}', 'Carol', '33333333-3333-4333-8333-333333333333', 'Carter', NULL, 'Assistant Professor', 'University of Central Florida', NULL, NULL, NULL, NULL),
-	(NULL, NULL, 'I am Alice Anderson, and I love math!!', '{C++,Python,"Machine Learning","Data Analysis"}', 'Alice', '11111111-1111-4111-8111-111111111111', 'Anderson', '11111111-1111-4111-8111-111111111111/header-rmpc_logo.webp', 'PhD Student', 'University of Central Florida', NULL, NULL, NULL, NULL);
+INSERT INTO "public"."profile" ("age", "about", "skill", "first_name", "user_id", "last_name", "header_pic_path", "occupation", "workplace", "orcid", "timezone") VALUES
+	(NULL, 'I love music ', '{Other,Money,Economics}', 'Bob', '22222222-2222-4222-8222-222222222222', 'Brown', NULL, 'Postdoctoral Fellow', 'University of Central Florida', NULL, NULL),
+	(NULL, 'I am Carol Carlsen. I love planes', '{Other}', 'Carol', '33333333-3333-4333-8333-333333333333', 'Carter', NULL, 'Assistant Professor', 'University of Central Florida', NULL, NULL),
+	(NULL, 'I am Alice Anderson, and I love math!!', '{C++,Python,"Machine Learning","Data Analysis"}', 'Alice', '11111111-1111-4111-8111-111111111111', 'Anderson', '11111111-1111-4111-8111-111111111111/header-rmpc_logo.webp', 'PhD Student', 'University of Central Florida', NULL, NULL);
 
 
 --

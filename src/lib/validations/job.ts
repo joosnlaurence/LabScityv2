@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { WORK_MODE_VALUES, JOB_TYPE_VALUES, ACADEMIA_ROLE_VALUES  } from "../constants/job";
+import { JOB_TYPES, WORK_MODES } from "../types/jobs";
 
 // id, title, description, summary, location, 
 // department, organization, work_mode, job_type, academia_role, application_link, 
@@ -26,31 +28,27 @@ export const createJobSchema = z.object({
         .string()
         .optional(),
     work_mode: z
-        .enum([
-            "on-site",
-            "remote",
-            "hybrid",
-        ])
+        .enum(WORK_MODE_VALUES)
         .optional(),
     job_type: z
-        .enum([
-            "Full-time",
-            "Part-time",
-            "Internship",
-            "Contract",
-        ])
+        .enum(JOB_TYPE_VALUES)
         .optional(),
     academia_role: z
-        .enum([
-            "Postdoc",
-            "Faculty",
-            "PhD",
-            "Grad Student",
-        ])
+        .enum(ACADEMIA_ROLE_VALUES)
         .optional(),
     application_link: z
         .string()
         .optional(),
 });
 
+export const updateJobSchema = createJobSchema.partial();
+
+export const jobFiltersSchema = z.object({
+  search: z.string().trim().min(1).optional(),
+  job_type: z.enum(JOB_TYPES).optional(),
+  work_mode: z.enum(WORK_MODES).optional(),
+  location: z.string().trim().min(1).optional(),
+});
+
 export type CreateJobValues = z.infer<typeof createJobSchema>;
+export type UpdateJobValues = z.infer<typeof updateJobSchema>;

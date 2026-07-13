@@ -27,6 +27,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import type { JobViewModel } from "./job-view-model";
+import { useAuth } from "@/components/auth/use-auth";
+import { useSetSavedJob } from "./use-jobs";
 
 interface JobDetailsPageProps {
   job: JobViewModel;
@@ -34,7 +36,20 @@ interface JobDetailsPageProps {
 }
 
 export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
-  const [saved, setSaved] = useState(false);
+  const { user } = useAuth();
+  const [saved, setSaved] = useState(job.isSaved);
+  const setSavedJob = useSetSavedJob(user?.id ?? "");
+
+  const handleSaveClick = () => {
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    setSavedJob.mutate(
+      { jobId: job.id, isSaved: nextSaved },
+      {
+        onError: () => setSaved(!nextSaved),
+      },
+    );
+  };
 
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
@@ -141,7 +156,9 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                       fill={saved ? "currentColor" : "none"}
                     />
                   }
-                  onClick={() => setSaved((current) => !current)}
+                  disabled={!user}
+                  loading={setSavedJob.isPending}
+                  onClick={handleSaveClick}
                 >
                   {saved ? "Saved" : "Save Job"}
                 </Button>
@@ -262,7 +279,7 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
               <Text size="sm" fw={800} mb="sm">
                 Similar Jobs
               </Text>
-              {similarJobs.length > 0 ? (
+              {/* {similarJobs.length > 0 ? (
                 similarJobs.map((similarJob) => (
                   <Link
                     key={similarJob.id}
@@ -290,7 +307,11 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                   More similar jobs will appear here as additional listings are
                   posted.
                 </Text>
-              )}
+              )} */}
+              <Text size='sm' c='dimmed'>
+                Similar jobs will be displayed here once the frontend for them 
+                is wired up
+              </Text>
             </Card>
           </Stack>
         </Flex>

@@ -8,6 +8,7 @@ import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import '@mantine/carousel/styles.css';
 import { QueryProvider } from "@/components/providers/query-provider";
 import { cssVariablesResolver, theme } from "@/lib/constants/theme";
 

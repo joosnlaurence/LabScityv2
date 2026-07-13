@@ -16,6 +16,7 @@ import {
 } from "@/lib/validations/post";
 import { parsePostContent } from "@/lib/utils/post-content";
 import { createClient } from "@/supabase/server";
+import { formatFeedPost } from "../utils/feed";
 
 const idSchema = z.string().min(1, "ID is required");
 const postMediaBucket = "post_images";
@@ -295,7 +296,8 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
         media_width,
         media_height,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
-				likes(user_id)
+				likes(user_id),
+        saved_posts(profile_user_id)
 			`,
       )
       .eq("taken_down", false)
@@ -339,23 +341,6 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
       ? String(postsToReturn[postsToReturn.length - 1]?.post_id)
       : null;
 
-    // Helper function to calculate time ago
-    const getTimeAgo = (date: string): string => {
-      const now = new Date();
-      const postDate = new Date(date);
-      const diffInSeconds = Math.floor(
-        (now.getTime() - postDate.getTime()) / 1000,
-      );
-
-      if (diffInSeconds < 60) return "just now";
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-      if (diffInSeconds < 86400)
-        return `${Math.floor(diffInSeconds / 3600)}h ago`;
-      if (diffInSeconds < 604800)
-        return `${Math.floor(diffInSeconds / 86400)}d ago`;
-      return postDate.toLocaleDateString();
-    };
-
     // Fetch comments for each post
     const postsWithComments = await Promise.all(
       postsToReturn.map(async (post: any) => {
@@ -367,7 +352,6 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
 						text,
 						created_at,
 						user_id,
-            parent_comment_id,
 						users:user_id(user_id, first_name, last_name, profile_pic_path),
 						comment_likes(user_id)
 					`,
@@ -381,48 +365,9 @@ export async function getFeed(input: FeedFilterValues, supabaseClient?: any) {
     );
 
 		// Format the response
-		const formattedPosts = postsWithComments.map(({ post, comments }: any) => {
-			const mediaUrl = post.media_path
-				? supabase.storage.from(postMediaBucket).getPublicUrl(post.media_path).data.publicUrl
-				: null;
-      const mediaWidth: number | undefined = post.media_width;
-      const mediaHeight: number | undefined = post.media_height;
-			const postAvatarUrl = post.users?.profile_pic_path
-				? supabase.storage.from("profile_pictures").getPublicUrl(post.users.profile_pic_path).data.publicUrl
-				: null;
-
-			return {
-			id: post.post_id,
-			userId: post.user_id,
-			userName: `${post.users?.first_name} ${post.users?.last_name}`.trim(),
-			avatarUrl: postAvatarUrl,
-			scientificField: post.scientific_field,
-			content: post.text,
-			mediaUrl,
-      mediaWidth,
-      mediaHeight,
-			timeAgo: getTimeAgo(post.created_at),
-			comments: comments.map((comment: any) => ({
-				id: comment.comment_id,
-				userId: comment.user_id,
-				userName: `${comment.users?.first_name} ${comment.users?.last_name}`.trim(),
-				avatarUrl: comment.users?.profile_pic_path
-					? supabase.storage.from("profile_pictures").getPublicUrl(comment.users.profile_pic_path).data.publicUrl
-					: null,
-				content: comment.text,
-        createdAt: comment.created_at,
-				timeAgo: getTimeAgo(comment.created_at),
-				isLiked: authData.user
-					? comment.comment_likes?.some((like: any) => like.user_id === authData.user?.id)
-					: false,
-        parentCommentId: comment.parent_comment_id != null ? String(comment.parent_comment_id) : null,
-			})),
-			isLiked: post.likes && post.likes.length > 0 && authData.user
-				? post.likes.some((like: any) => like.user_id === authData.user?.id)
-				: false,
-			likeCount: post.like_amount ?? 0,
-			};
-		});
+		const formattedPosts = postsWithComments.map(({ post, comments }: any) => 
+      formatFeedPost(supabase, post, comments, authData.user?.id ?? null)
+    );
 
     const data: GetFeedResult = {
       posts: formattedPosts,
@@ -465,12 +410,6 @@ export async function createComment(
     const postIdStr = String(postId);
     idSchema.parse(postIdStr);
     const parsed = createCommentSchema.parse(values);
-    const parentCommentIdStr = parsed.parentCommentId
-      ? String(parsed.parentCommentId)
-      : null;
-    if (parentCommentIdStr) {
-      idSchema.parse(parentCommentIdStr);
-    }
 
     // Get authenticated user
     const supabase = supabaseClient ?? (await createClient());
@@ -480,23 +419,6 @@ export async function createComment(
       return { success: false, error: "Authentication required" };
     }
 
-    if (parentCommentIdStr) {
-      const { data: parentComment, error: parentError } = await supabase
-        .from("comment")
-        .select("comment_id, post_id")
-        .eq("comment_id", parentCommentIdStr)
-        .eq("taken_down", false)
-        .maybeSingle();
-
-      if (parentError) {
-        return { success: false, error: parentError.message };
-      }
-
-      if (!parentComment || String(parentComment.post_id) !== postIdStr) {
-        return { success: false, error: "Reply target is invalid" };
-      }
-    }
-
     // Insert comment into database
     const { data, error } = await supabase
       .from("comment")
@@ -504,7 +426,6 @@ export async function createComment(
         post_id: postIdStr,
         user_id: authData.user.id,
         text: parsed.content,
-        parent_comment_id: parentCommentIdStr,
       })
       .select()
       .single();
@@ -1021,7 +942,8 @@ export async function getPostDetail(
         media_width,
         media_height,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
-				likes(user_id)
+				likes(user_id),
+        saved_posts(profile_user_id)
 			`,
       )
       .eq("post_id", postIdStr)
@@ -1036,22 +958,6 @@ export async function getPostDetail(
       return { success: true, data: null };
     }
 
-    const getTimeAgo = (date: string): string => {
-      const now = new Date();
-      const postDate = new Date(date);
-      const diffInSeconds = Math.floor(
-        (now.getTime() - postDate.getTime()) / 1000,
-      );
-
-      if (diffInSeconds < 60) return "just now";
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-      if (diffInSeconds < 86400)
-        return `${Math.floor(diffInSeconds / 3600)}h ago`;
-      if (diffInSeconds < 604800)
-        return `${Math.floor(diffInSeconds / 86400)}d ago`;
-      return postDate.toLocaleDateString();
-    };
-
     const { data: comments } = await supabase
       .from("comment")
       .select(
@@ -1060,56 +966,15 @@ export async function getPostDetail(
 				text,
 				created_at,
 				user_id,
-        parent_comment_id,
 				users:user_id(user_id, first_name, last_name, profile_pic_path),
 				comment_likes(user_id)
 			`,
       )
       .eq("post_id", postIdStr)
       .eq("taken_down", false)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false });
 
-    const mediaUrl = post.media_path
-      ? supabase.storage.from(postMediaBucket).getPublicUrl(post.media_path)
-          .data.publicUrl
-      : null;
-    const postAvatarUrl = post.users?.profile_pic_path
-      ? supabase.storage
-          .from("profile_pictures")
-          .getPublicUrl(post.users.profile_pic_path).data.publicUrl
-      : null;
-
-		const formatted: FeedPostItem = {
-			id: post.post_id,
-			userId: post.user_id,
-			userName: `${post.users?.first_name} ${post.users?.last_name}`.trim(),
-			avatarUrl: postAvatarUrl,
-			scientificField: post.scientific_field,
-			content: post.text,
-			mediaUrl,
-			timeAgo: getTimeAgo(post.created_at),
-			comments: (comments || []).map((comment: any) => ({
-				id: comment.comment_id,
-				userId: comment.user_id,
-				userName: `${comment.users?.first_name} ${comment.users?.last_name}`.trim(),
-				avatarUrl: comment.users?.profile_pic_path
-					? supabase.storage.from("profile_pictures").getPublicUrl(comment.users.profile_pic_path).data.publicUrl
-					: null,
-				content: comment.text,
-        createdAt: comment.created_at,
-				timeAgo: getTimeAgo(comment.created_at),
-				isLiked: authData.user
-					? comment.comment_likes?.some((like: any) => like.user_id === authData.user?.id)
-					: false,
-        parentCommentId: comment.parent_comment_id != null ? String(comment.parent_comment_id) : null,
-			})),
-			isLiked: post.likes && post.likes.length > 0 && authData.user
-				? post.likes.some((like: any) => like.user_id === authData.user?.id)
-				: false,
-			likeCount: post.like_amount ?? 0,
-      mediaWidth: post.media_width,
-      mediaHeight: post.media_height
-		};
+		const formatted = formatFeedPost(supabase, post, comments ?? [], authData.user?.id ?? null);
 
     return { success: true, data: formatted };
   } catch (error) {

@@ -4,6 +4,7 @@ import {
   Avatar,
   Box,
   Button,
+  Card,
   Center,
   Group,
   NavLink,
@@ -39,43 +40,56 @@ export function LSGroupSidebar({
   isLoading,
 }: LSGroupSidebarProps) {
   return (
-    <Stack gap={0} h="100%">
-      <Box
-        p="md"
+    <Stack gap="md" h="100%" p="md">
+      <Card
+        radius="xl"
+        p="lg"
+        withBorder
+        bg="white"
         style={{
-          borderBottom: "1px solid var(--mantine-color-navy-1)",
+          borderColor: "#E5E7EB",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
         }}
       >
-        <Group justify="space-between" align="flex-start">
+        <Stack gap="md">
           <Box>
-            <Title order={4} c="navy.7">
+            <Title order={3} c="#123257">
               Groups
             </Title>
-            <Text size="sm" c="dimmed">
-              Switch between your active groups.
+            <Text size="sm" c="#64748B">
+              Switch between your active research spaces and open a new one when
+              you need it.
             </Text>
           </Box>
           <Button
-            variant="light"
-            size="compact-sm"
+            radius="xl"
             leftSection={<IconPlus size={14} />}
             onClick={onNewGroupClick}
+            style={{ background: "#1F3A5F" }}
           >
-            New
+            New Group
           </Button>
-        </Group>
-      </Box>
+        </Stack>
+      </Card>
 
-      <ScrollArea h={{ base: 240, md: "calc(100vh - 60px - 89px)" }}>
-        <Stack gap={0}>
+      <ScrollArea h={{ base: 240, md: "calc(100vh - 60px - 204px)" }}>
+        <Stack gap="sm">
           {isLoading ? (
             <Center h={100}>
               <LSSpinner />
             </Center>
           ) : groups.length === 0 ? (
-            <Text size="sm" c="dimmed" p="md">
-              You haven't joined any groups yet.
-            </Text>
+            <Card
+              radius="xl"
+              p="lg"
+              withBorder
+              bg="white"
+              style={{ borderColor: "#E5E7EB" }}
+            >
+              <Text size="sm" c="#64748B">
+                You haven't joined any groups yet.
+              </Text>
+            </Card>
           ) : (
             groups.map((group) => {
               const href = groupsPath({
@@ -91,22 +105,35 @@ export function LSGroupSidebar({
                   active={active}
                   p="md"
                   style={{
-                    borderBottom: "1px solid var(--mantine-color-navy-1)",
+                    border: active
+                      ? "1px solid #BFDBFE"
+                      : "1px solid #E5E7EB",
+                    background: active ? "#EFF6FF" : "#FFFFFF",
+                    borderRadius: 20,
+                    boxShadow: active
+                      ? "0 10px 24px rgba(37,99,235,0.12)"
+                      : "0 1px 4px rgba(0,0,0,0.04)",
+                  }}
+                  styles={{
+                    root: {
+                      transition:
+                        "transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease",
+                    },
                   }}
                   label={
-                    <Text fw={600} c="navy.7" truncate>
+                    <Text fw={700} c="#123257" truncate>
                       {group.name}
                     </Text>
                   }
                   description={
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c="#64748B">
                       {formatMembers(group.memberCount)}
                     </Text>
                   }
                   leftSection={
                     <Avatar
-                      color="navy.7"
-                      bg={group.avatar_url ? undefined : "navy.7"}
+                      color="blue"
+                      bg={group.avatar_url ? undefined : "#1F3A5F"}
                       radius="xl"
                       src={group.avatar_url ?? undefined}
                     >

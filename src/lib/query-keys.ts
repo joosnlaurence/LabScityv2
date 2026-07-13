@@ -1,4 +1,7 @@
 import type { FeedFilterValues } from "@/lib/validations/post";
+import { PubFilters } from "./types/publication";
+import { ProductFilters } from "./types/products";
+import { JobFilters } from "./types/jobs";
 
 /**
  * Query key factory for the feed.
@@ -56,23 +59,40 @@ export const groupKeys = {
   popular: (limit: number) => [...groupKeys.all, "popular", limit] as const,
 };
 
-export const dataKeys = {
-  all: ["data"] as const,
-  post: (postId: number) => [...dataKeys.all, "post", postId] as const,
-  userPosts: (userId: string, cursor?: string) =>
-    [...dataKeys.all, "userPosts", userId, cursor] as const,
-  search: (query: string, limit?: number) =>
-    [...dataKeys.all, "search", query, limit] as const,
-  searchUsers: (query: string, limit?: number) =>
-    [...dataKeys.all, "searchUsers", query, limit] as const,
-  searchPosts: (query: string, limit?: number) =>
-    [...dataKeys.all, "searchPosts", query, limit] as const,
-  searchGroups: (query: string, limit?: number) =>
-    [...dataKeys.all, "searchGroups", query, limit] as const,
-  user: (userId: string) => [...dataKeys.all, "user", userId] as const,
-};
-
 export const publicationKeys = {
   all: ["publications"] as const,
-  list: (userId: string) => [...publicationKeys.all, 'list', userId] as const
+  lists: () => [...publicationKeys.all, 'list'] as const,
+  list: (userId: string, filters?: PubFilters) =>
+    [...publicationKeys.lists(), userId, filters ?? {}] as const,
+  facets: (userId: string) => [...publicationKeys.all, 'facets', userId] as const
 }
+
+export const productKeys = {
+  all: ["products"] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (userId: string, filters?: ProductFilters) => 
+    [...productKeys.lists(), userId, filters ?? {}] as const,
+  facets: (userId: string) => [...productKeys.all, 'facets', userId] as const
+}
+
+export const tagKeys = {
+  all: ["tags"] as const,
+  search: (q: string) => [...tagKeys.all, 'search', q] as const,
+}
+
+export const bookmarkKeys = {
+  all: ["bookmarks"] as const,
+  list: (userId: string) => [...bookmarkKeys.all, userId],
+  counts: (userId: string) => [...bookmarkKeys.all, "counts", userId],
+}
+
+export const jobKeys = {
+  all: ["jobs"] as const,
+  lists: () => [...jobKeys.all, "list"] as const,
+  list: (filters: JobFilters) => [...jobKeys.lists(), filters] as const,
+  mine: () => [...jobKeys.all, "mine"] as const,
+  details: () => [...jobKeys.all, "detail"] as const,
+  detail: (id: number) => [...jobKeys.details(), id] as const,
+  // TODO: Think about using this for some sort of dedicated saved jobs page or card
+  saved: () => [...jobKeys.all, "saved"] as const,
+};

@@ -5,6 +5,7 @@ import { createClient } from "@/supabase/server";
 import {
     createPublicationSchema,
     doiSchema,
+    parsedOpenAlexWorkSchema,
     updatePublicationSchema,
     type CreatePublicationValues,
     type UpdatePublicationValues
@@ -12,7 +13,9 @@ import {
 
 import type { DataResponse, Publication } from "@/lib/types/data";
 import { OpenAlexWork, ParsedOpenAlexWork } from "../types/publication";
-import { MAX_FEATURED_PUBLICATIONS, OPENALEX_TYPE_MAP } from "../constants/publications";
+import { MAX_FEATURED_PUBLICATIONS } from "../constants/publications";
+import { parseOpenAlexWork } from "../utils/openalex";
+import { syncOpenAlexTopics } from "./openalex";
 
 export async function addPublicationByDoi(
   doi: string
@@ -30,22 +33,8 @@ export async function addPublicationByDoi(
     if(!res.ok) throw new Error(`OpenAlex Error: ${res.status}`);
     const data: OpenAlexWork = await res.json();
 
-    const pubType = OPENALEX_TYPE_MAP[data.type ?? ''] ?? 'other';
-
-    const parsed: ParsedOpenAlexWork = {
-      doi: parsedDoi,
-      title: data.title ?? '',
-      authors: data.authorships.map((a) => a.author.display_name),
-      type: pubType,
-      journal: data.primary_location?.source?.display_name ?? null,
-      publicationDate: data.publication_date,
-      isOA: data.open_access?.is_oa ?? false,
-      pdfUrl: data.open_access?.oa_url ?? null,
-      openAlexTopicIds: (data.topics ?? []).map((t) =>
-        t.id.replace("https://openalex.org/", "")
-      ),
-    }
-
+    const parsed: ParsedOpenAlexWork = parseOpenAlexWork(data);
+    
     const { data: existing } = await supabase
       .from("user_publications")
       .select("publication_id, publications!inner(doi)")
@@ -59,7 +48,7 @@ export async function addPublicationByDoi(
 
     const createPubResult = await createPublication({
       title: parsed.title,
-      doi: parsed.doi,
+      doi: parsed.doi!,
       journal: parsed.journal,
       datePublished: parsed.publicationDate,
       authors: parsed.authors,
@@ -77,13 +66,72 @@ export async function addPublicationByDoi(
       )
     }
 
+    const { data: profile } = await supabase
+      .from('profile')
+      .select('orcid')
+      .eq('user_id', authData.user.id)
+      .single();
+
+    // sql trigger will skip users with an orchid id and call syncOpenAlexTopics directly
+    // otherwise, trigger will call recompute_profile_tags supabsae function to calculate works count manually
+    if (profile?.orcid) {
+      await syncOpenAlexTopics(profile.orcid, authData.user.id);
+    }
+
     return createPubResult;
+  } catch(err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message ?? "Malformed publication shape"};
+    }
+    return { success: false, error: 'Failed to add publication'};
+  }
+}
+
+export interface BulkInsertPublicationsResponse {
+  inserted: number;
+  skipped: number;
+}
+
+export async function bulkInsertPublications(
+  publications: ParsedOpenAlexWork[]
+): Promise<DataResponse<BulkInsertPublicationsResponse>> {
+  try {
+    const supabase = await createClient(); 
+    const { data: authData } = await supabase.auth.getUser();
+
+    if(!authData.user) { 
+      return { success: false, error: "Authentication required" }
+    }
+
+    const parsedPubs = publications.map((pub) => parsedOpenAlexWorkSchema.parse(pub));
+
+    const { data, error } = await supabase
+    .rpc('bulk_import_user_publications',
+      { p_publications: parsedPubs, p_user_id: authData.user.id }
+    );
+
+    if(error){ 
+      console.error(error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
+    console.log(data);
+
+    return {
+      success: true,
+      data
+    }
+
   } catch(err) {
     if (err instanceof z.ZodError) {
       return { success: false, error: err.issues[0]?.message ?? "Invalid DOI"};
     }
-    return { success: false, error: 'Failed to add publication'};
+    return { success: false, error: 'Failed to add publications'};
   }
+
 }
 
 async function linkPublicationTopics(
@@ -128,10 +176,24 @@ export async function createPublication(
         const { data: authData } = await supabase.auth.getUser();
 
         if (!authData.user){
-            return { success: false, error: "Authentication required"}
+            return { 
+                success: false, 
+                error: "Authentication required"
+            }
         }
 
-        const { data: publication, error: publicationError } = await supabase
+        let publication = null;
+        if(parsed.doi) {
+          const { data: existing } = await supabase
+            .from("publications")
+            .select("publication_id")
+            .eq("doi", input.doi)
+            .maybeSingle();
+          publication = existing;
+        }
+
+        if (!publication) {
+          const { data, error: publicationError } = await supabase
             .from("publications")
             .insert({
                 title: parsed.title,
@@ -147,8 +209,11 @@ export async function createPublication(
             .select()
             .single();
 
-        if(publicationError){
-            return { success: false, error: publicationError.message}
+          if(publicationError){
+              return { success: false, error: publicationError.message}
+          } 
+
+          publication = data;
         }
 
         const { error: linkError } = await supabase
@@ -182,7 +247,8 @@ export async function createPublication(
 // gets the logged in user, returns early if not authenticated
 // make sure the publicationId is a valid positive integer
 // confirms that the user owns the publication, and returns unauthorized otherwise
-// returns the updated publication row
+// user updates go to user_publications updates (jsonb) column
+// returns the existing publication row with the user specific updates merged on top
 
 export async function updatePublication(
     publicationId: number,
@@ -229,7 +295,7 @@ export async function updatePublication(
             };
         }
 
-        const updateData = Object.fromEntries(
+        const updates = Object.fromEntries(
             Object.entries({
                 title: parsed.title,
                 doi: parsed.doi,
@@ -243,12 +309,12 @@ export async function updatePublication(
             }).filter(([, value]) => value !== undefined)
         );
 
-        const { data: publication, error: updateError } = await supabase
-            .from("publications")
-            .update(updateData)
-            .eq("publication_id", publicationId)
-            .select()
-            .single();
+        const { error: updateError } = await supabase
+            .from("user_publications")
+            .update({ updates })
+            .eq("user_id", authData.user.id)
+            .eq("publication_id", publicationId);
+
 
         if (updateError){
             return {
@@ -257,9 +323,22 @@ export async function updatePublication(
             };
         }    
 
+        const { data: publication, error: fetchError } = await supabase
+            .from("publications")
+            .select("*")
+            .eq("publication_id", publicationId)
+            .single();
+
+        if (fetchError || !publication) {
+            return {
+                success: false,
+                error: fetchError?.message ?? "Failed to fetch publication"
+            };
+        }
+
         return {
             success: true,
-            data: publication,
+            data: { ...publication, ...updates },
         };
 
     } catch (error){
@@ -324,16 +403,18 @@ export async function deletePublication(
             };
         }
 
-        const { error: deleteError } = await supabase
-            .from("publications")
+        const { data, error: deleteError } = 
+          await supabase
+            .from('user_publications')
             .delete()
-            .eq("publication_id", publicationId);
-
-        if (deleteError) {
-            return {
-                success: false,
-                error: deleteError.message,
-            };
+            .eq('user_id', authData.user.id)
+            .eq('publication_id', publicationId);
+        
+        if(deleteError) {
+          return {
+            success: false,
+            error: deleteError.message
+          };
         }
 
         return {

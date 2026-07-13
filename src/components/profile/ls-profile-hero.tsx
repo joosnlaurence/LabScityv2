@@ -7,237 +7,22 @@ import {
   Avatar,
   Card,
   Box,
-  Modal,
-  TextInput,
-  Autocomplete,
-  TagsInput,
-  Textarea,
   Stack,
-  Anchor,
-  ActionIcon,
   FileButton,
   Loader,
+  UnstyledButton,
 } from "@mantine/core";
-import { IconCamera, IconPencil, IconTrash } from "@tabler/icons-react";
-import { useState, useEffect } from "react";
-import type { Resolver } from "react-hook-form";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { SCIENCE_CATEGORIES, SKILL_OPTIONS } from "@/lib/constants/options";
-import {
-  updateProfileSchema,
-  type UpdateProfileValues,
-} from "@/lib/validations/profile";
+import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
+import { useMemo, useRef, useState } from "react";
+import { LSEditProfileModal } from "./ls-edit-profile-modal";
+import { useDisclosure } from "@mantine/hooks";
+import { User } from "@/lib/types/feed";
+import { useGetPublicationFacets } from "./publications/use-publications";
+import LSProfileListModal from "./ls-profile-list-modal";
+import { useUserFollowers, useUserFollowing } from "./use-profile";
+import classes from './ls-profile-hero.module.css'
 
-const profileHeaderHeight = 164;
-
-/** Form values: skill and articles always arrays (schema defaults). */
-type EditProfileFormValues = Omit<UpdateProfileValues, "skill" | "articles"> & {
-  skill: string[];
-  articles: { title: string; url: string }[];
-};
-
-const defaultEditValues: EditProfileFormValues = {
-  firstName: "",
-  lastName: "",
-  about: "",
-  workplace: "",
-  occupation: "",
-  fieldOfInterest: "",
-  skill: [],
-  articles: [],
-};
-
-/**
- * Controlled edit-profile modal and trigger button.
- * Parent supplies initialValues, onSubmit, and open/close state; form uses Workplace/Occupation.
- */
-export interface LSEditProfileModalProps {
-  opened: boolean;
-  onClose: () => void;
-  initialValues?: UpdateProfileValues;
-  onSubmit?: (values: UpdateProfileValues) => void;
-  isSubmitting?: boolean;
-}
-
-/** Normalize so skill and articles are always arrays for form default/reset. */
-function toFormDefaults(v: UpdateProfileValues): EditProfileFormValues {
-  return { ...v, skill: v.skill ?? [], articles: v.articles ?? [] };
-}
-
-export function LSEditProfileModal({
-  opened,
-  onClose,
-  initialValues = defaultEditValues,
-  onSubmit = () => { },
-  isSubmitting = false,
-}: LSEditProfileModalProps) {
-  const defaults = toFormDefaults(initialValues);
-
-  const form = useForm<EditProfileFormValues>({
-    resolver: zodResolver(updateProfileSchema) as Resolver<EditProfileFormValues>,
-    mode: "onBlur",
-    defaultValues: defaults,
-  });
-
-  useEffect(() => {
-    if (opened) {
-      form.reset(toFormDefaults(initialValues));
-    }
-  }, [opened, initialValues]);
-
-  const handleSave = (data: EditProfileFormValues) => {
-    onSubmit(data);
-  };
-
-  const {
-    register,
-    control,
-    formState: { errors },
-    handleSubmit,
-  } = form;
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "articles",
-  });
-
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title="Edit Profile"
-      centered
-      size="lg"
-      yOffset="5vh"
-      styles={{ body: { maxHeight: "calc(100vh - 200px)", overflowY: "auto" } }}
-    >
-      <form onSubmit={handleSubmit(handleSave)}>
-        <Stack gap={12}>
-          <Group grow>
-            <TextInput
-              withAsterisk
-              label="First Name"
-              error={errors.firstName?.message}
-              {...register("firstName")}
-            />
-            <TextInput
-              withAsterisk
-              label="Last Name"
-              error={errors.lastName?.message}
-              {...register("lastName")}
-            />
-          </Group>
-          <Textarea
-            label="About"
-            placeholder="Tell others about yourself..."
-            description="Max 256 characters"
-            error={errors.about?.message}
-            {...register("about")}
-          />
-          <Controller
-            name="workplace"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Autocomplete
-                label="Workplace"
-                placeholder="Select or type..."
-                data={["University of Central Florida", "University of Florida", "Harvard", "School of Rock"]}
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-          <Controller
-            name="occupation"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Autocomplete
-                label="Occupation"
-                placeholder="Select or type..."
-                data={["Researcher", "Professor", "PhD Student", "Engineer"]}
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-          <Controller
-            name="fieldOfInterest"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Autocomplete
-                label="Field of Interest"
-                placeholder="Select or type..."
-                data={[...SCIENCE_CATEGORIES]}
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-          <Controller
-            name="skill"
-            control={control}
-            render={({ field, fieldState }) => (
-              <TagsInput
-                label="Your Skills"
-                placeholder="Select or type your own..."
-                data={[...SKILL_OPTIONS]}
-                error={fieldState.error?.message}
-                {...field}
-              />
-            )}
-          />
-
-          <Text fw={600} size="sm">
-            Articles
-          </Text>
-          {fields.map((field, index) => (
-            <Group key={field.id} align="flex-start" wrap="nowrap">
-              <TextInput
-                placeholder="Title"
-                style={{ flex: 1 }}
-                error={errors.articles?.[index]?.title?.message}
-                {...register(`articles.${index}.title`)}
-              />
-              <TextInput
-                placeholder="https://..."
-                style={{ flex: 1 }}
-                error={errors.articles?.[index]?.url?.message}
-                {...register(`articles.${index}.url`)}
-              />
-              <ActionIcon
-                variant="subtle"
-                color="red"
-                mt={4}
-                onClick={() => remove(index)}
-              >
-                <IconTrash size={16} />
-              </ActionIcon>
-            </Group>
-          ))}
-          {errors.articles?.root?.message && (
-            <Text c="red" size="xs">
-              {errors.articles.root.message}
-            </Text>
-          )}
-          <Button
-            variant="light"
-            color="navy"
-            size="xs"
-            onClick={() => append({ title: "", url: "" })}
-            disabled={fields.length >= 30}
-          >
-            Add Article
-          </Button>
-
-          <Button type="submit" loading={isSubmitting}>
-            Save
-          </Button>
-        </Stack>
-      </form>
-    </Modal>
-  );
-}
+const PROFILE_BANNER_HEIGHT = 150;
 
 /**
  * Props for LSProfileHero.
@@ -268,30 +53,25 @@ export function LSEditProfileModal({
  * @param onReportClick - When viewing others: called when user clicks Report button.
  */
 export interface LSProfileHeroProps {
-  profileName: string;
-  profileResearchInterest: string;
-  profileAbout?: string;
-  profileSkill?: string[];
-  profileArticles?: { title: string; url: string }[];
-  profileHeaderImageURL?: string;
-  profilePicURL?: string;
-  occupation?: string;
-  workplace?: string;
+  profile: User;
   isOwnProfile: boolean;
   onProfilePicSelect?: (file: File | null) => void;
   isUploadingProfilePic?: boolean;
   onProfileHeaderSelect?: (file: File | null) => void;
   isUploadingProfileHeader?: boolean;
-  onOpenEditProfile?: () => void;
-  editModalOpened?: boolean;
-  onEditModalClose?: () => void;
-  editInitialValues?: UpdateProfileValues;
-  onEditSubmit?: (values: UpdateProfileValues) => void;
-  isEditSubmitting?: boolean;
   isFollowing?: boolean;
   onToggleFollow?: () => void;
   isTogglePending?: boolean;
   onReportClick?: () => void;
+}
+
+function formatLocalTime(timeZone: string, now: Date = new Date()) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short", // gives "EST"; "shortOffset" would give "GMT-5"
+  }).format(now);
 }
 
 /**
@@ -301,26 +81,12 @@ export interface LSProfileHeroProps {
  * above avatar so the camera/Edit overlay is visible). Other profile: Follow/Unfollow button.
  */
 export default function LSProfileHero({
-  profileName,
-  profileResearchInterest,
-  profileAbout,
-  profileSkill,
-  profileArticles,
-  profileHeaderImageURL,
-  profilePicURL,
-  occupation,
-  workplace,
+  profile,
   isOwnProfile,
   onProfilePicSelect,
   isUploadingProfilePic = false,
   onProfileHeaderSelect,
   isUploadingProfileHeader = false,
-  onOpenEditProfile,
-  editModalOpened = false,
-  onEditModalClose,
-  editInitialValues,
-  onEditSubmit,
-  isEditSubmitting = false,
   isFollowing = false,
   onToggleFollow,
   isTogglePending = false,
@@ -328,7 +94,34 @@ export default function LSProfileHero({
 }: LSProfileHeroProps) {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
-  const [isArticlesModalOpen, setIsArticlesModalOpen] = useState(false);
+
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
+  const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
+
+  const lastList = useRef<"followers" | "following">("followers");
+  if (listModal) lastList.current = listModal;
+
+  const activeList = listModal ?? lastList.current;
+  const { data: followers = []} = useUserFollowers(profile.user_id);
+  const { data: following = []} = useUserFollowing(profile.user_id);
+
+  const profileName = `${profile.first_name} ${profile.last_name}`;
+  const profileResearchInterest = profile.research_interests?.[0] ?? "";
+  const profileAbout = profile.about ?? undefined;
+  const profileSkill = profile.skills ?? undefined;
+  const profileHeaderImageURL = profile.profile_header_url ?? undefined;
+  const profilePicURL = profile.avatar_url ?? undefined;
+  const occupation = profile.occupation ?? undefined;
+  const workplace = profile.workplace ?? undefined;
+  const labDepartment = profile.lab_department ?? undefined;
+  const location = profile.location ?? undefined;
+  const timezone = profile.timezone ?? undefined;
+
+  const { data: pubFacets } = useGetPublicationFacets(profile.user_id);
+  const researchAreas = useMemo(
+    () => (pubFacets?.tags ?? []).slice(0, 3).map(t => t.name),
+    [pubFacets]
+  );  
 
   const avatarInitials = profileName
     .split(" ")
@@ -337,297 +130,198 @@ export default function LSProfileHero({
     .slice(0, 2)
     .join("");
 
+  const avatar = (
+    <Avatar
+      src={profilePicURL || undefined}
+      size={80}
+      color="navy.6"
+      bg={profilePicURL ? undefined : "navy.1"}
+      bd="2px solid white"
+      style={{ position: "relative", zIndex: 2 }}
+    >
+      {avatarInitials}
+    </Avatar>
+  );
+
+  const profileBanner = profileHeaderImageURL ? (
+    <Image
+      bg="gray"
+      w="100%"
+      h={PROFILE_BANNER_HEIGHT}
+      src={profileHeaderImageURL}
+    />
+  ) : ( 
+    <Box
+      w="100%"
+      h={PROFILE_BANNER_HEIGHT}
+      bg='navy.7'
+    />
+  );
+
   return (
-    <Card shadow="sm" padding="none" radius="md">
+    <Card shadow="xs" radius="md" bd='1px solid gray.3' padding='none'>
 
-      <Box mb={-64} pos="relative" style={{ zIndex: 1 }}>
-        {isOwnProfile && onProfileHeaderSelect ? (
-          <FileButton onChange={onProfileHeaderSelect} accept="image/jpeg,image/png,image/webp,image/gif">
-            {(props) => (
-              <button
-                type="button"
-                {...props}
-                onMouseEnter={() => setIsHeaderHovered(true)}
-                onMouseLeave={() => setIsHeaderHovered(false)}
-                style={{
-                  border: "none",
-                  padding: 0,
-                  background: "transparent",
-                  width: "100%",
-                  display: "block",
-                  cursor: "pointer",
-                  position: "relative",
-                  overflow: "hidden",
-                  lineHeight: 0,
-                }}
-              >
-                <Image
-                  bg="gray"
-                  w="100%"
-                  h={profileHeaderHeight}
-                  src={profileHeaderImageURL}
-                  fallbackSrc="https://placehold.co/600x100?text=Header"
-                />
-                {(isHeaderHovered || isUploadingProfileHeader) ? (
-                  <Box
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "rgba(0,0,0,0.35)",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      gap: 4,
-                    }}
-                  >
-                    {isUploadingProfileHeader ? (
-                      <Loader size="xs" color="white" />
-                    ) : (
-                      <>
-                        <IconCamera size={20} />
-                        Change banner
-                      </>
-                    )}
-                  </Box>
-                ) : null}
-              </button>
-            )}
-          </FileButton>
-        ) : (
-          <Image
-            bg="gray"
-            w="100%"
-            h={profileHeaderHeight}
-            src={profileHeaderImageURL}
-            fallbackSrc="https://placehold.co/600x100?text=Header"
-          />
-        )}
-      </Box>
-
-      <Box p="lg" pos="relative">
-        <Box
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            gap: 12,
-          }}
-          mb={12}
-        >
-          {/* Avatar shows profile image or initials when missing; z-index keeps it atop header */}
-          {isOwnProfile && onProfilePicSelect ? (
-            <FileButton onChange={onProfilePicSelect} accept="image/jpeg,image/png,image/webp,image/gif">
-              {(props) => (
-                <button
-                  type="button"
-                  {...props}
-                  onMouseEnter={() => setIsAvatarHovered(true)}
-                  onMouseLeave={() => setIsAvatarHovered(false)}
+      {/* Profile Banner */}
+      {isOwnProfile && onProfileHeaderSelect ? (
+        <FileButton onChange={onProfileHeaderSelect} accept="image/jpeg,image/png,image/webp,image/gif">
+          {(props) => (
+            <button
+              type="button"
+              {...props}
+              onMouseEnter={() => setIsHeaderHovered(true)}
+              onMouseLeave={() => setIsHeaderHovered(false)}
+              style={{
+                border: "none",
+                padding: 0,
+                background: "transparent",
+                width: "100%",
+                display: "block",
+                cursor: "pointer",
+                position: "relative",
+                overflow: "hidden",
+                lineHeight: 0,
+              }}
+            >
+              {profileBanner}
+              {(isHeaderHovered || isUploadingProfileHeader) ? (
+                <Box
                   style={{
-                    border: "none",
-                    padding: 0,
-                    background: "transparent",
-                    cursor: "pointer",
-                    position: "relative",
-                    zIndex: 2,
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                    overflow: "hidden",
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(0,0,0,0.35)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    gap: 4,
                   }}
                 >
-                  <Avatar
-                    src={profilePicURL || undefined}
-                    size={80}
-                    radius="xl"
-                    color="navy.7"
-                    bg={profilePicURL ? undefined : "navy.7"}
-                  >
-                    {avatarInitials}
-                  </Avatar>
-                  {/* Overlay z-index 130 so it sits above the avatar/button and remains visible. */}
-                  {(isAvatarHovered || isUploadingProfilePic) ? (
-                    <Box
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        zIndex: 3,
-                        borderRadius: "50%",
-                        background: "rgba(0,0,0,0.45)",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontSize: 10,
-                        fontWeight: 600,
-                        gap: 2,
-                      }}
-                    >
-                      {isUploadingProfilePic ? (
-                        <Loader size="xs" color="white" />
-                      ) : (
-                        <>
-                          <IconCamera size={18} />
-                          Edit
-                        </>
-                      )}
-                    </Box>
-                  ) : null}
-                </button>
-              )}
-            </FileButton>
-          ) : (
-            <Avatar
-              src={profilePicURL || undefined}
-              size={80}
-              radius="xl"
-              color="navy.7"
-              bg={profilePicURL ? undefined : "navy.7"}
-              style={{ position: "relative", zIndex: 2 }}
-            >
-              {avatarInitials}
-            </Avatar>
+                  {isUploadingProfileHeader ? (
+                    <Loader size="xs" color="white" />
+                  ) : (
+                    <>
+                      <IconCamera size={20} />
+                      Change banner
+                    </>
+                  )}
+                </Box>
+              ) : null}
+            </button>
           )}
-          <Stack gap="0">
-            <Text c="navy.7" size="xl" fw={600}>{profileName}</Text>
-            <Text c="navy.7" size="md">{profileResearchInterest}</Text>
-            {(occupation ?? workplace) ? (
-              <Text c="navy.6" size="md">
-                {[occupation, workplace].filter(Boolean).join(", ")}
-              </Text>
-            ) : null}
-          </Stack>
-        </Box>
-        <Box mb={12}>
-          {profileAbout &&
-            <Box mb={12}>
-              <Text c="navy.7" fw={600}>About</Text>
-              <Text c="navy.7">{profileAbout}</Text>
-            </Box>
-          }
-          {(profileSkill && profileSkill.length > 0) &&
-            <Box mb={12}>
-              <Text c="navy.7" fw={600} mb={8}>
-                Skills
-              </Text>
-              <Group gap={8}>
-                {(profileSkill.map((skill, i) => {
-                  return (
-                    <Badge key={i} color="navy.6" variant="light">
-                      {skill}
-                    </Badge>
-                  )
-                }))}
-              </Group>
-            </Box>
-          }
-          {/* Articles: first 3 inline; "Show all X" opens modal to avoid unbounded list growth. */}
-          {(profileArticles && profileArticles.length > 0) && (
-            <Box mb={12}>
-              <Text c="navy.7" fw={600} mb={8}>
-                Articles
-              </Text>
-              <Stack gap={6}>
-                {profileArticles.slice(0, 3).map((article, i) => (
-                  <Anchor
-                    key={i}
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    c="navy.6"
-                    size="sm"
-                    underline="hover"
+        </FileButton>
+      ) : (
+        profileBanner
+      )}
+
+      <Stack pos="relative" px='lg' pb='lg' pt='md' gap='12'>
+        <Group justify='space-between' align='flex-start' wrap='nowrap'>
+          <Box mt={-56} pos='relative' style={{ zIndex: 2 }}>
+            {/* Avatar shows profile image or initials when missing; z-index keeps it atop header */}
+            {isOwnProfile && onProfilePicSelect ? (
+              <FileButton onChange={onProfilePicSelect} accept="image/jpeg,image/png,image/webp,image/gif">
+                {(props) => (
+                  <button
+                    type="button"
+                    {...props}
+                    onMouseEnter={() => setIsAvatarHovered(true)}
+                    onMouseLeave={() => setIsAvatarHovered(false)}
+                    style={{
+                      border: "none",
+                      padding: 0,
+                      background: "transparent",
+                      cursor: "pointer",
+                      position: "relative",
+                      zIndex: 2,
+                      width: 80,
+                      height: 80,
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                    }}
                   >
-                    {article.title}
-                  </Anchor>
-                ))}
-              </Stack>
-              {profileArticles.length > 3 && (
-                <Button
-                  variant="subtle"
-                  color="navy"
-                  size="xs"
-                  mt={4}
-                  onClick={() => setIsArticlesModalOpen(true)}
-                >
-                  {`Show all ${profileArticles.length} articles`}
-                </Button>
-              )}
-              <Modal
-                opened={isArticlesModalOpen}
-                onClose={() => setIsArticlesModalOpen(false)}
-                title="Articles"
-                centered
-                size="md"
-                styles={{ body: { maxHeight: "60vh", overflowY: "auto" } }}
-              >
-                <Stack gap={8}>
-                  {profileArticles.map((article, i) => (
-                    <Anchor
-                      key={i}
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      c="navy.6"
-                      size="sm"
-                      underline="hover"
-                    >
-                      {article.title}
-                    </Anchor>
-                  ))}
-                </Stack>
-              </Modal>
-            </Box>
-          )}
-          <Box
-            mt={24}
-            mb={12}
-            w="100%"
-            style={{ display: "flex", justifyContent: "flex-end" }}
-          >
-            {isOwnProfile ? (
-              <>
-                {onOpenEditProfile && (
-                  <Button
-                    radius="xl"
-                    variant="filled"
-                    color="navy.6"
-                    onClick={onOpenEditProfile}
-                  >
-                    <IconPencil size={18} />
-                  </Button>
+                    {avatar}
+                    {/* Overlay z-index 130 so it sits above the avatar/button and remains visible. */}
+                    {(isAvatarHovered || isUploadingProfilePic) ? (
+                      <Box
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          zIndex: 3,
+                          borderRadius: "50%",
+                          background: "rgba(0,0,0,0.45)",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "white",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          gap: 2,
+                        }}
+                      >
+                        {isUploadingProfilePic ? (
+                          <Loader size="xs" color="white" />
+                        ) : (
+                          <>
+                            <IconCamera size={18} />
+                            Edit
+                          </>
+                        )}
+                      </Box>
+                    ) : null}
+                  </button>
                 )}
-                {editModalOpened !== undefined && onEditModalClose && (
-                  <LSEditProfileModal
-                    opened={editModalOpened}
-                    onClose={onEditModalClose}
-                    initialValues={editInitialValues}
-                    onSubmit={onEditSubmit}
-                    isSubmitting={isEditSubmitting}
-                  />
-                )}
-              </>
+              </FileButton>
             ) : (
+              avatar
+            )}
+          </Box>
+
+          {isOwnProfile ? (
+            <>
+              {/* Edit Profile Button */}
+              <Button
+                variant="outline"
+                onClick={openEditModal}
+                leftSection={<IconPencil size='1rem'/>}
+              >
+                Edit Profile
+              </Button>
+              <LSEditProfileModal
+                opened={editModalOpened}
+                onClose={closeEditModal}
+                userId={profile.user_id}
+              />
+            </>
+            ) : (
+              // Follow, Report, and Message Buttons
               <Group gap="sm">
                 {onToggleFollow && (
                   <Button
-                    radius="xl"
                     variant={isFollowing ? "outline" : "filled"}
-                    color="navy.6"
+                    leftSection={<IconUserPlus size='1rem'/>}
                     onClick={onToggleFollow}
                     loading={isTogglePending}
                   >
                     {isFollowing ? "Unfollow" : "Follow"}
                   </Button>
                 )}
+                {/* TODO: Wire up this DM button */}
+                {
+                  // onDMClick && (
+                  true && (
+                    <Button 
+                      variant='outline' 
+                      leftSection={<IconMessageCircle size='1rem'/>}
+                    >
+                      Message
+                    </Button>
+                  )
+                }
                 {onReportClick && (
                   <Button
-                    radius="xl"
                     variant="outline"
                     color="red"
                     onClick={onReportClick}
@@ -637,9 +331,135 @@ export default function LSProfileHero({
                 )}
               </Group>
             )}
-          </Box>
-        </Box>
-      </Box>
+        </Group>
+
+        {/* Profile Name + Workplace/Occupation */}
+        <Stack gap="4" mt={-15}>
+          <Text c="navy.7" fz={30} fw={700} lh='1'>{profileName}</Text>
+          <Text c="navy.7" size="sm">{profileResearchInterest}</Text>
+          {(occupation ?? workplace) ? (
+            <Text c="navy.6" size="sm">
+              {[occupation, workplace].filter(Boolean).join(", ")}
+            </Text>
+          ) : null}
+        </Stack>
+        
+        <Group gap="xs">
+          <UnstyledButton onClick={() => setListModal("followers")} className={classes.followCounts}>
+            <Text c="navy.7" size="sm">
+              <b>{followers.length}</b> Followers
+            </Text>
+          </UnstyledButton>
+          <UnstyledButton onClick={() => setListModal("following")} className={classes.followCounts}>
+            <Text c="navy.7" size="sm">
+              <b>{following.length}</b> Following
+            </Text>
+          </UnstyledButton>
+          <LSProfileListModal
+            title={activeList === "followers" ? "Followers" : "Following"}
+            profiles={activeList === "followers" ? followers : following}
+            opened={listModal !== null}
+            onClose={() => setListModal(null)}
+          />
+        </Group>
+
+        <Stack>
+          <Stack fz='sm' gap='6'>
+            {/* TODO: Update the profile table and updates so that the user can input these fields */}
+            {/* Institution */}
+            {
+              workplace &&
+              <Group gap='4'>
+                <IconBuildings size='1.25rem' stroke={1.5} color="var(--mantine-color-dimmed)"/>
+                <Text fz='sm' c='dimmed'>{workplace}</Text>
+              </Group>
+            }
+            {/* Department/Lab */}
+            {
+              labDepartment && 
+              <Group gap='4'>
+                <IconSchool size='1.25rem' stroke={1.5} color="var(--mantine-color-dimmed)"/>
+                <Text fz='sm' c='dimmed'>{labDepartment}</Text>
+              </Group>
+            }
+            {/* Location + Time Zone */}
+            {
+              (location || timezone) && 
+              <Group gap='xs'>
+                {
+                  location &&
+                  <Group gap='4'>
+                    <IconMapPin size='1rem' stroke={1.5} color="var(--mantine-color-dimmed)"/>
+                    <Text fz='xs' c='dimmed'>{location}</Text>
+                  </Group> 
+                }
+                {
+                  timezone && 
+                  <Group gap='4'>
+                    <IconClock size='1rem' stroke={1.5} color="var(--mantine-color-dimmed)"/>
+                    <Text fz='xs' c='dimmed'>Local Time {formatLocalTime(timezone)}</Text>
+                  </Group> 
+                }
+              </Group>
+            }
+          </Stack>
+        </Stack>
+
+        {profileAbout &&
+          <Text c="navy.7" fw='400' fz='sm' maw='800' my='6'>{profileAbout}</Text>
+        }
+
+        {
+          // TODO: Add research tags to profile
+          researchAreas.length > 0 &&
+          <Stack gap='xs'>
+            <Text fz='xs' c='dimmed' fw='bold'>RESEARCH AREAS</Text>
+            <Group gap='xs'>
+            {
+              researchAreas.map((tag) => 
+                <Badge 
+                  key={tag}
+                  bg='blue.0' 
+                  bd='1px solid blue.3'
+                  c='indigo.9'
+                  size='md'
+                  fw='600'
+                  p='sm'
+                  tt='none'
+                >
+                  {tag}
+                </Badge>
+              )
+            }
+            </Group>
+          </Stack>
+        }
+        {(profileSkill && profileSkill.length > 0) &&
+          <Stack gap='xs'>
+            <Text c="dimmed" fw='bold' fz='xs'>SKILLS</Text>
+            <Group gap={8}>
+              {(profileSkill.map((skill, i) => {
+                return (
+                  <Badge 
+                    key={skill.id} 
+                    bg='gray.2' 
+                    bd='1px solid gray.4' 
+                    c='navy.7' 
+                    tt='none'
+                    size='md'
+                    fw='600'
+                    p='sm'
+                    bdrs='md'
+                  >
+                    {skill.name}
+                  </Badge>
+                )
+              }))}
+            </Group>
+          </Stack>
+        }
+      </Stack>
     </Card >
   );
 };
+

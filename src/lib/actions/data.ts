@@ -10,6 +10,7 @@ import type {
   searchResult,
   SearchInput,
   Group,
+  Skill,
 } from "@/lib/types/data";
 
 import { User } from "@/lib/types/feed"
@@ -141,7 +142,8 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
         media_width,
         media_height,
         like_amount,
-        likes(user_id)
+        likes(user_id),
+        saved_posts(profile_user_id)
       `);
 
     // Step 4: Apply filters
@@ -209,7 +211,7 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
     // Fetch comments for each post
     const postsWithComments = await Promise.all(
       (posts ?? []).map(async (post: any) => {
-        const { likes, ...rest } = post;
+        const { likes, saved_posts, ...rest } = post;
         const { data: comments } = await supabase
           .from("comment")
           .select(`
@@ -223,12 +225,16 @@ export async function getUserPosts(input: GetUserPostsInput, supabaseClient?: Su
           .eq("post_id", post.post_id)
           .eq("taken_down", false)
           .order("created_at", { ascending: false });
+        
 
         return {
           ...rest,
           isLiked: currentUserId
             ? (likes ?? []).some((l: any) => l.user_id === currentUserId)
             : false,
+          isSaved: currentUserId
+            ? (saved_posts ?? []).some((s: any) => s.profile_user_id === currentUserId)
+            : false, 
           comments: (comments ?? []).map((c: any) => ({
             id: String(c.comment_id),
             userId: c.user_id,
@@ -320,8 +326,6 @@ function formatQuery(query: string) {
   const formattedQuery = words.map(w => `${w}'':*`).join(' & ');
   return formattedQuery;
 }
-
-// TODO: ADD pagination for search
 
 /**
  * Retrieves a list user generated content (Users, Posts, Articles, and Groups)
@@ -557,7 +561,7 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
     const user = data[0];
     const { data: profileData, error: profileError } = await supabase
       .from("profile")
-      .select("header_pic_path, about, workplace, profession, occupation, skill, articles")
+      .select("header_pic_path, about, workplace, occupation, skill, timezone, lab_department, location")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -572,9 +576,17 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
       ? supabase.storage.from("profile_header").getPublicUrl(profileData.header_pic_path).data.publicUrl
       : null;
 
-    // Map profile.skill (DB column) to User.skills; merge extended profile fields.
-    const profileSkill = profileData?.skill;
-    const skills = Array.isArray(profileSkill) ? profileSkill : null;
+    const { data: skillRows } = await supabase
+      .from("profile_skills")
+      .select("skill_id, skills!inner(id, name)")
+      .eq("profile_user_id", user_id);
+
+    const skills = (skillRows ?? []).flatMap((r) =>
+      (Array.isArray(r.skills) ? r.skills : [r.skills]).map((s) => ({
+        id: s.id,
+        name: s.name,
+      })),
+    );
 
     return {
       success: true,
@@ -587,7 +599,9 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
         workplace: profileData?.workplace ?? null,
         occupation: profileData?.occupation ?? null,
         skills,
-        articles: Array.isArray(profileData?.articles) ? profileData.articles : null,
+        timezone: profileData?.timezone ?? null,
+        lab_department: profileData?.lab_department ?? null,
+        location: profileData?.location ?? null
       },
     }
 
