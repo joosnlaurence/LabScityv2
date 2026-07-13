@@ -7,13 +7,14 @@ import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useDebouncedValue, useDisclosure, useIntersection } from "@mantine/hooks";
-import { useAddPubByDoi, useDeletePublication, useGetPublicationFacets, usePublications, useSetFeaturedPublication } from "./use-publications";
+import { useAddPubByDoi, useDeletePublication, useGetPublicationFacets, usePublications, useSetFeaturedPublication, useSetSavedPublication } from "./use-publications";
 import { DoiFormValues, doiSchema } from "@/lib/validations/publication";
 import { useForm } from "@mantine/form";
-import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
+import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
 import { useEffect, useRef, useState } from "react";
 import { PubFilters } from "@/lib/types/publication";
 import { useUserProfile } from "../use-profile";
+import { OPENALEX_WORK_TYPE_LABELS } from "@/lib/constants/openalex";
 
 export default function LSPublicationsList({userId}: {userId: string}) {  
   const { user, loading: userLoading } = useAuthContext();
@@ -104,6 +105,8 @@ export default function LSPublicationsList({userId}: {userId: string}) {
   const setFeaturedPub = useSetFeaturedPublication(userId);
   const featuredCount = publications?.filter((p) => p.is_featured).length ?? 0;
   
+  const setSavedPub = useSetSavedPublication(userId);
+
   const [doiModalOpened, { open: openDoiModal, close: closeDoiModal }] = useDisclosure(false);
 
   if(isLoadingUserPubs || isLoadingFacets || userLoading) {
@@ -242,7 +245,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                 placeholder='Publication Type'
                 data={pubFacets?.types.map(
                   (t) => ({ 
-                    value: String(t.type), label: `${PUBLICATION_TYPE_LABELS[t.type]} (${t.count})`
+                    value: String(t.type), label: `${OPENALEX_WORK_TYPE_LABELS[t.type]} (${t.count})`
                   })) ?? []
                 }
                 clearable
@@ -293,6 +296,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                   isFeatured: !pub.is_featured
                 })}
                 featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
+                onSaveClick={() => setSavedPub.mutate({ publicationId: pub.publication_id, isSaved: !pub.isSaved })}
               />
             )
             :

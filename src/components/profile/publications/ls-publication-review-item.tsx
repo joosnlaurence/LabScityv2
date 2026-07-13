@@ -7,37 +7,16 @@ import {
   Text,
 } from "@mantine/core";
 import {
-  IconBook2,
-  IconBooks,
-  IconClipboardText,
-  IconClock,
-  IconFile,
   IconLink,
-  IconNotebook,
-  IconPresentation,
-  IconSchool,
 } from "@tabler/icons-react";
 import type { ReactNode } from "react";
-import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
 import { ParsedOpenAlexWork } from "@/lib/types/publication";
+import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
 
 const PUB_DATE_FMT = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "long",
 });
-
-const TYPE_ICON_PROPS = { size: "0.8rem", color: "var(--mantine-color-indigo-8)" };
-
-const TYPE_ICONS: Record<string, ReactNode> = {
-  journal_article: <IconNotebook {...TYPE_ICON_PROPS} />,
-  book_chapter: <IconBook2 {...TYPE_ICON_PROPS} />,
-  conference_paper: <IconPresentation {...TYPE_ICON_PROPS} />,
-  preprint: <IconClock {...TYPE_ICON_PROPS} />,
-  dissertation: <IconSchool {...TYPE_ICON_PROPS} />,
-  review_article: <IconBooks {...TYPE_ICON_PROPS} />,
-  technical_report: <IconClipboardText {...TYPE_ICON_PROPS} />,
-  other: <IconFile {...TYPE_ICON_PROPS} />,
-};
 
 // const MAX_VISIBLE_TOPICS = 4;
 
@@ -51,7 +30,7 @@ export default function LSPublicationReviewItem({
   onSelectChange: (checked: boolean) => void;
 }) {
   const typeKey = pub.type ?? "other";
-  const typeIcon = TYPE_ICONS[typeKey] ?? TYPE_ICONS.other;
+  const typeIcon = PUB_PRODUCT_TYPE_ICONS[typeKey];
 
   const authorLine = (pub.authors ?? []).join(" · ");
 
@@ -95,7 +74,7 @@ export default function LSPublicationReviewItem({
               leftSection={typeIcon}
               style={{ flexShrink: 0 }}
             >
-              {PUBLICATION_TYPE_LABELS[typeKey]}
+              {OPENALEX_WORK_TYPE_LABELS[typeKey]}
             </Badge>
           </Group>
 

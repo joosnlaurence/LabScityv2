@@ -26,3 +26,6 @@ export type AcademiaRole = keyof typeof ACADEMIA_ROLE_LABELS;
 export const WORK_MODE_VALUES = Object.keys(WORK_MODE_LABELS) as WorkMode[];
 export const JOB_TYPE_VALUES = Object.keys(JOB_TYPE_LABELS) as JobType[];
 export const ACADEMIA_ROLE_VALUES = Object.keys(ACADEMIA_ROLE_LABELS) as AcademiaRole[];
+
+
+export const DEFAULT_JOBS_PAGE_SIZE = 10;

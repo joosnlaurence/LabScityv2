@@ -18,33 +18,37 @@ import {
 } from "@mantine/core"
 import { 
   IconBook, 
-  IconBook2, 
-  IconBooks, 
-  IconChevronRight, 
-  IconClipboardText, 
-  IconClock, 
+  IconBookmark, 
+  IconChevronRight,  
   IconDots, 
   IconEdit, 
   IconExternalLink, 
-  IconFile, 
   IconLink, 
-  IconNotebook, 
   IconPdf, 
   IconPin, 
   IconPinFilled, 
-  IconPresentation, 
-  IconSchool, 
-  IconStarFilled,
-  IconTrash, 
+  IconStarFilled, 
+  IconTrash,
 } from "@tabler/icons-react"
-import { MAX_FEATURED_PUBLICATIONS, PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications"
+import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications"
 import { Fragment } from "react/jsx-runtime"
 // import NextLink from 'next/link';
 import classes from './ls-publications.module.css';
 import { Publication } from "@/lib/types/data";
 import { useDisclosure } from "@mantine/hooks";
+import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICON_PROPS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
 
 const ICON_SIZE = "0.85rem";
+
+interface LSPublicationProps { 
+  pub: Publication, 
+  isOwner: boolean, 
+  onDeleteClick?: () => void, 
+  isDeleting?: boolean,
+  onFeaturedClick?: () => void,
+  featureBtnDisabled?: boolean,
+  onSaveClick?: () => void,
+} 
 
 export default function LSPublication(
   { 
@@ -53,48 +57,13 @@ export default function LSPublication(
     onDeleteClick, 
     isDeleting, 
     onFeaturedClick,
-    featureBtnDisabled
-  }
-  : 
-  { 
-    pub: Publication, 
-    isOwner: boolean, 
-    onDeleteClick?: () => void, 
-    isDeleting?: boolean,
-    onFeaturedClick?: () => void,
-    featureBtnDisabled?: boolean,
-  } 
+    featureBtnDisabled,
+    onSaveClick,
+  }: LSPublicationProps
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
 
-  const iconProps = { size: ICON_SIZE, color: 'var(--mantine-color-indigo-8)' };
-  let typeIcon = <IconNotebook {...iconProps}/>;
-  switch(pub.type) {
-    case "journal_article":
-      typeIcon = <IconNotebook {...iconProps}/>
-      break;
-    case "book_chapter":
-      typeIcon = <IconBook2 {...iconProps}/>
-      break;
-    case "conference_paper":
-      typeIcon = <IconPresentation {...iconProps}/>
-      break;
-    case "preprint":
-      typeIcon = <IconClock {...iconProps}/>
-      break;
-    case "dissertation":
-      typeIcon = <IconSchool {...iconProps}/>
-      break;
-    case "review_article":
-      typeIcon = <IconBooks {...iconProps}/>
-      break;
-    case "technical_report":
-      typeIcon = <IconClipboardText {...iconProps}/>
-      break;
-    default: // 'other'
-      typeIcon = <IconFile {...iconProps}/>
-      break;
-  }
+  const typeIcon = PUB_PRODUCT_TYPE_ICONS[pub.type ?? 'other'];
   
   const visibleAuthors = (pub?.authors ?? []).slice(0, 3);
   const authorOverflow = (pub?.authors ?? []).length - visibleAuthors.length;
@@ -136,7 +105,7 @@ export default function LSPublication(
     <Card
       w='100%'
       p='0'
-      bdrs='0.75rem'
+      bdrs='md'
       style={{
         border: pub.is_featured ? '1px solid var(--mantine-color-blue-3)'  : '1px solid var(--mantine-color-gray-3)',
         borderTop: pub.is_featured ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-gray-3)',
@@ -190,7 +159,7 @@ export default function LSPublication(
               lh='1rem'
               leftSection={typeIcon}
             >
-              {PUBLICATION_TYPE_LABELS[pub.type ?? 'other']}
+              {OPENALEX_WORK_TYPE_LABELS[pub.type ?? 'other']}
             </Badge>
             {
               pub.is_oa && 
@@ -202,7 +171,7 @@ export default function LSPublication(
                 fz='0.75rem'
                 lh='1rem'
                 leftSection={
-                  <IconBook {...iconProps}/>
+                  <IconBook {...PUB_PRODUCT_TYPE_ICON_PROPS}/>
                 }
               >Open Access</Badge>
             }
@@ -216,7 +185,7 @@ export default function LSPublication(
                 fz='0.75rem'
                 lh='1rem'
                 leftSection={
-                  <IconPdf {...iconProps}/>
+                  <IconPdf {...PUB_PRODUCT_TYPE_ICON_PROPS}/>
                 }
               >PDF Available</Badge>
               : undefined
@@ -225,7 +194,7 @@ export default function LSPublication(
 
           {/* Make Featured */}
           {
-            isOwner &&
+            (isOwner && !!onFeaturedClick) &&
             <Tooltip label={`You can feature up to ${MAX_FEATURED_PUBLICATIONS} publications`} disabled={!featureBtnDisabled}> 
               <ActionIcon variant="subtle" onClick={onFeaturedClick} disabled={featureBtnDisabled}>
                 {
@@ -407,12 +376,23 @@ export default function LSPublication(
             }
           </Group>
 
+          <Group gap='xs'>
+          {
+            !!onSaveClick &&
+            <ActionIcon
+              variant='subtle'
+              size='lg'
+              onClick={onSaveClick}
+            >
+              <IconBookmark size='1.25rem' stroke='1.5' fill={pub.isSaved ? 'currentColor' : 'none'}/>
+            </ActionIcon>
+          }
           {/* Update Buttons */}
           {
             isOwner &&             
             <Menu position="top-end" shadow="md">
               <Menu.Target>
-                <ActionIcon bdrs='md' variant='outline' size='lg'>
+                <ActionIcon bdrs='md' variant='subtle' size='lg'>
                   <IconDots size='1.25rem' color='var(--mantine-color-navy-7)' />
                 </ActionIcon>
               </Menu.Target>
@@ -431,6 +411,7 @@ export default function LSPublication(
               </Menu.Dropdown>
             </Menu>
           }
+          </Group>
         </Group>
       </Stack>
     </Card>

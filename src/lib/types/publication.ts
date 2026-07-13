@@ -1,8 +1,8 @@
-import { PUBLICATION_TYPE_LABELS } from "../constants/publications";
 import { Publication } from "./data";
+import { OpenAlexWorkType } from "./openalex";
 
-// publication_type enum values from supabase
-export type PublicationType = keyof typeof PUBLICATION_TYPE_LABELS;
+// done so that 
+export type PublicationType = OpenAlexWorkType;
 
 export interface OpenAlexWork {
   title: string | null;

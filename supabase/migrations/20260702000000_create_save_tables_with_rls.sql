@@ -14,7 +14,7 @@ CREATE TABLE saved_products (
 
 CREATE TABLE saved_posts (
     profile_user_id uuid REFERENCES profile(user_id) ON DELETE CASCADE,
-    post_id text REFERENCES posts(post_id) ON DELETE CASCADE,
+    post_id bigint REFERENCES posts(post_id) ON DELETE CASCADE,
     created_at timestamp with time zone DEFAULT now(),
     PRIMARY KEY (profile_user_id, post_id)
 );

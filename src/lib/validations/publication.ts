@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PUBLICATION_TYPE_VALUES } from "../constants/publications";
+import { OPENALEX_TYPE_VALUES } from "../constants/openalex";
 
 export const createPublicationSchema = z.object({
     title: z
@@ -23,7 +23,7 @@ export const createPublicationSchema = z.object({
             message: "At least one author is required",
        }), // must contain 1 or more items
     publicationType: z
-       .enum(PUBLICATION_TYPE_VALUES),
+       .enum(OPENALEX_TYPE_VALUES),
 
     previewPath: z
       .string()
@@ -65,7 +65,7 @@ export const parsedOpenAlexWorkSchema = z.object({
       .array(z.string().min(1))
       .min(1),
   type: z
-      .enum(PUBLICATION_TYPE_VALUES),
+      .enum(OPENALEX_TYPE_VALUES),
   isOA: z
       .boolean(),
   pdfUrl: z

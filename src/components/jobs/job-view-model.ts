@@ -2,8 +2,7 @@ import type { Job as DbJob } from "@/lib/types/data";
 import { formatJobTypeLabel, formatWorkModeLabel } from "./job-display";
 
 export interface JobViewModel {
-  id: string;
-  numericId: number;
+  id: number;
   posterId: string;
   title: string;
   org: string;
@@ -15,6 +14,7 @@ export interface JobViewModel {
   description: string;
   summary: string | null;
   applyUrl: string | null;
+  isSaved: boolean;
 }
 
 function formatTimeAgo(value: string) {
@@ -46,8 +46,7 @@ function toRemoteLabel(
 
 export function toJobViewModel(job: DbJob): JobViewModel {
   return {
-    id: String(job.id),
-    numericId: job.id,
+    id: job.id,
     posterId: job.poster_id,
     title: job.title,
     org: job.organization?.trim() || "Organization not specified",
@@ -59,5 +58,6 @@ export function toJobViewModel(job: DbJob): JobViewModel {
     description: job.description,
     summary: job.summary,
     applyUrl: job.application_link,
+    isSaved: job.isSaved
   };
 }

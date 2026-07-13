@@ -20,7 +20,6 @@ import {
   SegmentedControl,
   Slider,
   Stack,
-  Switch,
   Text,
   Textarea,
   TextInput,
@@ -41,14 +40,11 @@ import {
   IconHeart,
   IconPhoto,
   IconMessageCircle,
-  IconPin,
-  IconPinFilled,
   IconPlus,
   IconQuote,
   IconShare3,
   IconStarFilled,
   IconTrash,
-  IconTrendingUp,
   IconUsers,
   IconHeartFilled,
 } from "@tabler/icons-react";
@@ -80,6 +76,9 @@ import type { HomeFeedProps } from "./home-feed.types";
 import { PostFollowButton } from "./post-follow-button";
 import { useHomeFeed } from "./use-home-feed";
 import { useGetUser } from "../data/use-data";
+import { createClient } from "@/supabase/client";
+import { FeedPostItem } from "@/lib/types/feed";
+import { useSetSavedPost } from "./use-feed";
 
 const DEFAULT_EDITOR_TEXT_COLOR = "#000000";
 const DEFAULT_EDITOR_FONT_SIZE = "16px";
@@ -146,25 +145,6 @@ export function HomeFeed(props: HomeFeedProps) {
     }
   }, [currentUserId]);
 
-  const togglePinnedPost = (postId: string) => {
-    if (!currentUserId) {
-      return;
-    }
-
-    setPinnedPostIds((current) => {
-      const next = current.includes(postId)
-        ? current.filter((id) => id !== postId)
-        : [postId, ...current];
-
-      window.localStorage.setItem(
-        `${PINNED_POSTS_STORAGE_PREFIX}:${currentUserId}`,
-        JSON.stringify(next),
-      );
-
-      return next;
-    });
-  };
-
   const addFeedTag = (tag: string) => {
     const nextTag = tag.trim();
 
@@ -225,6 +205,8 @@ export function HomeFeed(props: HomeFeedProps) {
       return left.index - right.index;
     });
 
+  const setSaved = useSetSavedPost(currentUserId ?? '');
+
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
       <Flex
@@ -282,7 +264,6 @@ export function HomeFeed(props: HomeFeedProps) {
             <FeedPostCard
               key={post.id}
               currentUserId={currentUserId}
-              isPinned={isPinned}
               post={post}
               commentOpen={activeCommentPostId === post.id}
               onToggleComments={() =>
@@ -292,8 +273,8 @@ export function HomeFeed(props: HomeFeedProps) {
               }
               onAddComment={handleAddComment}
               onLike={() => handleTogglePostLike(post.id)}
+              onSetSaved={(postId, save) => setSaved.mutate({ postId: post.id, save: !post.isSaved })}
               onDelete={() => handleDeletePost(post.id)}
-              onTogglePinned={() => togglePinnedPost(post.id)}
             />
           ))}
 
@@ -1139,17 +1120,6 @@ function CreatePostCard({
               </Alert>
             ) : null}
 
-            <Switch
-              checked={isFeaturedPost}
-              onChange={(event) =>
-                setIsFeaturedPost(event.currentTarget.checked)
-              }
-              color="yellow"
-              label="Feature this post for everyone"
-              description="Featured posts get the highlighted styling and stay near the top of every user's home feed."
-              disabled={composerMode !== "normal"}
-            />
-
             <Group justify="space-between" wrap="wrap">
               <Group gap="xs" wrap="wrap">
                 {composerMode === "product" &&
@@ -1197,51 +1167,25 @@ function CreatePostCard({
 export function FeedPostCard({
   post,
   currentUserId,
-  isPinned,
   commentOpen,
   onToggleComments,
   onAddComment,
   onLike,
+  onSetSaved,
   onDelete,
-  onTogglePinned,
-  hidePin,
   hideYourPostBadge
 }: {
-  post: {
-    id: string;
-    userId: string;
-    userName: string;
-    avatarUrl?: string | null;
-    scientificField: string;
-    content: string;
-    timeAgo: string;
-    mediaUrl?: string | null;
-    mediaWidth?: number;
-    mediaHeight?: number;
-    comments: Array<{
-      id: string;
-      userId: string;
-      userName: string;
-      avatarUrl?: string | null;
-      content: string;
-      timeAgo: string;
-    }>;
-    isLiked?: boolean;
-    likeCount?: number;
-  };
+  post: FeedPostItem;
   currentUserId: string | null;
-  isPinned: boolean;
-  commentOpen: boolean;
-  onToggleComments: () => void;
+  commentOpen?: boolean;
+  onToggleComments?: () => void;
   onAddComment: (postId: string, values: { content: string }) => Promise<void>;
   onLike: () => void;
+  onSetSaved: (postId: string, save: boolean) => void;
   onDelete: () => void;
-  onTogglePinned: () => void;
-  hidePin?: boolean;
   hideYourPostBadge?: boolean;
 }) {
   const isOwnPost = currentUserId != null && currentUserId === post.userId;
-  const [saved, setSaved] = useState(false);
   const [comment, setComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1256,66 +1200,21 @@ export function FeedPostCard({
           content: parsedContent.bodyText,
           mediaUrl: post.mediaUrl,
         });
-  const isFeatured = parsedContent.isFeatured;
-  const hasHighlightedStyling = isPinned || isFeatured;
   const isCitable =
     parsedContent.kind === "publication" || inferredTags.includes("Article");
 
   const spoilerControlRef = useRef<HTMLButtonElement>(null);
-
   return (
     <Card
       radius="xl"
+      shadow='xs'
       withBorder
       bg="white"
       p="lg"
-      style={{
-        borderColor: "#E5E7EB",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-      }}
     >
       <Stack gap="md">
-        {hasHighlightedStyling ? (
-          <Box
-            h={8}
-            mx={-24}
-            mt={-24}
-            style={{
-              background:
-                "linear-gradient(90deg, #1F3A5F 0%, #2A65C7 55%, #67C7C0 100%)",
-            }}
-          />
-        ) : null}
         <Group justify="space-between" align="flex-start" wrap="nowrap">
           <Group gap="xs" wrap="wrap">
-            {isFeatured ? (
-              <Badge
-                radius="xl"
-                variant="light"
-                leftSection={<IconStarFilled size={10} color="#A16207" />}
-                style={{
-                  background: "#FEF3C7",
-                  color: "#92400E",
-                  border: "1px solid #FCD34D",
-                }}
-              >
-                Featured
-              </Badge>
-            ) : null}
-            {isPinned ? (
-              <Badge
-                radius="xl"
-                variant="light"
-                leftSection={<IconPinFilled size={10} color="#A16207" />}
-                style={{
-                  background: "#FEF3C7",
-                  color: "#92400E",
-                  border: "1px solid #FCD34D",
-                }}
-              >
-                Pinned
-              </Badge>
-            ) : null}
             {isOwnPost && !hideYourPostBadge? (
               <Badge
                 radius="xl"
@@ -1349,17 +1248,6 @@ export function FeedPostCard({
             ))}
           </Group>
           <Group gap={4} wrap="nowrap">
-            {
-              !hidePin &&
-              <ActionIcon
-                variant="subtle"
-                color={isPinned ? "yellow" : "gray"}
-                aria-label={isPinned ? "Unpin post" : "Pin post"}
-                onClick={onTogglePinned}
-              >
-                {isPinned ? <IconPinFilled size={18} /> : <IconPin size={18} />}
-              </ActionIcon>
-            }
             {isOwnPost ? (
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -1443,41 +1331,33 @@ export function FeedPostCard({
             >
               {initials(post.userName)}
             </Avatar>
-            {/* <Avatar.Group spacing="sm">
-              <Avatar size={28} src={post.avatarUrl ?? undefined} color="blue">
-                {initials(post.userName)}
-              </Avatar>
-              <Avatar size={28} color="cyan">
-                {(post.scientificField || "GE").slice(0, 2).toUpperCase()}
-              </Avatar>
-            </Avatar.Group> */}
             
-              <Text
-                size="sm"
-                style={{
-                  minWidth: 0,
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                }}
+            <Text
+              size="sm"
+              style={{
+                minWidth: 0,
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+              }}
+            >
+              <Anchor
+                component={Link}
+                href={`/profile/${post.userId}`}
+                underline="hover"
               >
-                <Anchor
-                  component={Link}
-                  href={`/profile/${post.userId}`}
-                  underline="hover"
+                <Text 
+                  span
+                  c="#1F2937"
+                  fw={600}
                 >
-                  <Text 
-                    span
-                    c="#1F2937"
-                    fw={600}
-                  >
-                    {post.userName}
-                  </Text>
-                </Anchor>
-                <Text span c="#64748B" fw={400}>
-                  {" "}
-                  · {post.timeAgo}
+                  {post.userName}
                 </Text>
+              </Anchor>
+              <Text span c="#64748B" fw={400}>
+                {" "}
+                · {post.timeAgo}
               </Text>
+            </Text>
             
             {!isOwnPost ? (
               <PostFollowButton
@@ -1490,26 +1370,6 @@ export function FeedPostCard({
             {copied ? "Link copied" : ""}
           </Text>
         </Group>
-
-        {inferredTags.length > 0 ? (
-          <Group gap={6} wrap="wrap">
-            {inferredTags.map((tag) => (
-              <Button
-                key={`pill-${tag}`}
-                variant="light"
-                radius="xl"
-                size="compact-sm"
-                style={{
-                  background: "#EFF6FF",
-                  color: "#1D4ED8",
-                  border: "1px solid #BFDBFE",
-                }}
-              >
-                {tag}
-              </Button>
-            ))}
-          </Group>
-        ) : null}
 
         {post.mediaUrl ? (
           <Box
@@ -1564,11 +1424,11 @@ export function FeedPostCard({
               leftSection={
                 <IconBookmark
                   size={16}
-                  fill={saved ? "currentColor" : "none"}
+                  fill={post.isSaved ? "currentColor" : "none"}
                 />
               }
               px={0}
-              onClick={() => setSaved((current) => !current)}
+              onClick={() => onSetSaved?.(String(post.id), !post.isSaved)}
             >
               Save
             </Button>
@@ -1754,11 +1614,15 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
       if (!res.ok) {
         throw new Error("Failed to fetch collaborators");
       }
-      return (await res.json()) as GetCollaboratorsResult[];
+      const data = (await res.json()) as GetCollaboratorsResult[];
+      console.log(data);
+      return data;
     },
     enabled: Boolean(currentUserId),
   });
   
+  const supabase = createClient();
+
   return (
     <SectionCard
       title="Recommended Collaborators"
@@ -1766,35 +1630,47 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
       actionLabel="See all"
     >
       <Stack gap={0}>
-        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => (
-          <Group
-            key={person.profile_user_id}
-            py="sm"
-            wrap="nowrap"
-            style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
-          >
-            <Avatar component={Link} href={`/profile/${person.profile_user_id}`} radius="xl" color="blue">
-              {initials(`${person.first_name} ${person.last_name}`)}
-            </Avatar>
-            <Box flex={1} miw={0}>
-              <Anchor component={Link} href={`/profile/${person.profile_user_id}`}>
-                <Text size="sm" fw={800} truncate>
-                  {person.first_name} {person.last_name}
+        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => {
+          const { data } = supabase.storage
+            .from("profile_pictures")
+            .getPublicUrl(person?.profile_pic_path ?? '');
+
+          return (
+            <Group
+              key={person.profile_user_id}
+              py="sm"
+              wrap="nowrap"
+              style={{ borderBottom: "1px solid var(--mantine-color-gray-1)" }}
+            >
+              <Avatar 
+                component={Link} 
+                href={`/profile/${person.profile_user_id}`} 
+                radius="xl" 
+                color="blue"
+                src={data.publicUrl}
+              >
+                {initials(`${person.first_name} ${person.last_name}`)}
+              </Avatar>
+              <Box flex={1} miw={0}>
+                <Anchor component={Link} href={`/profile/${person.profile_user_id}`}>
+                  <Text size="sm" fw={800} truncate>
+                    {person.first_name} {person.last_name}
+                  </Text>
+                </Anchor>
+                <Text size="xs" c="dimmed" truncate>
+                  {person.occupation || person.workplace || "Researcher"}
                 </Text>
-              </Anchor>
-              <Text size="xs" c="dimmed" truncate>
-                {person.occupation || person.workplace || "Researcher"}
-              </Text>
-              <Badge size="xs" color="green" variant="light" mt={4}>
-                {Math.round(person.cosine_similarity * 100)}% match
-              </Badge>
-            </Box>
-            <PostFollowButton
-              currentUserId={currentUserId ?? null}
-              targetUserId={person.profile_user_id}
-            />
-          </Group>
-        ))}
+                <Badge size="xs" color="green" variant="light" mt={4}>
+                  {Math.round(person.cosine_similarity * 100)}% match
+                </Badge>
+              </Box>
+              <PostFollowButton
+                currentUserId={currentUserId ?? null}
+                targetUserId={person.profile_user_id}
+              />
+            </Group>
+          )
+        })}
         {collaboratorsQuery.isLoading ? (
           <Text size="sm" c="dimmed">
             Loading collaborators...

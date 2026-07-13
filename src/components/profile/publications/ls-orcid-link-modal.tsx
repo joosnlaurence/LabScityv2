@@ -21,13 +21,14 @@ import OrcidInfo from "./ls-orcid-info";
 import { useForm } from "@mantine/form";
 import { orcidSchema } from "@/lib/validations/publication";
 import { useEffect, useMemo, useState } from "react";
-import { ParsedOpenAlexWork } from "@/lib/types/publication";
+import { ParsedOpenAlexWork, PublicationType } from "@/lib/types/publication";
 import { ApiResponse } from "@/lib/types/api";
 import { useQuery } from "@tanstack/react-query";
 import LSPublicationReviewItem from "./ls-publication-review-item";
-import { PUBLICATION_TYPE_LABELS } from "@/lib/constants/publications";
 import { useBulkInsertPublications } from "./use-publications";
 import { IconLink } from "@tabler/icons-react";
+import { OPENALEX_WORK_TYPE_LABELS } from "@/lib/constants/openalex";
+import { OpenAlexWorkType } from "@/lib/types/openalex";
 
 export default function LSOrcidLinker({userId}: {userId: string}) {
   const [orcidInputOpened, { open: openOrcidInput, close: closeOrcidInput }] = useDisclosure(false);
@@ -119,10 +120,9 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
     );
   }
 
-  type PubType = keyof typeof PUBLICATION_TYPE_LABELS;
 
   const groups = useMemo(() => {
-    const m = new Map<PubType, string[]>();
+    const m = new Map<PublicationType, string[]>();
     for(const pub of publications ?? []) {
       const key = pub.type ?? 'other'
       if (!m.has(key)) m.set(key, []);
@@ -131,7 +131,7 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
     return m;
   }, [publications])
 
-  const toggleGroup = (key: PubType) => {
+  const toggleGroup = (key: PublicationType) => {
     const dois = groups.get(key);
     const allOn = dois?.every((d) => selected.has(d));
     setSelected((prev) => {
@@ -141,7 +141,9 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
     });
   }
 
-  const PUB_TYPE_ORDER = Object.keys(PUBLICATION_TYPE_LABELS) as PubType[];
+  const PUB_TYPE_ORDER = Object.keys(OPENALEX_WORK_TYPE_LABELS) as OpenAlexWorkType[];
+
+  console.log(publications);
 
   return (
     <>
@@ -253,7 +255,6 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
                       .map(([type, dois]) => {
                         const selectedInGroup = dois.filter((d) => selected.has(d)).length
                         const allOfGroup = selectedInGroup === dois.length;
-                        const someOfGroup = selectedInGroup > 0 && !allOfGroup;
 
                         return (
                           <Chip 
@@ -263,7 +264,7 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
                             color='navy.6'
                             size='xs'
                           >
-                            {PUBLICATION_TYPE_LABELS[type]} ({selectedInGroup}/{dois.length})
+                            {OPENALEX_WORK_TYPE_LABELS[type]} ({selectedInGroup}/{dois.length})
                           </Chip>
                         )
                       })

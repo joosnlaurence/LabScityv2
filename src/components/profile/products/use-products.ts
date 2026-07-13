@@ -1,8 +1,10 @@
+import { setSavedProduct } from "@/lib/actions/bookmarks";
 import { createProduct, createProductImageUploadUrl, deleteProduct, saveProductImagePaths, setProductAsFeatured as setFeaturedProduct } from "@/lib/actions/product";
 import { TAGS_PAGE_SIZE } from "@/lib/constants/product";
-import { productKeys, tagKeys } from "@/lib/query-keys";
+import { bookmarkKeys, productKeys, tagKeys } from "@/lib/query-keys";
 import { ApiResponse, InfiniteScrollResponse } from "@/lib/types/api";
-import { Product, ProductImageDraft, TagSearchResult } from "@/lib/types/data";
+import { SavedItemsData } from "@/lib/types/bookmarks";
+import { ProductImageDraft, TagSearchResult } from "@/lib/types/data";
 import { InfiniteProducts, ProductFacets, ProductFilters } from "@/lib/types/products";
 import { CreateProductValues } from "@/lib/validations/product";
 import { createClient } from "@/supabase/client";
@@ -24,7 +26,7 @@ export function useProducts(userId: string, filters: ProductFilters) {
           params.set("cursor", btoa(JSON.stringify(pageParam)));  
         }
         const res = await fetch(`/api/products?${params}`);
-        if(!res.ok) throw new Error("Failed to fetch publications");
+        if(!res.ok) throw new Error("Failed to fetch products");
         const apiResponse: ApiResponse<InfiniteProducts> = await res.json();
         if(!apiResponse.success) throw new Error(apiResponse.error)
         return apiResponse.data;
@@ -39,7 +41,7 @@ export function useGetProductFacets(userId: string) {
     queryKey: productKeys.facets(userId),
     queryFn: async () => {
       const res = await fetch(`/api/products/facets?userId=${userId}`);
-      if(!res.ok) throw new Error('Failed to fetch publication facets');
+      if(!res.ok) throw new Error('Failed to fetch product facets');
       const apiResponse: ApiResponse<ProductFacets> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error);
       return apiResponse.data;
@@ -146,6 +148,8 @@ export function useDeleteProduct(userId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
       queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.counts(userId) });
       notifications.show({color: 'green', message: 'Product successfully deleted!'})
     },
     onError: (err) => {
@@ -182,8 +186,80 @@ export function useSetFeaturedProduct(userId: string) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.list(userId) });
     }
   });
+}
+
+export function useSetSavedProduct(userId: string) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ productId, isSaved }: { productId: number, isSaved: boolean}) => {
+      const res = await setSavedProduct(productId, isSaved);
+      if(!res.success) throw new Error(res.error);
+      return res.success;
+    },
+    onMutate: async ({ productId, isSaved }) => {
+      await queryClient.cancelQueries({ queryKey: productKeys.all });
+      await queryClient.cancelQueries({ queryKey: bookmarkKeys.all });
+      const snapshot = [
+        ...queryClient.getQueriesData({ queryKey: productKeys.all }),
+        ...queryClient.getQueriesData({ queryKey: bookmarkKeys.all })
+      ];
+
+      queryClient.setQueriesData({ queryKey: productKeys.lists() }, (old) => {
+        const data = old as { pages?: InfiniteProducts[]; pageParams?: any } | undefined;
+        if(!data?.pages) return old;
+        return {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            products: page.products.map((prod) => 
+              String(prod.product_id) === String(productId) ? { ...prod, isSaved} : prod,
+            ),
+          })),
+        }
+      });
+
+      queryClient.setQueriesData({ queryKey: bookmarkKeys.all }, (old) => {
+        const data = old as SavedItemsData | undefined;
+        if(!Array.isArray(data?.products)) return old;
+        return {
+          ...data,
+          products: data.products.map(row => 
+            String(row.product_id) === String(productId) 
+            ? 
+            { ...row, products: { ...row.products, isSaved } }
+            : row,
+          ),
+        }
+      });
+
+      return { snapshot };
+    },
+    onSuccess: (_data, { productId, isSaved}) => {
+      if(!isSaved) {
+        queryClient.setQueriesData({ queryKey: bookmarkKeys.list(userId) }, (old) => {
+          const data = old as SavedItemsData | undefined;
+          if(!Array.isArray(data?.products)) return old;
+          return { ...data, products: data.products.filter(prod => prod.product_id !== productId) }
+        });
+      }
+      notifications.show({color: 'green', message: `Product ${isSaved ? 'saved' : 'unsaved'}!`});
+    },
+    onError: (error, _vars, context) => {
+      if(context?.snapshot) {
+        for (const [key, data] of context.snapshot) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+      notifications.show({ color: "red", title: "Error saving product", message: error.message });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
+    }
+  })
 }
 
 export function useSearchTags(search: string) {
