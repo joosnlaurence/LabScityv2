@@ -1,7 +1,7 @@
 'use client';
 
 import { Text, Center, Group, Loader, Stack, TextInput, Divider, Select, OptionsFilter, ComboboxItem } from "@mantine/core";
-import { IconAdjustmentsHorizontal, IconSearch } from "@tabler/icons-react";
+import { IconAdjustmentsHorizontal, IconBoxOff, IconSearch } from "@tabler/icons-react";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useDebouncedValue, useIntersection } from "@mantine/hooks";
 import { useEffect, useRef, useState } from "react";
@@ -192,9 +192,12 @@ export default function LSProductsList({ userId }: { userId: string }) {
             }
           </Stack>
           : 
-          <Text ta='center' c='dimmed'>
-            No Products Found...
-          </Text>
+          <Stack justify='center' align='center'>
+              <IconBoxOff color='var(--mantine-color-dimmed)' size={64} stroke={1}/>
+              <Text ta='center' c='dimmed'>
+                No Research Products Found...
+              </Text>
+            </Stack>
         }
       </Stack>
 

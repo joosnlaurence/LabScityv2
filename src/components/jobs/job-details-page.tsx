@@ -52,7 +52,7 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
   };
 
   return (
-    <Box bg="gray.0" mih="calc(100vh - 56px)">
+    <Box mih="calc(100vh - 56px)">
       <Box maw={1200} mx="auto" px={{ base: "sm", md: "xl" }} py="xl">
         <Button
           component={Link}

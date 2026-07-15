@@ -208,7 +208,7 @@ export function HomeFeed(props: HomeFeedProps) {
   const setSaved = useSetSavedPost(currentUserId ?? '');
 
   return (
-    <Box bg="gray.0" mih="calc(100vh - 56px)">
+    <Box mih="calc(100vh - 56px)">
       <Flex
         maw={1320}
         mx="auto"
@@ -260,7 +260,7 @@ export function HomeFeed(props: HomeFeedProps) {
             </Card>
           ) : null}
 
-          {displayPosts.map(({ post, isPinned }) => (
+          {displayPosts.map(({ post }) => (
             <FeedPostCard
               key={post.id}
               currentUserId={currentUserId}

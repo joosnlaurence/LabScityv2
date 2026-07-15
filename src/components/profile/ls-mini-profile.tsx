@@ -5,7 +5,6 @@ import classes from "./ls-mini-profile.module.css";
 export interface LSMiniProfileProps {
   posterName: string;
   posterEmail: string;
-  posterResearchInterest: string;
   posterProfilePicURL?: string;
   userId?: string;
 }
@@ -13,7 +12,6 @@ export interface LSMiniProfileProps {
 export default function LSMiniProfile({
   posterName,
   posterEmail,
-  posterResearchInterest,
   posterProfilePicURL,
   userId,
 }: LSMiniProfileProps) {
@@ -39,15 +37,12 @@ export default function LSMiniProfile({
         <Text c="navy.7" size="md" fw={600} lineClamp={1}>
           {posterName}
         </Text>
-        {posterResearchInterest ? (
-          <Text c="navy.6" size="sm" lineClamp={1}>
-            {posterResearchInterest}
-          </Text>
-        ) : posterEmail ? (
+        {
+          posterEmail && 
           <Text c="dimmed" size="xs" lineClamp={1}>
             {posterEmail}
           </Text>
-        ) : null}
+        }
       </Stack>
     </Group>
   );

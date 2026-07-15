@@ -53,7 +53,7 @@ export function LSGroupsPageShell({
   );
 
   return (
-    <Box bg="gray.0" mih="calc(100vh - 60px)">
+    <Box mih="calc(100vh - 60px)">
       <Tabs
         value={tabValue}
         onChange={(v) => {

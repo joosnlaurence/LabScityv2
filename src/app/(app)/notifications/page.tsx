@@ -235,7 +235,7 @@ const LSNotificationsDesktopLayout = ({
   };
 
   return (
-    <Box py={24} px={80}>
+    <Box py={24} px={80} h='100%'>
       <Flex p={8} direction="row" w="100%" gap={8}>
         <Box flex={5}>
           <NotificationsHeader totalCount={totalCount} />
