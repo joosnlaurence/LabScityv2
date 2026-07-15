@@ -104,8 +104,10 @@ export interface FeedCommentItem {
   userName: string;
   avatarUrl?: string | null;
   content: string;
+  createdAt?: string;
   timeAgo: string;
   isLiked?: boolean;
+  parentCommentId?: string | null;
 }
 
 /**

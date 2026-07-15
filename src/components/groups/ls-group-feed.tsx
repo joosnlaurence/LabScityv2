@@ -159,7 +159,9 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
 
                 <Divider />
 
-                {post.comments.map((comment) => (
+                {post.comments
+                  .filter((comment) => !comment.parentCommentId)
+                  .map((comment) => (
                   <LSPostCommentCard
                     key={comment.id}
                     comment={comment}

@@ -56,10 +56,12 @@ export function formatFeedPost(
       userName: `${comment.users?.first_name} ${comment.users?.last_name}`.trim(),
       avatarUrl: publicUrl(supabase, AVATAR_BUCKET, comment.users?.profile_pic_path),
       content: comment.text,
+      createdAt: comment.created_at,
       timeAgo: getTimeAgo(comment.created_at),
       isLiked: currentUserId
         ? (comment.comment_likes?.some((like: any) => like.user_id === currentUserId) ?? false)
         : false,
+      parentCommentId: comment.parent_comment_id != null ? String(comment.parent_comment_id) : null,
     })),
     isLiked: currentUserId
       ? (post.likes?.some((like: any) => like.user_id === currentUserId) ?? false)

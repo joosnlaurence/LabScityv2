@@ -35,6 +35,7 @@ export async function getJobById(
     }
 
     const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from("jobs")
       .select("*")
@@ -47,11 +48,33 @@ export async function getJobById(
 
     return {
       success: true,
-      data: (data as Job | null) ?? null,
+      data: data
+        ? ({
+            ...(data as Job),
+            isSaved: authData.user
+              ? await isJobSaved(supabase, jobId, authData.user.id)
+              : false,
+          } as Job)
+        : null,
     };
   } catch {
     return { success: false, error: "Failed to fetch job" };
   }
+}
+
+async function isJobSaved(supabase: Awaited<ReturnType<typeof createClient>>, jobId: number, userId: string) {
+  const { data, error } = await supabase
+    .from("saved_jobs")
+    .select("job_id")
+    .eq("profile_user_id", userId)
+    .eq("job_id", jobId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
 }
 
 export async function createJob(

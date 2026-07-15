@@ -1476,7 +1476,9 @@ export function FeedPostCard({
         {commentOpen ? (
           <Stack gap="sm">
             <Divider />
-            {post.comments.map((item) => (
+            {post.comments
+              .filter((item) => !item.parentCommentId)
+              .map((item) => (
               <Group key={item.id} align="flex-start" wrap="nowrap">
                 <Avatar size="sm" radius="xl" src={item.avatarUrl ?? undefined}>
                   {initials(item.userName)}

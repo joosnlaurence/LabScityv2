@@ -8,7 +8,7 @@ import { isAcademicRole, JOB_TYPES } from "@/lib/types/jobs";
 export async function GET(request: Request){
     const { searchParams } = new URL(request.url)
     const cursor = searchParams.get('cursor')
-    const limit = parseInt(searchParams.get('limit') ?? String(DEFAULT_JOBS_PAGE_SIZE))
+    const limit = parseInt(searchParams.get('limit') ?? String(DEFAULT_JOBS_PAGE_SIZE), 10)
     const search = searchParams.get("search")?.trim() || null;
     const job_type = searchParams.get('job_type')
     const work_mode = searchParams.get('work_mode')
@@ -70,7 +70,7 @@ export async function GET(request: Request){
     )
 
     let savedIds = new Set<number>();
-    if((jobs?.length ?? []) > 0) {
+    if(userId && (jobs?.length ?? 0) > 0) {
       const { data: savedRows, error: savedError } = await supabase
         .from("saved_jobs")
         .select("job_id")

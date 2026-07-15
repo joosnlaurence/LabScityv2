@@ -2,6 +2,7 @@
 
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -13,6 +14,7 @@ import {
   TagsInput,
   Text,
   TextInput,
+  Loader,
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
@@ -29,8 +31,10 @@ import {
 import { useEditor } from "@tiptap/react";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
+import { useDebouncedValue } from "@mantine/hooks";
 import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
 import type { createJob } from "@/lib/actions/job";
+import { useLocationSearch } from "@/components/profile/use-profile-search";
 import {
   formatJobTypeLabel,
   formatWorkModeLabel,
@@ -81,6 +85,12 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
   const [publishNow, setPublishNow] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [debouncedLocation] = useDebouncedValue(draft.location, 500);
+  const locationSearchQuery = useLocationSearch(debouncedLocation);
+  const locationOptions = useMemo(
+    () => (locationSearchQuery.data ?? []).map((result) => result.display_name),
+    [locationSearchQuery.data],
+  );
 
   const updateDraft = <K extends keyof JobDraft>(
     key: K,
@@ -234,14 +244,16 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                 />
               </Flex>
               <Flex gap="md" direction={{ base: "column", sm: "row" }}>
-                <TextInput
+                <Autocomplete
                   label="Location"
                   placeholder="City, State or Remote"
                   value={draft.location}
-                  onChange={(event) =>
-                    updateDraft("location", event.currentTarget.value)
-                  }
+                  onChange={(value) => updateDraft("location", value)}
+                  data={locationOptions}
                   leftSection={<IconMapPin size={16} />}
+                  rightSection={
+                    locationSearchQuery.isFetching ? <Loader size={14} /> : undefined
+                  }
                   style={{ flex: 1 }}
                 />
                 <Select

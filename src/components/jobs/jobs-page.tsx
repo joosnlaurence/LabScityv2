@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Autocomplete,
   Badge,
   Box,
   Button,
@@ -30,7 +31,7 @@ import {
   IconTrendingUp,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import { getJobPreviewHtml, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from "./job-display";
 import { toJobViewModel, type JobViewModel } from "./job-view-model";
@@ -39,20 +40,30 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { JobType, WorkMode } from "@/lib/constants/job";
 import { JobFilters } from "@/lib/types/jobs";
 import { useAuth } from "../auth/use-auth";
+import { useLocationSearch } from "../profile/use-profile-search";
 
 export function JobsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebouncedValue(search, 300);
+  const [location, setLocation] = useState("");
+  const [debouncedLocation] = useDebouncedValue(location, 300);
   const [jobType, setJobType] = useState<JobType | null>(null);
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const locationSearchQuery = useLocationSearch(debouncedLocation);
+  const locationOptions = useMemo(
+    () => (locationSearchQuery.data ?? []).map((result) => result.display_name),
+    [locationSearchQuery.data],
+  );
 
   const filters = useMemo<JobFilters>(() => {
     return {
       search: debouncedSearch.trim() || undefined,
+      location: debouncedLocation.trim() || undefined,
       job_type: jobType ?? undefined,
       work_mode: workMode ?? undefined,
     };
-  }, [debouncedSearch, jobType, workMode]);
+  }, [debouncedLocation, debouncedSearch, jobType, workMode]);
 
   const { user } = useAuth();
   const currentUserId = user?.id;
@@ -69,6 +80,27 @@ export function JobsPage() {
     () => (myJobsQuery.data ?? []).map(toJobViewModel),
     [myJobsQuery.data],
   );
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !jobsQuery.hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (
+          entry?.isIntersecting &&
+          jobsQuery.hasNextPage &&
+          !jobsQuery.isFetchingNextPage
+        ) {
+          void jobsQuery.fetchNextPage();
+        }
+      },
+      { rootMargin: "360px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [jobsQuery.fetchNextPage, jobsQuery.hasNextPage, jobsQuery.isFetchingNextPage]);
 
   return (
     <Box bg="gray.0" mih="calc(100vh - 56px)">
@@ -94,6 +126,19 @@ export function JobsPage() {
               leftSection={<IconSearch size={16} />}
               radius="md"
               style={{ flex: "1 1 280px" }}
+            />
+            <Autocomplete
+              value={location}
+              onChange={setLocation}
+              data={locationOptions}
+              placeholder="Location"
+              clearable
+              leftSection={<IconMapPin size={16} />}
+              rightSection={
+                locationSearchQuery.isFetching ? <Loader size={14} /> : undefined
+              }
+              radius="md"
+              style={{ flex: "1 1 220px" }}
             />
             <Select
               value={jobType}
@@ -163,18 +208,12 @@ export function JobsPage() {
               ))
             }
 
-            {
-              jobsQuery.hasNextPage ? (
-                <Button
-                  variant="default"
-                  radius="md"
-                  onClick={() => jobsQuery.fetchNextPage()}
-                  loading={jobsQuery.isFetchingNextPage}
-                >
-                  Load more jobs
-                </Button>
-              ) : null
-            }
+            {jobsQuery.hasNextPage ? <Box ref={loadMoreRef} h={1} /> : null}
+            {jobsQuery.isFetchingNextPage ? (
+              <Group justify="center" py="md">
+                <Loader size="sm" />
+              </Group>
+            ) : null}
           </Stack>
 
           <Stack w={300} gap="md" visibleFrom="lg">

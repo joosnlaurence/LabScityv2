@@ -9,6 +9,7 @@ import { useRef, useState } from "react";
 import { useAuth } from "@/components/auth/use-auth";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
+import { PostCommentThread } from "@/components/feed/post-comment-thread";
 import { PostDetailCard } from "@/components/feed/post-detail-card";
 import { usePostDetail } from "@/components/feed/use-post-detail";
 import { ReportOverlay } from "@/components/report/report-overlay";
@@ -382,26 +383,23 @@ export default function PostDetailPage() {
               radius="xl"
               withBorder
               p="md"
-              bg="white"
-              style={{ borderColor: "#E5E7EB" }}
-            >
-              <Stack gap="sm">
-                {post.comments.map((comment) => (
-                  <LSPostCommentCard
-                    key={comment.id}
-                    comment={comment}
-                    onLikeClick={() => likeCommentMutation.mutate(comment.id)}
-                    onReportClick={() =>
-                      setReportTarget({
-                        type: "comment",
-                        postId: post.id,
-                        commentId: comment.id,
-                      })
-                    }
-                    menuId={`comment-menu-${comment.id}`}
-                  />
-                ))}
-              </Stack>
+            bg="white"
+            style={{ borderColor: "#E5E7EB" }}
+          >
+              <PostCommentThread
+                comments={post.comments}
+                postId={post.id}
+                onAddComment={handleAddComment}
+                onLikeComment={(commentId) => likeCommentMutation.mutate(commentId)}
+                onReportComment={(commentId) =>
+                  setReportTarget({
+                    type: "comment",
+                    postId: post.id,
+                    commentId,
+                  })
+                }
+                isSubmitting={createCommentMutation.isPending}
+              />
             </Card>
           ) : (
             <Text size="sm" c="#64748B">
