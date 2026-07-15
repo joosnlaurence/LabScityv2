@@ -617,4 +617,153 @@ SELECT pg_catalog.setval('"public"."user_report_report_id_seq"', 1, false);
 
 -- \unrestrict NMDMCdgFTWwvsuBUZ2eOsw9XgE7hZdztGi7fRn3CnZmOWWfqFs3UJ3RrwAANEIx
 
+--
+-- LabScity local development fixtures
+--
+
+INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
+	('00000000-0000-0000-0000-000000000000', '72795500-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'jo727955@ucf.edu', '$2a$06$g1k8uEBSs2y780yY7UDfU.xxydKTL0WmaIc/.Q1sEAeT//aKwdg.a', now(), NULL, '', NULL, '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{"first_name": "Jordan", "last_name": "Olsen"}', NULL, now(), now(), NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
+	('00000000-0000-0000-0000-000000000000', '72795500-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'maya.photonics@ucf.edu', '$2a$06$ZMbwVxRLdUbQ5dNxQeZZveA.b9EbUQBV8kSWcWMcewBnzZS.ZRKpC', now(), NULL, '', NULL, '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{"first_name": "Maya", "last_name": "Patel"}', NULL, now(), now(), NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
+	('00000000-0000-0000-0000-000000000000', '72795500-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'noah.bioimaging@ucf.edu', '$2a$06$FkR3uuUpjYanKxhACZhke.JKlN/Zj5KzOpOr3FHuPwz7Hka4opti6', now(), NULL, '', NULL, '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{"first_name": "Noah", "last_name": "Kim"}', NULL, now(), now(), NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
+	('00000000-0000-0000-0000-000000000000', '72795500-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'sofia.quantum@ucf.edu', '$2a$06$eByHo5sUSCU5HJPihOlwpuiHeFugAMWR6x/v7j1cIT6xMddKiyMn2', now(), NULL, '', NULL, '', NULL, '', '', NULL, NULL, '{"provider": "email", "providers": ["email"]}', '{"first_name": "Sofia", "last_name": "Ramirez"}', NULL, now(), now(), NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+
+INSERT INTO "auth"."identities" ("provider_id", "user_id", "identity_data", "provider", "last_sign_in_at", "created_at", "updated_at", "id") VALUES
+	('72795500-0000-4000-8000-000000000001', '72795500-0000-4000-8000-000000000001', '{"sub": "72795500-0000-4000-8000-000000000001", "email": "jo727955@ucf.edu"}', 'email', now(), now(), now(), '72795500-1000-4000-8000-000000000001'),
+	('72795500-0000-4000-8000-000000000002', '72795500-0000-4000-8000-000000000002', '{"sub": "72795500-0000-4000-8000-000000000002", "email": "maya.photonics@ucf.edu"}', 'email', now(), now(), now(), '72795500-1000-4000-8000-000000000002'),
+	('72795500-0000-4000-8000-000000000003', '72795500-0000-4000-8000-000000000003', '{"sub": "72795500-0000-4000-8000-000000000003", "email": "noah.bioimaging@ucf.edu"}', 'email', now(), now(), now(), '72795500-1000-4000-8000-000000000003'),
+	('72795500-0000-4000-8000-000000000004', '72795500-0000-4000-8000-000000000004', '{"sub": "72795500-0000-4000-8000-000000000004", "email": "sofia.quantum@ucf.edu"}', 'email', now(), now(), now(), '72795500-1000-4000-8000-000000000004');
+
+INSERT INTO "public"."users" ("first_name", "last_name", "email", "created_at", "user_id", "profile_pic_path", "is_banned", "banned_at", "banned_by") VALUES
+	('Jordan', 'Olsen', 'jo727955@ucf.edu', now(), '72795500-0000-4000-8000-000000000001', NULL, false, NULL, NULL),
+	('Maya', 'Patel', 'maya.photonics@ucf.edu', now(), '72795500-0000-4000-8000-000000000002', NULL, false, NULL, NULL),
+	('Noah', 'Kim', 'noah.bioimaging@ucf.edu', now(), '72795500-0000-4000-8000-000000000003', NULL, false, NULL, NULL),
+	('Sofia', 'Ramirez', 'sofia.quantum@ucf.edu', now(), '72795500-0000-4000-8000-000000000004', NULL, false, NULL, NULL);
+
+INSERT INTO "public"."profile" ("age", "about", "skill", "first_name", "user_id", "last_name", "header_pic_path", "occupation", "workplace", "orcid", "timezone", "tag_embedding", "skill_embedding", "profile_embedding", "lab_department", "location") VALUES
+	(NULL, 'I build computational microscopy pipelines and want to test every LabScity feature locally.', '{Python,Microscopy,"Machine Learning","Scientific Software"}', 'Jordan', '72795500-0000-4000-8000-000000000001', 'Olsen', NULL, 'Graduate Research Assistant', 'UCF CREOL', NULL, 'America/New_York', '[0.92,0.24,0.12]'::extensions.vector, '[0.86,0.31,0.18]'::extensions.vector, NULL, 'Computational Imaging Lab', 'Orlando, Florida, United States'),
+	(NULL, 'Photonics researcher working on metasurfaces, optical instrumentation, and reproducible data workflows.', '{Optics,Photonics,Python,Instrumentation}', 'Maya', '72795500-0000-4000-8000-000000000002', 'Patel', NULL, 'Postdoctoral Fellow', 'UCF CREOL', NULL, 'America/New_York', '[0.88,0.29,0.16]'::extensions.vector, '[0.81,0.36,0.20]'::extensions.vector, NULL, 'Nano-Photonics Group', 'Orlando, Florida, United States'),
+	(NULL, 'Bioimaging scientist developing open-source tools for segmentation and image quality metrics.', '{Bioimaging,Segmentation,Python,"Data Analysis"}', 'Noah', '72795500-0000-4000-8000-000000000003', 'Kim', NULL, 'Research Scientist', 'UCF College of Medicine', NULL, 'America/New_York', '[0.72,0.54,0.27]'::extensions.vector, '[0.70,0.58,0.30]'::extensions.vector, NULL, 'Biomedical Imaging Core', 'Lake Nona, Florida, United States'),
+	(NULL, 'Quantum optics faculty member recruiting students for integrated photonics and single-photon experiments.', '{Quantum,Photonics,Optics,Mentoring}', 'Sofia', '72795500-0000-4000-8000-000000000004', 'Ramirez', NULL, 'Assistant Professor', 'UCF Physics', NULL, 'America/New_York', '[0.83,0.34,0.22]'::extensions.vector, '[0.78,0.40,0.24]'::extensions.vector, NULL, 'Quantum Optics Lab', 'Orlando, Florida, United States');
+
+INSERT INTO "public"."tags" ("id", "name", "openalex_id", "level", "parent_tag_id", "description", "embedding", "keywords") VALUES
+	(101, 'Computational Imaging', NULL, 1, NULL, 'Algorithms and hardware for image formation and reconstruction.', NULL, '{microscopy,reconstruction,imaging}'),
+	(102, 'Photonics', NULL, 1, NULL, 'Research involving light, optics, lasers, and photonic devices.', NULL, '{optics,lasers,metasurfaces}'),
+	(103, 'Bioimaging', NULL, 1, NULL, 'Imaging methods for biological and medical systems.', NULL, '{segmentation,microscopy,biomedical}'),
+	(104, 'Scientific Software', NULL, 1, NULL, 'Reusable software for research workflows.', NULL, '{software,open-source,reproducibility}'),
+	(105, 'Quantum Optics', NULL, 1, NULL, 'Single photons, quantum light, and quantum-enabled devices.', NULL, '{quantum,photons,entanglement}');
+
+INSERT INTO "public"."posts" ("post_id", "category", "created_at", "text", "like_amount", "user_id", "group_id", "media_path", "scientific_field", "taken_down", "media_width", "media_height") VALUES
+	(101, 'general', now() - interval '7 days', 'Kicking off a local test dataset for computational imaging. I am comparing Richardson-Lucy deconvolution with a tiny learned prior on noisy microscopy frames.', 3, '72795500-0000-4000-8000-000000000001', NULL, NULL, 'Computational Imaging', false, NULL, NULL),
+	(102, 'general', now() - interval '6 days', 'Our lab has a spare optical rail and sCMOS camera this week. Happy to collaborate with anyone testing phase retrieval workflows.', 2, '72795500-0000-4000-8000-000000000002', NULL, NULL, 'Photonics', false, NULL, NULL),
+	(103, 'general', now() - interval '5 days', 'Question for the bioimaging crowd: what metrics are you using for segmentation quality when labels are sparse and annotators disagree?', 4, '72795500-0000-4000-8000-000000000003', NULL, NULL, 'Bioimaging', false, NULL, NULL),
+	(104, 'general', now() - interval '4 days', 'We are recruiting students interested in quantum optics experiments with integrated photonic chips. Strong Python skills help a lot.', 1, '72795500-0000-4000-8000-000000000004', NULL, NULL, 'Quantum Optics', false, NULL, NULL),
+	(105, 'general', now() - interval '3 days', 'I pushed a small napari plugin prototype for browsing LabScity product metadata beside raw image stacks. Feedback welcome.', 5, '72795500-0000-4000-8000-000000000001', NULL, NULL, 'Scientific Software', false, NULL, NULL),
+	(106, 'general', now() - interval '2 days', 'Metasurface alignment note: logging temperature drift alongside beam profiles made our repeatability plots much easier to interpret.', 2, '72795500-0000-4000-8000-000000000002', NULL, NULL, 'Photonics', false, NULL, NULL),
+	(107, 'general', now() - interval '1 day', 'Open benchmark idea: small paired brightfield/fluorescence dataset for testing fast restoration models on laptops.', 3, '72795500-0000-4000-8000-000000000003', NULL, NULL, 'Bioimaging', false, NULL, NULL),
+	(108, 'general', now() - interval '12 hours', 'Local seed sanity check: saving jobs, products, posts, and publications should all have something to click now.', 0, '72795500-0000-4000-8000-000000000001', NULL, NULL, 'LabScity Testing', false, NULL, NULL);
+
+INSERT INTO "public"."comment" ("post_id", "user_id", "text", "created_at", "like_count", "comment_id", "taken_down", "parent_comment_id") VALUES
+	(101, '72795500-0000-4000-8000-000000000002', 'I can share calibration targets if you want to benchmark reconstruction stability.', now() - interval '6 days 20 minutes', 1, 101, false, NULL),
+	(101, '72795500-0000-4000-8000-000000000001', 'Yes please. I will add the target images to the product page once the schema is settled.', now() - interval '6 days 10 minutes', 0, 102, false, 101),
+	(103, '72795500-0000-4000-8000-000000000004', 'We use inter-rater uncertainty maps and report agreement separately from model score.', now() - interval '4 days 22 hours', 1, 103, false, NULL),
+	(105, '72795500-0000-4000-8000-000000000003', 'This would be useful for microscopy training sessions. Can it read OME-TIFF?', now() - interval '2 days 20 hours', 0, 104, false, NULL);
+
+INSERT INTO "public"."likes" ("post_id", "created_at", "user_id") VALUES
+	(101, now() - interval '6 days', '72795500-0000-4000-8000-000000000002'),
+	(101, now() - interval '6 days', '72795500-0000-4000-8000-000000000003'),
+	(102, now() - interval '5 days', '72795500-0000-4000-8000-000000000001'),
+	(103, now() - interval '4 days', '72795500-0000-4000-8000-000000000001'),
+	(105, now() - interval '2 days', '72795500-0000-4000-8000-000000000004');
+
+INSERT INTO "public"."follows" ("follower_id", "following_id", "created_at") VALUES
+	('72795500-0000-4000-8000-000000000001', '72795500-0000-4000-8000-000000000002', now() - interval '9 days'),
+	('72795500-0000-4000-8000-000000000001', '72795500-0000-4000-8000-000000000003', now() - interval '8 days'),
+	('72795500-0000-4000-8000-000000000002', '72795500-0000-4000-8000-000000000001', now() - interval '7 days'),
+	('72795500-0000-4000-8000-000000000004', '72795500-0000-4000-8000-000000000001', now() - interval '6 days');
+
+INSERT INTO "public"."publications" ("publication_id", "title", "journal", "date_published", "authors", "preview_path", "is_oa", "pdf_url", "type", "doi") VALUES
+	(101, 'Fast Sparse Deconvolution for Low-Light Microscopy', 'Journal of Computational Imaging', '2026-02-15', '{Jordan Olsen,Maya Patel}', NULL, true, 'https://example.com/papers/sparse-deconvolution.pdf', 'journal_article', '10.5555/labscity.2026.101'),
+	(102, 'Benchmarking Annotation Uncertainty in Bioimage Segmentation', 'Bioimaging Methods', '2025-11-03', '{Noah Kim,Jordan Olsen}', NULL, true, 'https://example.com/papers/annotation-uncertainty.pdf', 'preprint', '10.5555/labscity.2025.102'),
+	(103, 'Integrated Photonics Testbed for Quantum Optics Education', 'Optics Education Letters', '2026-01-20', '{Sofia Ramirez,Maya Patel}', NULL, false, NULL, 'conference_paper', '10.5555/labscity.2026.103');
+
+INSERT INTO "public"."publication_tags" ("publication_id", "tag_id") VALUES
+	(101, 101),
+	(101, 102),
+	(102, 103),
+	(102, 104),
+	(103, 102),
+	(103, 105);
+
+INSERT INTO "public"."user_publications" ("user_id", "publication_id", "is_featured", "updates") VALUES
+	('72795500-0000-4000-8000-000000000001', 101, true, '{"role": "First author", "note": "Seeded for local testing"}'),
+	('72795500-0000-4000-8000-000000000001', 102, false, '{"role": "Co-author"}'),
+	('72795500-0000-4000-8000-000000000002', 101, false, '{"role": "Co-author"}'),
+	('72795500-0000-4000-8000-000000000003', 102, true, '{"role": "Lead author"}'),
+	('72795500-0000-4000-8000-000000000004', 103, true, '{"role": "Lead author"}');
+
+INSERT INTO "public"."products" ("product_id", "title", "short_summary", "publication_id", "contributors", "is_featured", "product_type", "links") VALUES
+	(101, 'Microscopy Reconstruction Notebook', 'A reproducible Python notebook for sparse deconvolution experiments.', 101, '{Jordan Olsen,Maya Patel}', true, 'software', '[{"kind": "github", "url": "https://github.com/example/microscopy-reconstruction", "label": "GitHub"}]'::jsonb),
+	(102, 'Bioimage Segmentation Uncertainty Dataset', 'Small annotated image set for testing uncertainty-aware segmentation metrics.', 102, '{Noah Kim,Jordan Olsen}', true, 'dataset', '[{"kind": "website", "url": "https://example.com/datasets/bioimage-uncertainty", "label": "Dataset"}]'::jsonb),
+	(103, 'Quantum Optics Lab Manual', 'Teaching materials for integrated photonics alignment and photon counting labs.', 103, '{Sofia Ramirez}', false, 'software', '[{"kind": "other", "url": "https://example.com/manuals/quantum-optics-lab", "label": "Manual"}]'::jsonb);
+
+INSERT INTO "public"."product_tags" ("product_id", "tag_id") VALUES
+	(101, 101),
+	(101, 104),
+	(102, 103),
+	(102, 104),
+	(103, 105),
+	(103, 102);
+
+INSERT INTO "public"."user_products" ("user_id", "product_id", "created_at") VALUES
+	('72795500-0000-4000-8000-000000000001', 101, now() - interval '3 days'),
+	('72795500-0000-4000-8000-000000000001', 102, now() - interval '2 days'),
+	('72795500-0000-4000-8000-000000000002', 101, now() - interval '3 days'),
+	('72795500-0000-4000-8000-000000000003', 102, now() - interval '2 days'),
+	('72795500-0000-4000-8000-000000000004', 103, now() - interval '1 day');
+
+INSERT INTO "public"."jobs" ("id", "title", "description", "created_at", "poster_id", "summary", "location", "department", "organization", "work_mode", "job_type", "academia_role", "application_link") VALUES
+	(101, 'Postdoctoral Researcher - Computational Microscopy', '<p>Join a collaborative imaging group building fast reconstruction methods for noisy microscopy data. Experience with Python, inverse problems, or optics is helpful.</p>', now() - interval '10 days', '72795500-0000-4000-8000-000000000002', 'Postdoc role focused on computational microscopy and reproducible reconstruction pipelines.', 'Orlando, Florida, United States', 'CREOL', 'University of Central Florida', 'hybrid', NULL, 'postdoc', 'https://example.com/jobs/computational-microscopy-postdoc'),
+	(102, 'Research Software Engineer - Bioimaging Tools', '<p>Build open-source tools for image analysis, dataset curation, and model evaluation in a biomedical imaging core.</p>', now() - interval '8 days', '72795500-0000-4000-8000-000000000003', 'Full-time research software role supporting bioimaging and segmentation workflows.', 'Lake Nona, Florida, United States', 'Biomedical Imaging Core', 'UCF College of Medicine', 'on-site', 'full-time', NULL, 'https://example.com/jobs/bioimaging-rse'),
+	(103, 'PhD Student - Quantum Photonics', '<p>Funded PhD opening for integrated photonics, single-photon experiments, and lab automation.</p>', now() - interval '6 days', '72795500-0000-4000-8000-000000000004', 'Funded PhD opportunity in quantum optics and integrated photonics.', 'Orlando, Florida, United States', 'Physics', 'University of Central Florida', 'on-site', NULL, 'phd', 'https://example.com/jobs/quantum-photonics-phd'),
+	(104, 'Remote Scientific Python Intern', '<p>Help improve notebook examples, testing fixtures, and documentation for microscopy analysis tools.</p>', now() - interval '4 days', '72795500-0000-4000-8000-000000000001', 'Remote internship for scientific Python and documentation.', 'Remote', 'Computational Imaging Lab', 'LabScity Demo Consortium', 'remote', 'internship', NULL, 'https://example.com/jobs/scientific-python-intern'),
+	(105, 'Faculty Cluster Hire - Imaging and AI', '<p>Tenure-track opening for researchers at the intersection of imaging hardware, machine learning, and scientific software.</p>', now() - interval '2 days', '72795500-0000-4000-8000-000000000002', 'Faculty role spanning imaging systems and AI-enabled analysis.', 'Orlando, Florida, United States', 'Optics and Photonics', 'University of Central Florida', 'hybrid', NULL, 'faculty', 'https://example.com/jobs/imaging-ai-faculty');
+
+INSERT INTO "public"."jobs_tags" ("job_id", "tag_id", "is_required") VALUES
+	(101, 101, true),
+	(101, 102, false),
+	(102, 103, true),
+	(102, 104, true),
+	(103, 105, true),
+	(104, 104, true),
+	(105, 101, false),
+	(105, 102, true);
+
+INSERT INTO "public"."saved_posts" ("profile_user_id", "post_id", "created_at") VALUES
+	('72795500-0000-4000-8000-000000000001', 102, now() - interval '2 days'),
+	('72795500-0000-4000-8000-000000000001', 103, now() - interval '1 day');
+
+INSERT INTO "public"."saved_jobs" ("profile_user_id", "created_at", "job_id") VALUES
+	('72795500-0000-4000-8000-000000000001', now() - interval '2 days', 101),
+	('72795500-0000-4000-8000-000000000001', now() - interval '1 day', 103);
+
+INSERT INTO "public"."saved_publications" ("profile_user_id", "publication_id", "created_at") VALUES
+	('72795500-0000-4000-8000-000000000001', 101, now() - interval '2 days'),
+	('72795500-0000-4000-8000-000000000001', 103, now() - interval '1 day');
+
+INSERT INTO "public"."saved_products" ("profile_user_id", "product_id", "created_at") VALUES
+	('72795500-0000-4000-8000-000000000001', 101, now() - interval '2 days'),
+	('72795500-0000-4000-8000-000000000001', 102, now() - interval '1 day');
+
+INSERT INTO "public"."notifications" ("id", "user_id", "type", "title", "content", "link", "is_read", "created_at") VALUES
+	('72795500-2000-4000-8000-000000000001', '72795500-0000-4000-8000-000000000001', 'new_follow', 'New collaborator followed you', 'Maya Patel started following your profile.', '/profile/72795500-0000-4000-8000-000000000002', false, now() - interval '6 days'),
+	('72795500-2000-4000-8000-000000000002', '72795500-0000-4000-8000-000000000001', 'post_like', 'Your post got a like', 'Noah Kim liked your reconstruction post.', '/posts/101', false, now() - interval '5 days'),
+	('72795500-2000-4000-8000-000000000003', '72795500-0000-4000-8000-000000000001', 'new_comment', 'New comment', 'Maya commented on your computational imaging post.', '/posts/101', true, now() - interval '4 days');
+
+SELECT pg_catalog.setval('"public"."Posts_postid_seq"', 108, true);
+SELECT pg_catalog.setval('"public"."Comment_comment_id_seq"', 104, true);
+SELECT pg_catalog.setval('"public"."jobs_id_seq"', 105, true);
+SELECT pg_catalog.setval('"public"."products_product_id_seq"', 103, true);
+SELECT pg_catalog.setval('"public"."publications_publication_id_seq"', 103, true);
+SELECT pg_catalog.setval('"public"."tags_id_seq"', 105, true);
+
 RESET ALL;

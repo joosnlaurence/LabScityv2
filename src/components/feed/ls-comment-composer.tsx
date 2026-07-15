@@ -19,6 +19,11 @@ export interface LSCommentComposerProps {
   postId: string;
   onAddComment: (postId: string, values: CreateCommentValues) => void | Promise<void>;
   isSubmitting?: boolean;
+  parentCommentId?: string;
+  placeholder?: string;
+  submitLabel?: string;
+  onCancel?: () => void;
+  autoFocus?: boolean;
 }
 
 function noPropagate(fn?: () => void) {
@@ -36,6 +41,11 @@ export function LSCommentComposer({
   postId,
   onAddComment,
   isSubmitting: isMutationPending = false,
+  parentCommentId,
+  placeholder = "Share a thought...",
+  submitLabel = "Comment",
+  onCancel,
+  autoFocus = false,
 }: LSCommentComposerProps) {
   const {
     handleSubmit,
@@ -48,6 +58,7 @@ export function LSCommentComposer({
     mode: "onChange",
     defaultValues: {
       content: "",
+      parentCommentId,
     },
   });
 
@@ -56,6 +67,7 @@ export function LSCommentComposer({
       await onAddComment(postId, values);
       reset({
         content: "",
+        parentCommentId,
       });
     } catch {
       // Hook's mutation onError already showed notification; don't reset form so user can retry.
@@ -71,22 +83,33 @@ export function LSCommentComposer({
           render={({ field }) => (
             <Textarea
               labelProps={{ fw: "bold" }}
-              placeholder="Share a thought..."
+              placeholder={placeholder}
               error={errors.content?.message}
               styles={{ label: { color: "var(--mantine-color-navy-7)" } }}
               {...register("content")}
               onClick={noPropagate()}
+              autoFocus={autoFocus}
             />
           )}
         />
         <Group justify="flex-end">
+          {onCancel ? (
+            <Button
+              type="button"
+              variant="default"
+              onClick={noPropagate(onCancel)}
+              disabled={isSubmitting || isMutationPending}
+            >
+              Cancel
+            </Button>
+          ) : null}
           <Button
             type="submit"
             disabled={!isValid || isSubmitting || isMutationPending}
             loading={isMutationPending}
             onClick={noPropagate()}
           >
-            Comment
+            {submitLabel}
           </Button>
         </Group>
       </Stack>

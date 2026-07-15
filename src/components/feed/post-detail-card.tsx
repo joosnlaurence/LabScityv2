@@ -175,7 +175,6 @@ export function PostDetailCard({
                 draftContent.trim().length === 0 ||
                 draftContent.trim() === parsedContent.bodyText.trim()
               }
-
             >
               Save
             </Button>

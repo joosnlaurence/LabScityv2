@@ -39,6 +39,7 @@ export const createCommentSchema = z.object({
     .string()
     .min(1, { message: "Comment is required" })
     .max(2000, { message: "Comment must be less than 2000 characters" }),
+  parentCommentId: z.string().min(1).optional(),
 });
 
 export const createReportSchema = z
