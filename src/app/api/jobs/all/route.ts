@@ -71,7 +71,6 @@ export async function GET(request: Request){
 
     let savedIds = new Set<number>();
     if((jobs?.length ?? []) > 0) {
-      console.log(jobs);
       const { data: savedRows, error: savedError } = await supabase
         .from("saved_jobs")
         .select("job_id")

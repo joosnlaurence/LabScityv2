@@ -1615,7 +1615,6 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
         throw new Error("Failed to fetch collaborators");
       }
       const data = (await res.json()) as GetCollaboratorsResult[];
-      console.log(data);
       return data;
     },
     enabled: Boolean(currentUserId),
@@ -1660,9 +1659,9 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
                 <Text size="xs" c="dimmed" truncate>
                   {person.occupation || person.workplace || "Researcher"}
                 </Text>
-                <Badge size="xs" color="green" variant="light" mt={4}>
+                {/* <Badge size="xs" color="green" variant="light" mt={4}>
                   {Math.round(person.cosine_similarity * 100)}% match
-                </Badge>
+                </Badge> */}
               </Box>
               <PostFollowButton
                 currentUserId={currentUserId ?? null}

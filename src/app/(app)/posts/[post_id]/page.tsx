@@ -60,8 +60,6 @@ export default function PostDetailPage() {
     await queryClient.cancelQueries({ queryKey: postKeys.detail(post_id) });
     await queryClient.cancelQueries({ queryKey: feedKeys.all });
 
-    console.log(feedKeys.all);
-
     const detailSnapshot = queryClient.getQueryData<GetPostDetailResult>(postKeys.detail(post_id));
     const feedSnapshots = queryClient.getQueriesData<GetFeedPaginatedResult>({ queryKey: feedKeys.all });
 

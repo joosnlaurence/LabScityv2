@@ -1,5 +1,6 @@
 import { ApiResponse } from "@/lib/types/api";
-import { LocationResult, Skill } from "@/lib/types/data";
+import { LocationResult } from "@/lib/types/data";
+import { Skill, Tag } from "@/lib/validations/profile";
 import { useQuery } from "@tanstack/react-query";
 
 export function useLocationSearch(query: string) {
@@ -28,6 +29,19 @@ export function useSkillSearch(query: string) {
       return json.data;
     },
     // enabled: q.length >= 3,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+export function useTagSearch(query: string) {
+  return useQuery({
+    queryKey: ["tags", "search", query],
+    queryFn: async () => {
+      const res = await fetch(`/api/tags/search?q=${encodeURIComponent(query)}`);
+      const json: ApiResponse<Tag[]> = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data;
+    },
+    staleTime: 60 * 60 * 1000,
   });
 }

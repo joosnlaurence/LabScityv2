@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_PROFILE_SKILLS, MAX_PROFILE_TAGS } from "../constants/profile";
 
 /**
  * Zod schema for the profile edit form.
@@ -37,21 +38,6 @@ export const updateProfileSchema = z.object({
     .min(2, { message: "Occupation must be at least 2 characters" })
     .optional()
     .or(z.literal("")),
-  researchAreas: z
-    .array(
-      z.string()
-       .min(2, { message: "Field of interest must be at least 2 characters" })
-    )
-    .optional(),
-  skill: z
-    .array(
-      z
-        .string()
-        .min(1, { message: "Skill must be at least 1 character" }),
-    )
-    .max(20, { message: "You can select up to 20 skills" })
-    .optional()
-    .default([]),
   labDepartment: z
     .string()
     .min(2, { message: "Lab/department must be at least 2 characters" })
@@ -109,3 +95,36 @@ export const createUserReportSchema = z.object({
 /** Inferred type from createUserReportSchema. Use for user report form values. */
 export type CreateUserReportValues = z.infer<typeof createUserReportSchema>;
 
+
+export const skillValueSchema = z.object({
+  // null means custom skill
+  id: z.number().int().positive().nullable(),
+  name: z.string().trim().min(2).max(60)
+});
+
+export const updateSkillsSchema = z.object({
+  skills: z.array(skillValueSchema).max(MAX_PROFILE_SKILLS, `Up to ${MAX_PROFILE_SKILLS} skills`),
+});
+
+export type Skill = z.infer<typeof skillValueSchema>;
+export type UpdateSkillsValues = z.infer<typeof updateSkillsSchema>;
+
+export const tagValueSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().trim()
+});
+
+export type Tag = z.infer<typeof tagValueSchema>;
+
+export const declaredTagSchema = z.object({
+  // null means custom declared tag
+  id: z.number().int().positive().nullable(),
+  name: z.string().trim().min(2).max(60)
+});
+
+export const updateDeclaredTagsSchema = z.object({
+  tags: z.array(declaredTagSchema).max(MAX_PROFILE_TAGS, `Up to ${MAX_PROFILE_TAGS} research areas`),
+});
+
+export type DeclaredTagValue = z.infer<typeof declaredTagSchema>;
+export type UpdateDeclaredTagsValues = z.infer<typeof updateDeclaredTagsSchema>;

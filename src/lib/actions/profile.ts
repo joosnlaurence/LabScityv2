@@ -12,6 +12,10 @@ import {
   type UpdateProfileValues,
   type ToggleFollowValues,
   type CreateUserReportValues,
+  UpdateSkillsValues,
+  updateSkillsSchema,
+  UpdateDeclaredTagsValues,
+  updateDeclaredTagsSchema,
 } from "@/lib/validations/profile";
 
 const profilePictureBucket = "profile_pictures";
@@ -373,8 +377,8 @@ export async function updateProfileAction(
       workplace: emptyToNull(validated.workplace),
       occupation: emptyToNull(validated.occupation),
       timezone: emptyToNull(validated.timezone),
-      lab_department: emptyToNull(validated?.labDepartment),
-      location: emptyToNull(validated?.location)
+      lab_department: emptyToNull(validated.labDepartment),
+      location: emptyToNull(validated.location),
     };
 
     const { error: profileError } = await supabase
@@ -382,25 +386,6 @@ export async function updateProfileAction(
       .upsert(profilePayload, { onConflict: "user_id" });
     if (profileError) {
       return { success: false, error: profileError.message };
-    }
-
-    const skillIds = validated.skill.map(Number).filter(n => Number.isInteger(n));
-
-    const { error: delErr } = await supabase
-      .from("profile_skills")
-      .delete()
-      .eq("profile_user_id", userId);
-    if (delErr) {
-      return { success: false, error: delErr.message };
-    }
-    
-    if (skillIds.length > 0) {
-      const { error: insErr } = await supabase
-        .from("profile_skills")
-        .insert(skillIds.map((skill_id) => ({ profile_user_id: userId, skill_id })));
-      if (insErr) {
-        return { success: false, error: insErr.message };
-      }
     }
 
     const { error: usersError } = await supabase
@@ -426,6 +411,62 @@ export async function updateProfileAction(
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to update profile",
+    };
+  }
+}
+
+export async function updateProfileSkills(
+  input: UpdateSkillsValues,
+  supabaseClient?: SupabaseClient,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const parsed = updateSkillsSchema.parse(input);
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) return { success: false, error: "Authentication required" };
+
+    const { error } = await supabase.rpc("update_profile_skills", {
+      p_skill_ids: parsed.skills.filter((s) => s.id !== null).map((s) => s.id),
+      p_custom_names: parsed.skills.filter((s) => s.id === null).map((s) => s.name),
+    });
+    if (error) return { success: false, error: error.message };
+
+    return { success: true };
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message ?? "Validation failed" };
+    }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update skills",
+    };
+  }
+}
+
+export async function updateDeclaredTagsAction(
+  input: UpdateDeclaredTagsValues,
+  supabaseClient?: SupabaseClient,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const validated = updateDeclaredTagsSchema.parse(input);
+    const supabase = supabaseClient ?? (await createClient());
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) return { success: false, error: "Authentication required" };
+
+    const { error } = await supabase.rpc("update_declared_tags", {
+      p_tag_ids: validated.tags.filter((t) => t.id !== null).map((t) => t.id),
+      p_custom_names: validated.tags.filter((t) => t.id === null).map((t) => t.name),
+    });
+    if (error) return { success: false, error: error.message };
+
+    return { success: true };
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message ?? "Validation failed" };
+    }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update research areas",
     };
   }
 }

@@ -99,21 +99,11 @@ export interface JobSkill {
   is_required: boolean;
 }
 
-export interface TagSearchResult {
-  id: number;
-  name: string;
-}
-
 export interface LocationResult {
     place_id: number;
     display_name: string;
     lat: string;
     lon: string;
-}
-
-export interface Skill {
-  id: number;
-  name: string;
 }
 
 export interface Job {
