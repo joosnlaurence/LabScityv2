@@ -104,6 +104,12 @@ export interface TagSearchResult {
   name: string;
 }
 
+export interface TrendingJobTag {
+  tag_id: number;
+  name: string;
+  job_count: number;
+}
+
 export interface LocationResult {
     place_id: number;
     display_name: string;

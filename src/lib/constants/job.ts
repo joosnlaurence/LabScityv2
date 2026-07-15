@@ -29,3 +29,5 @@ export const ACADEMIA_ROLE_VALUES = Object.keys(ACADEMIA_ROLE_LABELS) as Academi
 
 
 export const DEFAULT_JOBS_PAGE_SIZE = 10;
+
+export const DEFAULT_TRENDING_JOB_TAGS_LIMIT = 10;
