@@ -1,33 +1,50 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/supabase/server";
-import type { InfiniteScrollResponse } from "@/lib/types/api";
+import { ApiResponse } from "@/lib/types/api";
+import { Skill } from "@/lib/validations/profile";
 
-const SKILLS_PAGE_SIZE = 20;
+const SKILLS_SEARCH_SIZE = 20;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get("q");
-  const limit = parseInt(searchParams.get("limit") ?? String(SKILLS_PAGE_SIZE));
-  const offset = parseInt(searchParams.get("offset") ?? "0");
+  const q = (searchParams.get("q") ?? "").trim();
+
+  if (q.length < 1) {
+    return NextResponse.json<ApiResponse<Skill[]>>({ success: true, data: [] });
+  }
+
+  const parsed = parseInt(searchParams.get("limit") ?? "", 10);
+  const limit = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 50) : SKILLS_SEARCH_SIZE;
 
   const supabase = await createClient();
+
   const { data, error } = await supabase
     .from("skills")
     .select("id, name")
-    .ilike("name", `%${q ?? ""}%`)
-    .order("name", { ascending: true })
-    .range(offset, offset + limit - 1);
+    .ilike("name", `%${q}%`)
+    .limit(limit * 3);
 
   if (error) {
-    return NextResponse.json<InfiniteScrollResponse<{ id: number; name: string }[]>>(
+    return NextResponse.json<ApiResponse<Skill[]>>(
       { success: false, error: error.message },
       { status: 500 },
     );
   }
 
-  return NextResponse.json<InfiniteScrollResponse<{ id: number; name: string }[]>>({
+  const t = q.toLowerCase();
+  const rank = (name: string) => {
+    const s = name.toLowerCase();
+    if (s === t) return 0;
+    if (s.startsWith(t)) return 1;
+    return 2;
+  };
+
+  const ranked = (data ?? [])
+    .sort((a, b) => rank(a.name) - rank(b.name) || a.name.length - b.name.length)
+    .slice(0, limit);
+
+  return NextResponse.json<ApiResponse<Skill[]>>({
     success: true,
-    data: data ?? [],
-    hasMore: (data ?? []).length === limit,
+    data: ranked,
   });
 }

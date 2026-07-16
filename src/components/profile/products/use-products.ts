@@ -1,12 +1,13 @@
 import { setSavedProduct } from "@/lib/actions/bookmarks";
 import { createProduct, createProductImageUploadUrl, deleteProduct, saveProductImagePaths, setProductAsFeatured as setFeaturedProduct } from "@/lib/actions/product";
-import { TAGS_PAGE_SIZE } from "@/lib/constants/product";
+import { TAGS_SEARCH_SIZE } from "@/lib/constants/profile";
 import { bookmarkKeys, productKeys, tagKeys } from "@/lib/query-keys";
 import { ApiResponse, InfiniteScrollResponse } from "@/lib/types/api";
 import { SavedItemsData } from "@/lib/types/bookmarks";
-import { ProductImageDraft, TagSearchResult } from "@/lib/types/data";
+import { ProductImageDraft } from "@/lib/types/data";
 import { InfiniteProducts, ProductFacets, ProductFilters } from "@/lib/types/products";
 import { CreateProductValues } from "@/lib/validations/product";
+import { Tag } from "@/lib/validations/profile";
 import { createClient } from "@/supabase/client";
 import { notifications } from "@mantine/notifications";
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -263,30 +264,15 @@ export function useSetSavedProduct(userId: string) {
 }
 
 export function useSearchTags(search: string) {
-  // return useInfiniteQuery({
-  //   queryKey: tagKeys.search(search),
-  //   initialPageParam: 0,
-  //   queryFn: async ({ pageParam }) => {
-  //     const res = await fetch(`/api/tags/search?q=${encodeURIComponent(search)}&limit=${TAGS_PAGE_SIZE}&offset=${pageParam}`);
-  //     if(!res.ok) throw new Error("Failed to fetch products");
-  //     const apiResponse: InfiniteScrollResponse<TagSearchResult[]> = await res.json();
-  //     if(!apiResponse.success) throw new Error(apiResponse.error);
-  //     return apiResponse;
-  //   },
-  //   getNextPageParam: (last, all) => last.hasMore ? all.length * TAGS_PAGE_SIZE : undefined,
-  //   // enabled: search.trim().length > 0,
-  //   placeholderData: keepPreviousData,
-  // })
   return useQuery({
     queryKey: tagKeys.search(search),
     queryFn: async () => {
-      const res = await fetch(`/api/tags/search?q=${encodeURIComponent(search)}&limit=${TAGS_PAGE_SIZE}`);
+      const res = await fetch(`/api/tags/search?q=${encodeURIComponent(search)}&limit=${TAGS_SEARCH_SIZE}`);
       if(!res.ok) throw new Error("Failed to fetch products");
-      const apiResponse: InfiniteScrollResponse<TagSearchResult[]> = await res.json();
+      const apiResponse: InfiniteScrollResponse<Tag[]> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error);
       return apiResponse.data;
     },
-    // enabled: search.trim().length > 0,
     placeholderData: keepPreviousData,
   })
 }

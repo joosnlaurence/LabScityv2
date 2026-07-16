@@ -432,7 +432,7 @@ const LSProfileDesktopLayout = ({
             classNames={classes}
             w='100%'
           >
-            <Tabs.List mb={20} justify="start">
+            <Tabs.List mb={20} justify="start" bg='gray.0'>
               <Tabs.Tab value="posts">Posts</Tabs.Tab>
               <Tabs.Tab value="publications">Publications</Tabs.Tab>
               <Tabs.Tab value="products">Research Products</Tabs.Tab>
@@ -533,7 +533,7 @@ export function LSProfileView(props: LSProfileViewProps) {
     : "Unknown User";
 
   return (
-    <Box bg="gray.0" mih="calc(100vh - 56px)">
+    <Box mih="calc(100vh - 56px)">
       {!props.isOwnProfile && (
         <LSUserReportOverlay
           open={reportOverlayOpen}

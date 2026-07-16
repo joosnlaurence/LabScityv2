@@ -56,7 +56,6 @@ export function useSetSavedJob(userId: string) {
   
   return useMutation({
     mutationFn: async ({ jobId, isSaved }: { jobId: number, isSaved: boolean}) => {
-      console.log('isSaved', isSaved);
       const res = await setSavedJob(jobId, isSaved);
       if(!res.success) throw new Error(res.error);
       return res.success;

@@ -24,7 +24,7 @@ import type {
   CreateReportValues,
   UpdatePostValues,
 } from "@/lib/validations/post";
-import type { UpdateProfileValues } from "@/lib/validations/profile";
+import type { Skill, UpdateProfileValues } from "@/lib/validations/profile";
 import type {
   updateProfileAction,
   toggleFollowAction,
@@ -33,7 +33,6 @@ import type {
   createProfileHeaderUploadUrl,
   updateOwnProfileHeader,
 } from "@/lib/actions/profile";
-import { Skill } from "@/lib/types/data";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -98,7 +97,6 @@ function profileToEditInitialValues(profile: {
   about?: string | null;
   workplace?: string | null;
   occupation?: string | null;
-  research_interests?: string[] | null;
   skills?: Skill[] | null;
 }): UpdateProfileValues {
   return {
@@ -107,8 +105,6 @@ function profileToEditInitialValues(profile: {
     about: profile.about ?? "",
     workplace: profile.workplace ?? "",
     occupation: profile.occupation ?? "",
-    researchAreas: profile.research_interests ?? [],
-    skill: (profile.skills ?? []).map(s => String(s.id)),
   };
 }
 

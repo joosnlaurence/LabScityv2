@@ -12,7 +12,7 @@ import {
   Loader,
   UnstyledButton,
 } from "@mantine/core";
-import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
+import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconPlus, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
 import { useMemo, useRef, useState } from "react";
 import { LSEditProfileModal } from "./ls-edit-profile-modal";
 import { useDisclosure } from "@mantine/hooks";
@@ -21,6 +21,8 @@ import { useGetPublicationFacets } from "./publications/use-publications";
 import LSProfileListModal from "./ls-profile-list-modal";
 import { useUserFollowers, useUserFollowing } from "./use-profile";
 import classes from './ls-profile-hero.module.css'
+import { LSAddSkillsModal } from "./ls-add-skills-modal";
+import { LSAddTagsModal } from "./ls-add-tags-modal";
 
 const PROFILE_BANNER_HEIGHT = 150;
 
@@ -98,6 +100,9 @@ export default function LSProfileHero({
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
   const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
 
+  const [skillsModalOpened, { open: openSkillsModal, close: closeSkillsModal }] = useDisclosure(false);
+  const [researchAreasModalOpened, { open: openResearchAreasModal, close: closeResearchAreasModal }] = useDisclosure(false);
+  
   const lastList = useRef<"followers" | "following">("followers");
   if (listModal) lastList.current = listModal;
 
@@ -106,9 +111,9 @@ export default function LSProfileHero({
   const { data: following = []} = useUserFollowing(profile.user_id);
 
   const profileName = `${profile.first_name} ${profile.last_name}`;
-  const profileResearchInterest = profile.research_interests?.[0] ?? "";
   const profileAbout = profile.about ?? undefined;
-  const profileSkill = profile.skills ?? undefined;
+  const profileSkills = profile.skills;
+  const profileTags = profile.declared_tags;
   const profileHeaderImageURL = profile.profile_header_url ?? undefined;
   const profilePicURL = profile.avatar_url ?? undefined;
   const occupation = profile.occupation ?? undefined;
@@ -116,12 +121,6 @@ export default function LSProfileHero({
   const labDepartment = profile.lab_department ?? undefined;
   const location = profile.location ?? undefined;
   const timezone = profile.timezone ?? undefined;
-
-  const { data: pubFacets } = useGetPublicationFacets(profile.user_id);
-  const researchAreas = useMemo(
-    () => (pubFacets?.tags ?? []).slice(0, 3).map(t => t.name),
-    [pubFacets]
-  );  
 
   const avatarInitials = profileName
     .split(" ")
@@ -336,7 +335,6 @@ export default function LSProfileHero({
         {/* Profile Name + Workplace/Occupation */}
         <Stack gap="4" mt={-15}>
           <Text c="navy.7" fz={30} fw={700} lh='1'>{profileName}</Text>
-          <Text c="navy.7" size="sm">{profileResearchInterest}</Text>
           {(occupation ?? workplace) ? (
             <Text c="navy.6" size="sm">
               {[occupation, workplace].filter(Boolean).join(", ")}
@@ -410,15 +408,15 @@ export default function LSProfileHero({
         }
 
         {
-          // TODO: Add research tags to profile
-          researchAreas.length > 0 &&
+          (profileTags && profileTags.length > 0) 
+          ?
           <Stack gap='xs'>
             <Text fz='xs' c='dimmed' fw='bold'>RESEARCH AREAS</Text>
             <Group gap='xs'>
             {
-              researchAreas.map((tag) => 
+              profileTags.map((tag, i) => 
                 <Badge 
-                  key={tag}
+                  key={tag.id || `${tag.name}${i}`}
                   bg='blue.0' 
                   bd='1px solid blue.3'
                   c='indigo.9'
@@ -427,21 +425,63 @@ export default function LSProfileHero({
                   p='sm'
                   tt='none'
                 >
-                  {tag}
+                  {tag.name}
                 </Badge>
               )
             }
             </Group>
+            {
+              isOwnProfile && 
+              <>
+                <Button 
+                  variant='outline' 
+                  rightSection={<IconPlus size='1rem'/>}
+                  onClick={openResearchAreasModal}
+                  c='dimmed'
+                  bd='1px dashed dimmed'
+                  bdrs='100'
+                  size='xs'
+                  w='fit-content'
+                >
+                  Add Research Areas
+                </Button>
+                <LSAddTagsModal userId={profile.user_id} opened={researchAreasModalOpened} onClose={closeResearchAreasModal}/>
+              </>
+            }
+          </Stack>
+          :
+          isOwnProfile &&
+          <Stack gap='xs'>
+            <Text fz='xs' c='dimmed' fw='bold'>RESEARCH AREAS</Text>
+            <Stack gap='4'>
+              <Text size='xs' c='dimmed'>Add your research areas to your profile to get collaboration recommendations</Text>
+              <Button 
+                variant='outline' 
+                rightSection={<IconPlus size='1rem'/>}
+                onClick={openResearchAreasModal}
+                c='dimmed'
+                bd='1px dashed dimmed'
+                bdrs='100'
+                size='xs'
+                w='fit-content'
+              >
+                Add Research Areas
+              </Button>
+              <LSAddTagsModal userId={profile.user_id} opened={researchAreasModalOpened} onClose={closeResearchAreasModal}/>
+            </Stack>
           </Stack>
         }
-        {(profileSkill && profileSkill.length > 0) &&
+
+        {
+          (profileSkills && profileSkills.length > 0) 
+          ?
           <Stack gap='xs'>
             <Text c="dimmed" fw='bold' fz='xs'>SKILLS</Text>
             <Group gap={8}>
-              {(profileSkill.map((skill, i) => {
-                return (
+              { 
+                profileSkills.map((skill, i) => 
                   <Badge 
-                    key={skill.id} 
+                    key={skill.id ?? `${skill.name}${i}`} 
                     bg='gray.2' 
                     bd='1px solid gray.4' 
                     c='navy.7' 
@@ -454,8 +494,47 @@ export default function LSProfileHero({
                     {skill.name}
                   </Badge>
                 )
-              }))}
+              }
             </Group>
+            {
+              isOwnProfile && 
+              <>
+              <Button 
+                variant='outline' 
+                rightSection={<IconPlus size='1rem'/>}
+                onClick={openSkillsModal}
+                c='dimmed'
+                bd='1px dashed dimmed'
+                bdrs='100'
+                size='xs'
+                w='fit-content'
+              >
+                Add Skills
+              </Button>
+              <LSAddSkillsModal opened={skillsModalOpened} onClose={closeSkillsModal} userId={profile.user_id} />
+              </>
+            }
+          </Stack>
+          :
+          isOwnProfile &&
+          <Stack gap='xs'>
+            <Text c="dimmed" fw='bold' fz='xs'>SKILLS</Text>
+            <Stack gap='4'>
+              <Text size='xs' c='dimmed'>Add skills to your profile to get collaboration recommendations</Text>
+              <Button 
+                variant='outline' 
+                rightSection={<IconPlus size='1rem'/>}
+                onClick={openSkillsModal}
+                c='dimmed'
+                bd='1px dashed dimmed'
+                bdrs='100'
+                size='xs'
+                w='fit-content'
+              >
+                Add Skills
+              </Button>
+              <LSAddSkillsModal opened={skillsModalOpened} onClose={closeSkillsModal} userId={profile.user_id} />
+            </Stack>
           </Stack>
         }
       </Stack>

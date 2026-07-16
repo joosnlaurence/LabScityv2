@@ -3,30 +3,23 @@
  * Based on Supabase database schema
  */
 
-import { Skill } from "./data";
+import { DeclaredTagValue, Skill } from "../validations/profile";
 
 export type PostCategory = "formal" | "natural" | "social" | "applied" | "general";
 
-/**
- * User/Profile type from the users/profile tables
- */
 export interface User {
   user_id: string;
   first_name: string;
   last_name: string;
   email: string;
-  research_interests?: string[];
   profile_pic_path?: string | null;
   profile_header_path?: string | null;
   avatar_url?: string | null;
-  // Extended profile fields (from public.profile), all optional so callers
-  // can safely consume them even if the current query doesn't join profile.
   about?: string | null;
   occupation?: string | null;
   workplace?: string | null;
-  skills?: Skill[] | null;
-  /** Profile articles (title + URL). From public.profile.articles jsonb. */
-  articles?: { title: string; url: string }[] | null;
+  skills?: Skill[];
+  declared_tags?: DeclaredTagValue[];
   profile_header_url?: string | null;
   timezone?: string | null;
   lab_department?: string | null;

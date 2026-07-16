@@ -8,7 +8,6 @@ import {
   Select,
   Button,
   Loader,
-  MultiSelect,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,8 +33,6 @@ interface EditProfileFormValues {
   labDepartment: string;
   location: string;
   timezone: string;
-  researchAreas: string[];
-  skill: string[];
 }
 
 function profileToEditValues(profile: User | undefined): UpdateProfileValues {
@@ -48,8 +45,6 @@ function profileToEditValues(profile: User | undefined): UpdateProfileValues {
     labDepartment: profile?.lab_department ?? "",
     location: profile?.location ?? "",
     timezone: profile?.timezone ?? "",
-    researchAreas: profile?.research_interests ?? [],
-    skill: (profile?.skills ?? []).map(s => String(s.id)),
   };
 }
 
@@ -63,8 +58,6 @@ function toFormDefaults(v: UpdateProfileValues): EditProfileFormValues {
     labDepartment: v.labDepartment ?? "",
     location: v.location ?? "",
     timezone: v.timezone ?? "",
-    researchAreas: v.researchAreas ?? [],
-    skill: v.skill ?? [],
   };
 }
 
@@ -111,9 +104,6 @@ export function LSEditProfileModal({ opened, onClose, userId }: LSEditProfileMod
       form.setInitialValues(next);
       form.setValues(next);
       form.clearErrors();
-      setSelectedSkills(
-        (profile?.skills ?? []).map(s => ({ value: String(s.id), label: s.name }))
-      )
     }
   }, [opened, initialValues]);
 
@@ -163,20 +153,18 @@ export function LSEditProfileModal({ opened, onClose, userId }: LSEditProfileMod
     }
   }, []);
 
-  const [selectedSkills, setSelectedSkills] = useState<{ value: string; label: string }[]>([]);
   const [skillSearch, setSkillSearch] = useState("");
   const [debouncedSkill] = useDebouncedValue(skillSearch, 300);
-  const { data: skillResults } = useSkillSearch(debouncedSkill);
 
-  const skillOptions = useMemo(() => {
-    const map = new Map();
-    for (const s of selectedSkills) map.set(s.value, s);
-    for (const r of skillResults ?? []) {
-      const v = String(r.id);
-      if(!map.has(v)) map.set(v, { value: v, label: r.name });
-    }
-    return [...map.values()];
-  }, [selectedSkills, skillResults]);
+  // const skillOptions = useMemo(() => {
+  //   const map = new Map();
+  //   for (const s of selectedSkills) map.set(s.value, s);
+  //   for (const r of skillResults ?? []) {
+  //     const v = String(r.id);
+  //     if(!map.has(v)) map.set(v, { value: v, label: r.name });
+  //   }
+  //   return [...map.values()];
+  // }, [selectedSkills, skillResults]);
 
   const [locationSearch, setLocationSearch] = useState("");
   const [debouncedLocation] = useDebouncedValue(locationSearch, 500);
@@ -263,28 +251,6 @@ export function LSEditProfileModal({ opened, onClose, userId }: LSEditProfileMod
             nothingFoundMessage="No matching time zone"
             key={form.key("timezone")}
             {...form.getInputProps("timezone")}
-          />
-
-          {/* <TagsInput
-            label="Research Areas"
-            placeholder="Select or type your research areas..."
-            data={[...SCIENCE_CATEGORIES]}
-            key={form.key("researchAreas")}
-            {...form.getInputProps("researchAreas")}
-          /> */}
-
-          <MultiSelect
-            label='Skills'
-            placeholder="Search skills by name..."
-            data={skillOptions}
-            comboboxProps={{ shadow: 'md' }}
-            searchable
-            searchValue={skillSearch}
-            onSearchChange={setSkillSearch}
-            nothingFoundMessage="No matching skills"
-            clearSearchOnChange={false}
-            key={form.key("skill")}
-            {...form.getInputProps('skill')}
           />
 
           <Button type="submit" loading={updateMutation.isPending}>

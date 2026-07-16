@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/use-auth";
 import { getUser, getUserPosts } from "@/lib/actions/data";
 import { getProfileVisibleGroups } from "@/lib/actions/groups";
@@ -6,8 +6,12 @@ import {
   getUserFollowers,
   getUserFollowing,
   getUserFriends,
+  updateDeclaredTagsAction,
+  updateProfileSkills,
 } from "@/lib/actions/profile";
 import { profileKeys } from "@/lib/query-keys";
+import { UpdateDeclaredTagsValues, UpdateSkillsValues } from "@/lib/validations/profile";
+import { notifications } from "@mantine/notifications";
 
 // NOTE: Profile hooks now return the full React Query result objects
 // so server prefetch and client usage share the same data shape.
@@ -140,5 +144,50 @@ export function useProfileGroups(profileUserId: string) {
       return result.data;
     },
     enabled: Boolean(user?.id && profileUserId),
+  });
+}
+
+export function useUpdateProfileSkills(userId: string, onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (values: UpdateSkillsValues) => {
+      const res = await updateProfileSkills(values);
+      if (!res.success) throw new Error(res.error ?? "Failed to update skills");
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.user(userId) });
+      // TODO: Add CMA keys here too
+      onSuccess?.();
+    },
+    onError: (err) =>
+      notifications.show({
+        title: "Could not update skills",
+        message: err instanceof Error ? err.message : "Something went wrong",
+        color: "red",
+      }),
+  });
+}
+
+export function useUpdateDeclaredTags(userId: string, onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: UpdateDeclaredTagsValues) => {
+      const res = await updateDeclaredTagsAction(values);
+      if (!res.success) throw new Error(res.error ?? "Failed to update research areas");
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.user(userId) });
+      // TODO: Add CMA keys here too
+      onSuccess?.();
+    },
+    onError: (err) =>
+      notifications.show({
+        title: "Could not update research areas",
+        message: err instanceof Error ? err.message : "Something went wrong",
+        color: "red",
+      }),
   });
 }

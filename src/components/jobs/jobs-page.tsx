@@ -103,7 +103,7 @@ export function JobsPage() {
   }, [jobsQuery.fetchNextPage, jobsQuery.hasNextPage, jobsQuery.isFetchingNextPage]);
 
   return (
-    <Box bg="gray.0" mih="calc(100vh - 56px)">
+    <Box mih="calc(100vh - 56px)">
       <Box maw={1320} mx="auto" px={{ base: "sm", md: "xl" }} py="xl">
         <Group justify="space-between" align="flex-end" mb="lg">
           <Box>

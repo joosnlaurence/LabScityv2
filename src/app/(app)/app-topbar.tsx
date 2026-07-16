@@ -48,6 +48,7 @@ import { createClient } from "@/supabase/client";
 import { useIsMobile } from "../use-is-mobile";
 import { useGetUser } from "@/components/data/use-data";
 import classes from './app-topbar.module.css';
+import { initials } from "@/components/feed/post-detail-card.utils";
 
 type NotificationType =
   | "post_like"
@@ -452,9 +453,9 @@ export default function LSAppTopBar({ userId, isModerator }: LSAppTopBarProps) {
 
             {!isMobile && (
               <UnstyledButton component={Link} href={`/profile/${userId}`}>
-                <Avatar size={34} radius="xl" bg='navy.1' color="navy.6" src={profile?.avatar_url}>
-                  {(`${profile?.first_name[0]}${profile?.last_name[0]}`).toUpperCase()}
-                </Avatar>
+                <Avatar size={34} radius="xl" bg="navy.1" color="navy.6" src={profile?.avatar_url}>
+                  {initials([profile?.first_name, profile?.last_name].filter(Boolean).join(" "))}
+                </Avatar> 
               </UnstyledButton>
             )}
 

@@ -208,7 +208,7 @@ export function HomeFeed(props: HomeFeedProps) {
   const setSaved = useSetSavedPost(currentUserId ?? '');
 
   return (
-    <Box bg="gray.0" mih="calc(100vh - 56px)">
+    <Box mih="calc(100vh - 56px)">
       <Flex
         maw={1320}
         mx="auto"
@@ -260,7 +260,7 @@ export function HomeFeed(props: HomeFeedProps) {
             </Card>
           ) : null}
 
-          {displayPosts.map(({ post, isPinned }) => (
+          {displayPosts.map(({ post }) => (
             <FeedPostCard
               key={post.id}
               currentUserId={currentUserId}
@@ -1617,7 +1617,6 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
         throw new Error("Failed to fetch collaborators");
       }
       const data = (await res.json()) as GetCollaboratorsResult[];
-      console.log(data);
       return data;
     },
     enabled: Boolean(currentUserId),
@@ -1662,9 +1661,9 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
                 <Text size="xs" c="dimmed" truncate>
                   {person.occupation || person.workplace || "Researcher"}
                 </Text>
-                <Badge size="xs" color="green" variant="light" mt={4}>
+                {/* <Badge size="xs" color="green" variant="light" mt={4}>
                   {Math.round(person.cosine_similarity * 100)}% match
-                </Badge>
+                </Badge> */}
               </Box>
               <PostFollowButton
                 currentUserId={currentUserId ?? null}

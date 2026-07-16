@@ -143,8 +143,6 @@ export default function LSOrcidLinker({userId}: {userId: string}) {
 
   const PUB_TYPE_ORDER = Object.keys(OPENALEX_WORK_TYPE_LABELS) as OpenAlexWorkType[];
 
-  console.log(publications);
-
   return (
     <>
       <Modal.Root size='800' centered opened={orcidInputOpened} onClose={closeOrcidInput}>

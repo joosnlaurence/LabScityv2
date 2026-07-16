@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Text, Center, Collapse, Group, Loader, Stack, TextInput, LoadingOverlay, Divider, RangeSlider, Select, Menu, OptionsFilter, ComboboxItem, Card, Modal, Box } from "@mantine/core";
-import { IconAdjustmentsHorizontal, IconLink, IconPlus, IconSearch } from "@tabler/icons-react";
+import { IconAdjustmentsHorizontal, IconArticleOff, IconLink, IconPlus, IconSearch } from "@tabler/icons-react";
 import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
@@ -282,7 +282,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
             loaderProps={{ children: '' }}
           /> */}
           {
-            publications.length > 0 
+            publications.length > 0
             ?
             publications.map((pub, i) => 
               <LSPublication 
@@ -300,9 +300,12 @@ export default function LSPublicationsList({userId}: {userId: string}) {
               />
             )
             :
-            <Text ta='center' c='dimmed'>
-              No Publications Found...
-            </Text>
+            <Stack justify='center' align='center'>
+              <IconArticleOff color='var(--mantine-color-dimmed)' size={64} stroke={1}/>
+              <Text ta='center' c='dimmed'>
+                No Publications Found...
+              </Text>
+            </Stack>
           }
         </Stack>
 

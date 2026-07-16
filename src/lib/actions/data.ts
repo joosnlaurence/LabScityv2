@@ -10,7 +10,6 @@ import type {
   searchResult,
   SearchInput,
   Group,
-  Skill,
 } from "@/lib/types/data";
 
 import { User } from "@/lib/types/feed"
@@ -20,10 +19,10 @@ import {
   getUserPostsInputSchema,
   postSchema,
   searchResultSchema,
-  SearchResultSchema,
 } from "@/lib/validations/data";
 import { createClient } from "@/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { DeclaredTagValue, Skill } from "../validations/profile";
 
 
 // Returns a Promise<DataResponse<Post>>
@@ -576,17 +575,37 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
       ? supabase.storage.from("profile_header").getPublicUrl(profileData.header_pic_path).data.publicUrl
       : null;
 
-    const { data: skillRows } = await supabase
-      .from("profile_skills")
-      .select("skill_id, skills!inner(id, name)")
-      .eq("profile_user_id", user_id);
+    const { data: skillRows, error: skillsError } = await supabase
+      .from("profile_skills_view")
+      .select("skill_id,name")
+      .eq("user_id", user_id)
+      .order("skill_id", { nullsFirst: false })
+      .order("name");
 
-    const skills = (skillRows ?? []).flatMap((r) =>
-      (Array.isArray(r.skills) ? r.skills : [r.skills]).map((s) => ({
-        id: s.id,
-        name: s.name,
-      })),
-    );
+    if (skillsError) {
+      return { success: false, error: skillsError.message };
+    }
+
+    const { data: tagRows, error: tagsError } = await supabase
+      .from("profile_declared_tags_view")
+      .select("tag_id,name")
+      .eq("user_id", user_id)
+      .order("tag_id", { nullsFirst: false })
+      .order("name");
+
+    if (tagsError) {
+      return { success: false, error: tagsError.message };
+    }
+
+    const skills: Skill[] = (skillRows ?? []).map((r) => ({
+      id: r.skill_id,
+      name: r.name,
+    }));
+
+    const declared_tags: DeclaredTagValue[] = (tagRows ?? []).map((r) => ({
+      id: r.tag_id,
+      name: r.name,
+    }));
 
     return {
       success: true,
@@ -599,6 +618,7 @@ export async function getUser(user_id: string, supabaseClient?: SupabaseClient):
         workplace: profileData?.workplace ?? null,
         occupation: profileData?.occupation ?? null,
         skills,
+        declared_tags,
         timezone: profileData?.timezone ?? null,
         lab_department: profileData?.lab_department ?? null,
         location: profileData?.location ?? null

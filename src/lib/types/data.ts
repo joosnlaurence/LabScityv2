@@ -99,11 +99,6 @@ export interface JobSkill {
   is_required: boolean;
 }
 
-export interface TagSearchResult {
-  id: number;
-  name: string;
-}
-
 export interface TrendingJobTag {
   tag_id: number;
   name: string;
@@ -115,11 +110,6 @@ export interface LocationResult {
     display_name: string;
     lat: string;
     lon: string;
-}
-
-export interface Skill {
-  id: number;
-  name: string;
 }
 
 export interface Job {
