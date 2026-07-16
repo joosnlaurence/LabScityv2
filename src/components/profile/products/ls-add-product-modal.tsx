@@ -244,7 +244,7 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
                       bg='red.5' 
                       onClick={() => form.removeListItem("links", i+2)}
                     >
-                      <IconTrash />
+                      <IconTrash stroke={1.5}/>
                     </ActionIcon>
                   </Group>
                 )
@@ -261,7 +261,6 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
               >
                 Add Additional Link
               </Button>
-              {/* TODO: Figure out how to wire infinite scrolling in the MultiSelect */}
               <MultiSelect 
                 label='Topics'
                 placeholder='Research Topics'
@@ -292,7 +291,7 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
         </Stack>
       </Modal>
       <Button 
-        leftSection={ <IconPlus size='1rem'/> }
+        rightSection={ <IconPlus size='1rem'/> }
         onClick={openModal}
       >
         Add Product

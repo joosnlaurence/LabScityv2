@@ -1,11 +1,13 @@
 import { setSavedProduct } from "@/lib/actions/bookmarks";
-import { createProduct, createProductImageUploadUrl, deleteProduct, saveProductImagePaths, setProductAsFeatured as setFeaturedProduct } from "@/lib/actions/product";
+import { bulkInsertProducts, createProduct, createProductImageUploadUrl, deleteProduct, saveProductImagePaths, setFeaturedProduct } from "@/lib/actions/product";
+import { ProductType } from "@/lib/constants/product";
 import { TAGS_SEARCH_SIZE } from "@/lib/constants/profile";
 import { bookmarkKeys, productKeys, tagKeys } from "@/lib/query-keys";
 import { ApiResponse, InfiniteScrollResponse } from "@/lib/types/api";
 import { SavedItemsData } from "@/lib/types/bookmarks";
 import { ProductImageDraft } from "@/lib/types/data";
 import { InfiniteProducts, ProductFacets, ProductFilters } from "@/lib/types/products";
+import { ParsedOpenAlexWork } from "@/lib/types/publication";
 import { CreateProductValues } from "@/lib/validations/product";
 import { Tag } from "@/lib/validations/profile";
 import { createClient } from "@/supabase/client";
@@ -15,7 +17,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 export function useProducts(userId: string, filters: ProductFilters) {
   return useInfiniteQuery({
       queryKey: productKeys.list(userId, filters),
-      initialPageParam: null as { created_at: string, product_id: number } | null,
+      initialPageParam: null as { release_date: string | null, product_id: number } | null,
       queryFn: async ({ pageParam }) => {
         const params = new URLSearchParams({ userId });
         if(filters.search) params.set('search', filters.search);
@@ -274,5 +276,41 @@ export function useSearchTags(search: string) {
       return apiResponse.data;
     },
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useBulkInsertProducts({
+  userId, 
+  onSuccess,
+}: {
+  userId: string,
+  onSuccess: () => void
+}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (products: ParsedOpenAlexWork<ProductType>[]) => {
+      const res = await bulkInsertProducts(products);
+      if(!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      onSuccess?.();
+      notifications.show({
+          color: 'green', 
+          message: `${data!.inserted} products inserted, ${data!.skipped} skipped`
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        color: "red",
+        title: "Error bulk importing products",
+        message: error.message
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
+    }
   })
 }

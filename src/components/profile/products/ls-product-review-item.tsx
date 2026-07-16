@@ -9,9 +9,9 @@ import {
 import {
   IconLink,
 } from "@tabler/icons-react";
-import type { ReactNode } from "react";
 import { ParsedOpenAlexWork } from "@/lib/types/publication";
 import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
+import { PRODUCT_TYPE_LABELS, ProductType } from "@/lib/constants/product";
 
 const PUB_DATE_FMT = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
@@ -20,12 +20,12 @@ const PUB_DATE_FMT = new Intl.DateTimeFormat("en-US", {
 
 // const MAX_VISIBLE_TOPICS = 4;
 
-export default function LSPublicationReviewItem({
-  pub,
+export default function LSProductReviewItem({
+  product: pub,
   selected,
   onSelectChange,
 }: {
-  pub: ParsedOpenAlexWork;
+  product: ParsedOpenAlexWork<ProductType>;
   selected: boolean;
   onSelectChange: (checked: boolean) => void;
 }) {
@@ -74,7 +74,7 @@ export default function LSPublicationReviewItem({
               leftSection={typeIcon}
               style={{ flexShrink: 0 }}
             >
-              {OPENALEX_WORK_TYPE_LABELS[typeKey]}
+              {PRODUCT_TYPE_LABELS[typeKey]}
             </Badge>
           </Group>
 

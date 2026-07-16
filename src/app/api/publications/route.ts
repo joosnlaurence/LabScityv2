@@ -3,7 +3,6 @@ import { createClient } from "@/supabase/server";
 import type { ApiResponse } from "@/lib/types/api";
 import type { Publication } from "@/lib/types/data";
 import { InfinitePublications } from "@/lib/types/publication";
-import { userIdSchema } from "@/lib/validations/moderation";
 
 const PAGE_SIZE = 10;
 

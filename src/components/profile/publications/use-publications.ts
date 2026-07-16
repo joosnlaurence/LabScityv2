@@ -93,7 +93,7 @@ export function useBulkInsertPublications({
     onError: (error) => {
       notifications.show({
         color: "red",
-        title: "Error pinning publication",
+        title: "Error bulk importing publications",
         message: error.message
       });
     },

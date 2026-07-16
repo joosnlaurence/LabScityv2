@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { OPENALEX_TYPE_VALUES } from "../constants/openalex";
+import { PRODUCT_TYPE_VALUES } from "../constants/product";
 
 export const createPublicationSchema = z.object({
     title: z
@@ -54,7 +55,8 @@ export const parsedOpenAlexWorkSchema = z.object({
   title: z
       .string()
       .min(1),
-  doi: z.string(),
+  doi: z
+      .string(),
   journal: z
       .string()
       .nullable(),
@@ -77,6 +79,19 @@ export const parsedOpenAlexWorkSchema = z.object({
 })
 
 export const updatePublicationSchema = createPublicationSchema.partial();
+
+export const parsedProductWorkSchema = z.object({
+  workId: z.string().min(1),
+  title: z.string().min(1),
+  doi: z.string().nullable(),
+  journal: z.string().nullable(),
+  publicationDate: z.iso.date().nullable(),
+  authors: z.array(z.string().min(1)).min(1),
+  type: z.enum(PRODUCT_TYPE_VALUES),
+  isOA: z.boolean(),
+  pdfUrl: z.string().nullable(),
+  openAlexTopicIds: z.array(z.string()).nullable(),
+});
 
 export const orcidSchema = z
   .string()

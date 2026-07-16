@@ -715,14 +715,10 @@ function CreatePostCard({
       </Modal>
 
       <Card
-        radius="xl"
+        radius="md"
         padding="md"
-        withBorder
-        bg="white"
-        style={{
-          borderColor: "#E5E7EB",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-        }}
+        bd='1px solid gray.3'
+        shadow='xs'
       >
         <Stack gap="md">
         <Group justify="space-between" align="center">
@@ -1206,7 +1202,7 @@ export function FeedPostCard({
   const spoilerControlRef = useRef<HTMLButtonElement>(null);
   return (
     <Card
-      radius="xl"
+      radius="md"
       shadow='xs'
       withBorder
       bg="white"

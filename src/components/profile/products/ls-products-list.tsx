@@ -11,6 +11,8 @@ import LSAddProductModal from "./ls-add-product-modal";
 import { useDeleteProduct, useGetProductFacets, useProducts, useSetFeaturedProduct, useSetSavedProduct } from "./use-products";
 import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 import { useUserProfile } from "../use-profile";
+import LSOrcidProductsModal from "./ls-orcid-products-modal";
+import OrcidInfo from "../publications/ls-orcid-info";
 
 export default function LSProductsList({ userId }: { userId: string }) {
   const { user, loading: userLoading } = useAuthContext();
@@ -93,7 +95,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
   }
 
   return (
-    <Stack w='100%' maw='800'> 
+    <Stack w='100%' maw='800'>
       <Group justify='space-between'>
         <Stack gap='0'>
           <Text fw='bold'>Products</Text>
@@ -101,7 +103,11 @@ export default function LSProductsList({ userId }: { userId: string }) {
         </Stack>
         {
           isOwner &&
-          <LSAddProductModal userId={userId} />
+          <Group>
+            <LSAddProductModal userId={userId} />
+            <LSOrcidProductsModal userId={userId}/>
+            <OrcidInfo size='2rem' />
+          </Group>
         }
       </Group>
 
@@ -112,7 +118,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
           <Stack>
             <TextInput
               placeholder='Search by product title'
-              styles={{ input: { background: 'var(--mantine-color-gray-1)' } }}
+              styles={{ input: { background: 'var(--mantine-color-gray-0)' } }}
               leftSection={<IconSearch stroke='1.75' size='1rem' color='var(--mantine-color-gray-5)' />}
               onChange={(e) => setSearchInput(e.currentTarget.value)}
             />
@@ -162,7 +168,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
             </Group>
           </Stack>
       }
-      <Divider />
+      <Divider color='gray.4'/>
 
       <Stack pos='relative'>
         {

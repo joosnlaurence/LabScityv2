@@ -118,8 +118,6 @@ export async function bulkInsertPublications(
       };
     }
 
-    console.log(data);
-
     return {
       success: true,
       data

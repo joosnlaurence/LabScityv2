@@ -55,7 +55,7 @@ export function resolveOpenAlexTypeDesignation(raw: string): OpenAlexTypeDesigna
 }
 
 export function parseOpenAlexWork(work: OpenAlexWork): ParsedOpenAlexWork {
-  const pubType = OPENALEX_TYPE_MAP[work.type ?? ''] ?? 'other';
+  const type = OPENALEX_TYPE_MAP[work.type ?? ''] ?? 'other';
 
   const pdfUrl = 
     work.best_oa_location?.pdf_url ??
@@ -64,10 +64,11 @@ export function parseOpenAlexWork(work: OpenAlexWork): ParsedOpenAlexWork {
     null;
 
   return {
+    workId: work.id,
     doi: work.doi ? (doiSchema.safeParse(work.doi).data ?? null) : null,
     title: sanitizeTitle(work.title),
     authors: work.authorships.map((a) => a.author.display_name),
-    type: pubType,
+    type,
     journal: work.primary_location?.source?.display_name ?? null,
     publicationDate: work.publication_date,
     isOA: work.open_access?.is_oa ?? false,

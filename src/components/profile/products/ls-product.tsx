@@ -12,7 +12,9 @@ import {
   Stack, 
   Text,
   Tooltip,
-  Image
+  Image,
+  Popover,
+  UnstyledButton
 } from "@mantine/core"
 import { Carousel } from "@mantine/carousel"
 import NextImage from "next/image";
@@ -35,9 +37,7 @@ import { Product } from "@/lib/types/data";
 import { MAX_FEATURED_PRODUCTS } from "@/lib/constants/product";
 import classes from './ls-product.module.css';
 import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
-
-const visibleAuthors = ['Barbara J. Sharanowski', 'Jason Laureano', 'Bob Christ']
-const authorOverflow = 0;
+import { Fragment } from "react/jsx-runtime";
 
 export default function LSProduct(
   { 
@@ -68,6 +68,15 @@ export default function LSProduct(
   const otherLinks = product.links.filter((link) => link.kind === 'other');
   const viewLink = websiteLink?.url ?? githubLink?.url ?? null;
 
+  const visibleAuthors = (product?.contributors ?? []).slice(0, 3);
+  const authorOverflow = (product?.contributors ?? []).length - visibleAuthors.length;
+
+  const date = product.release_date ? 
+    new Intl.DateTimeFormat("en-US", { 
+      year: "numeric", 
+      month: "long",  
+    }).format(new Date(product.release_date))
+    : undefined;
 
   return (
     <>
@@ -98,7 +107,7 @@ export default function LSProduct(
     <Card
       w='100%'
       p='0'
-      bdrs='0.75rem'
+      bdrs='md'
       style={{
         border: product.is_featured ? '1px solid var(--mantine-color-blue-3)'  : '1px solid var(--mantine-color-gray-3)',
         borderTop: product.is_featured ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-gray-3)',
@@ -192,48 +201,52 @@ export default function LSProduct(
         
         <Stack gap='6'>
           {/* Title */}
-          <Text 
+          <Anchor 
             fz='lg' 
             fw='600' 
-            lh='1rem'
+            href={viewLink ?? ''}
+            target="_blank"
+            rel="noreferrer"
           >
             {product.title}
-          </Text>
+          </Anchor>
           {/* Contributors */}
           <Group fz='sm'>
             {
-              product.contributors ?
-              <Text c='dimmed' fz='sm'>
-                {product.contributors.map((name, i) => (
-                  `${i > 0 ? " · " : ''} ${name} ${i === visibleAuthors.length-1 ? " " : ''}`
-                ))}
-              </Text>
-              : undefined
+              visibleAuthors.map((name, i) => (
+                <Fragment key={`${name}-${i}`}>
+                  {i > 0 && " · "}
+                  {name}
+                  {i === visibleAuthors.length-1 ? " " : undefined}
+                </Fragment>
+              ))
             }
             {
-              // authorOverflow > 0 && (
-              //   <Popover shadow='xs'>
-              //     <Popover.Target>
-              //       <UnstyledButton className={classes.authorOverflow} component="span" c="dimmed" fz='sm'>
-              //         {`+${authorOverflow} more`}
-              //       </UnstyledButton>
-              //     </Popover.Target>
-              //     <Popover.Dropdown
-              //       bdrs='md' 
-              //       bd='1px solid navy.2'
-              //     >
-              //       <Stack gap='2'>
-              //         {
-              //           (product.authors ?? []).map((name, i) => 
-              //             <Text key={`${product.publication_id}-${name}-${i}`} size='sm'>{name}</Text>
-              //           )
-              //         }
-              //       </Stack>
-              //     </Popover.Dropdown>
-              //   </Popover>
-              // )
+              authorOverflow > 0 && (
+                <Popover shadow='xs'>
+                  <Popover.Target>
+                    <UnstyledButton className={classes.authorOverflow} component="span" c="dimmed" fz='sm'>
+                      {`+${authorOverflow} more`}
+                    </UnstyledButton>
+                  </Popover.Target>
+                  <Popover.Dropdown
+                    bdrs='md' 
+                    bd='1px solid navy.2'
+                  >
+                    <Stack gap='2'>
+                      {
+                        (product.contributors ?? []).map((name, i) => 
+                          <Text key={`${product.product_id}-${name}-${i}`} size='sm'>{name}</Text>
+                        )
+                      }
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
+              )
             }
           </Group>
+
+          <Text fz='sm' c='dimmed'>{date}</Text>
           
           {/* Product Summary */}
           <Text fz='sm'>
@@ -246,6 +259,8 @@ export default function LSProduct(
               websiteLink ? 
               <Anchor
                 href={websiteLink.url}
+                target="_blank"
+                rel="noreferrer"
               >
                 <Group align="center" gap='4'>
                   <IconWorld color='var(--mantine-color-indigo-5)' size='1rem'/>
@@ -260,6 +275,8 @@ export default function LSProduct(
               githubLink ? 
               <Anchor
                 href={githubLink.url}
+                target="_blank"
+                rel="noreferrer"
               >
                 <Group align="center" gap='4'>
                   <IconBrandGithub size='1rem'/>
@@ -275,6 +292,8 @@ export default function LSProduct(
                 <Anchor
                   href={link.url}
                   key={`${link.url}-${i}`}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   <Group align="center" gap='4'>
                     <IconLink size='1rem'/>

@@ -189,7 +189,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                 
               </Modal.Content>
             </Modal.Root>
-            <Button onClick={openDoiModal} rightSection={<IconPlus size="1rem" />}>
+            <Button  onClick={openDoiModal} rightSection={<IconPlus size="1rem" />}>
               Add Research
             </Button>
           </Group>
@@ -208,7 +208,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
         <Stack>
           <TextInput 
             placeholder='Search by publication title'
-            styles={{ input: { background: 'var(--mantine-color-gray-1)' } }}
+            styles={{ input: { background: 'var(--mantine-color-gray-0)' } }}
             leftSection={<IconSearch stroke='1.75' size='1rem' color='var(--mantine-color-gray-5)'/>}
             onChange={(e) => setSearchInput(e.currentTarget.value)}
           />
@@ -270,7 +270,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
           </Group>
         </Stack> 
       }
-      <Divider />
+      <Divider color='gray.4'/>
 
         <Stack pos='relative'>
           {
