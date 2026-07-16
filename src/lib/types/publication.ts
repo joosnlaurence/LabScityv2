@@ -1,3 +1,4 @@
+import { ProductType } from "../constants/product";
 import { Publication } from "./data";
 import { OpenAlexWorkType } from "./openalex";
 
@@ -5,6 +6,7 @@ import { OpenAlexWorkType } from "./openalex";
 export type PublicationType = OpenAlexWorkType;
 
 export interface OpenAlexWork {
+  id: string;
   title: string | null;
   doi: string | null;
   best_oa_location: { pdf_url: string | null };
@@ -17,13 +19,16 @@ export interface OpenAlexWork {
   topics: {id: string; display_name: string; score: number}[];
 }
 
-export interface ParsedOpenAlexWork {
+export interface ParsedOpenAlexWork<
+  WorkType extends PublicationType | ProductType = PublicationType
+> {
+  workId: string;
   title: string;
   doi: string | null; 
   journal: string | null;
   publicationDate: string | null;
   authors: string[];
-  type: PublicationType;
+  type: WorkType;
   isOA: boolean;
   pdfUrl: string | null;
   openAlexTopicIds: string[];

@@ -64,6 +64,7 @@ export interface Product {
   }[];
   publication_id: number | null;
   images: ProductImage[];
+  release_date: string | null;
   contributors: string[] | null;
   is_featured: boolean;
   product_type: OpenAlexWorkType | null;

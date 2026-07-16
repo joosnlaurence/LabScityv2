@@ -1,9 +1,25 @@
 "use client";
 
 import { 
+  Card,
   createTheme, 
-  CSSVariablesResolver, 
+  CSSVariablesResolver,
+  defaultVariantColorsResolver,
+  VariantColorsResolver, 
 } from "@mantine/core";
+
+const variantColorResolver: VariantColorsResolver = (input) => {
+  const resolved = defaultVariantColorsResolver(input);
+  if(input.variant === 'outline') {
+    return {
+      ...resolved,
+      background: 'var(--mantine-color-gray-0)',
+      hover: 'var(--mantine-color-gray-2)',
+    };
+  }
+
+  return resolved;
+}
 
 /** Mantine theme: Konkhmer Sleokchher font, navy and gray color palettes, primary color "navy". */
 export const theme = createTheme({
@@ -37,7 +53,17 @@ export const theme = createTheme({
   },
   primaryColor: "navy",  
   primaryShade: 7,
-  defaultRadius: 'md'
+  defaultRadius: 'md',
+  components: {
+    Card: Card.extend({
+      defaultProps: {
+        bd: '1px solid gray.3',
+        shadow: 'xs',
+        bg: 'gray.0'
+      }
+    }), 
+  },
+  variantColorResolver
 });
 
 export const cssVariablesResolver: CSSVariablesResolver = () => ({

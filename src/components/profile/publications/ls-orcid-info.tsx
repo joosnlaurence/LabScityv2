@@ -1,13 +1,15 @@
 import { Flex, Popover, UnstyledButton, Text, Anchor } from "@mantine/core";
 import { IconHelp } from "@tabler/icons-react";
 
-export default function OrcidInfo({size}: {size: string}) {  
+export default function OrcidInfo({
+  size = '1.5rem', stroke = 1, color = "var(--mantine-color-dimmed)"
+}: {size?: string, stroke?: number, color?: string}) {  
   return (
     <Popover width='200' position='top' shadow='xs'>
       <Popover.Target>
         <UnstyledButton variant='none' bdrs='100'>
           <Flex>
-            <IconHelp size={size} stroke='1' color='var(--mantine-color-dimmed)'/>  
+            <IconHelp size={size} stroke={stroke} color={color}/>  
           </Flex>
         </UnstyledButton>  
       </Popover.Target>  
@@ -27,7 +29,7 @@ export default function OrcidInfo({size}: {size: string}) {
           enable LabScity to automatically fetch data about your 
           publications. 
         </Text>
-        <Anchor fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
+        <Anchor c='navy.6' fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
           Learn more at orcid.org
         </Anchor>
       </Popover.Dropdown>

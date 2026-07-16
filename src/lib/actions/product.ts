@@ -14,7 +14,10 @@ import {
 import type { DataResponse, Product } from "@/lib/types/data";
 import type { ProductImageUploadData } from "@/lib/types/api";
 import { MAX_PRODUCT_IMAGE_BYTES, PRODUCT_IMAGE_BUCKET, extensionFromMime } from "@/lib/utils/storage";
-import { MAX_IMAGE_UPLOADS as MAX_PRODUCT_PREVIEWS } from "../constants/product";
+import { MAX_FEATURED_PRODUCTS, MAX_IMAGE_UPLOADS as MAX_PRODUCT_PREVIEWS, ProductType } from "../constants/product";
+import { ParsedOpenAlexWork } from "../types/publication";
+import { doiSchema, parsedProductWorkSchema } from "../validations/publication";
+import { ProductInsertRow, ProductLink } from "../types/products";
 // allows the user to remove a productTag
 export async function deleteProductTopics(
   productId: number,
@@ -202,8 +205,6 @@ export async function createProduct(
         publication_id: parsed.publication_id ?? null,
         links: parsed.links ?? [],
         contributors: parsed.contributors ?? [],
-        // is_featured: parsed.is_featured ?? false,
-        is_featured: false,
         product_type: parsed.product_type ?? null,
       })
       .select()
@@ -333,7 +334,6 @@ export async function updateProduct(
         links: parsed.links,
         publication_id: parsed.publication_id,
         contributors: parsed.contributors,
-        is_featured: parsed.is_featured,
         product_type: parsed.product_type,
       }).filter(([, value]) => value !== undefined)
     );
@@ -350,6 +350,18 @@ export async function updateProduct(
         success: false,
         error: updateError.message
       };
+    }
+
+    if (parsed.is_featured !== undefined) {
+      const { error: setFeaturedProductError } = await supabase
+        .from("user_products")
+        .update({ is_featured: parsed.is_featured })
+        .eq("product_id", productId)
+        .eq("user_id", authData.user.id);
+
+      if (setFeaturedProductError) {
+        return { success: false, error: setFeaturedProductError.message };
+      }
     }
 
     return {
@@ -370,14 +382,84 @@ export async function updateProduct(
   }
 }
 
-// wrapper function to mark a product as featured specifically
-export async function setProductAsFeatured(
+export async function setFeaturedProduct(
   productId: number,
-  isFeatured: boolean,
-): Promise<DataResponse<Product>> {
-  return updateProduct(productId, { is_featured: isFeatured })
-}
+  isFeatured: boolean
+) {
+  try {
+    if (!Number.isInteger(productId) || productId <= 0) {
+      return {
+        success: false,
+        error: "Invalid product id",
+      };
+    }
 
+    const supabase = await createClient();
+
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return {
+        success: false,
+        error: "Authentication required",
+      };
+    }
+
+    if (isFeatured) {
+      const { count, error: validationError } =
+        await supabase
+          .from("user_products")
+          .select("*", { count: 'exact', head: true })
+          .eq("user_id", authData.user.id)
+          .eq("is_featured", true);
+
+      if (validationError) {
+        return {
+          success: false,
+          error: validationError.message
+        };
+      }
+
+      if ((count ?? 0) >= MAX_FEATURED_PRODUCTS) {
+        return {
+          success: false,
+          error: `You can only feature up to ${MAX_FEATURED_PRODUCTS} products`
+        };
+      }
+    }
+
+    const { data: product, error } =
+      await supabase
+        .from("user_products")
+        .update({ is_featured: isFeatured })
+        .eq("user_id", authData.user.id)
+        .eq("product_id", productId)
+        .select()
+        .maybeSingle();
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
+    if (!product) {
+      return {
+        success: false,
+        error: 'Product does not exist or user not authorized'
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[setFeaturedProduct] error:", error);
+    return {
+      success: false,
+      error: "Failed to set featured product"
+    };
+  }
+}
 export async function createProductImageUploadUrl(
   productId: number,
   contentType: string,
@@ -636,4 +718,79 @@ export async function deleteProduct(
       error: "Failed to delete product",
     };
   }
+}
+
+export interface BulkInsertProductsResponse {
+  inserted: number;
+  skipped: number;
+}
+
+export async function bulkInsertProducts(
+  products: ParsedOpenAlexWork<ProductType>[]
+): Promise<DataResponse<BulkInsertProductsResponse>> {
+  try {
+    const supabase = await createClient(); 
+    const { data: authData } = await supabase.auth.getUser();
+
+    if(!authData.user) { 
+      return { success: false, error: "Authentication required" }
+    }
+
+    const parsedProducts = products.map((product) => parsedProductWorkSchema.parse(product));
+    const rows: ProductInsertRow[] = parsedProducts.map((p) => {
+      const links: ProductLink[] = [];
+
+      if (p.doi) {
+        const parsedDoi = doiSchema.safeParse(p.doi)
+        if (parsedDoi.success) {
+          links.push({
+            url: `https://doi.org/${parsedDoi.data}`,
+            kind: 'website',
+            label: `DOI: ${parsedDoi.data}`,
+          });
+        }
+      }
+
+      if (p.pdfUrl) {
+        links.push({ url: p.pdfUrl, kind: 'other', label: 'Full-Text PDF' });
+      }
+
+      return {
+        workId: p.workId,
+        title: p.title,
+        contributors: p.authors,
+        type: p.type,
+        releaseDate: p.publicationDate,
+        links,
+        openAlexTopicIds: p.openAlexTopicIds ?? [],
+      };
+    });
+
+    console.log(rows);
+
+    const { data, error } = await supabase
+      .rpc('bulk_import_user_products',
+        { p_products: rows, p_user_id: authData.user.id }
+      );
+
+    if(error){ 
+      console.error(error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+
+    return {
+      success: true,
+      data
+    }
+
+  } catch(err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message};
+    }
+    return { success: false, error: 'Failed to add products'};
+  }
+
 }

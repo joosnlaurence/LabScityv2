@@ -19,9 +19,23 @@ export interface ProductFacets {
 export interface InfiniteProducts {
   products: Product[],
   nextCursor: {
-    created_at: string
+    release_date: string | null,
     product_id: number
   } | null
 }
 
 export const PRODUCT_TYPES = OPENALEX_TYPE_DESIGNATIONS
+
+const PRODUCT_LINK_KINDS = ['website', 'github', 'other'] as const;
+export type ProductLinkKind = (typeof PRODUCT_LINK_KINDS)[number];
+
+export type ProductLink = { url: string; kind: ProductLinkKind; label: string };
+
+export type ProductInsertRow = {
+  workId: string;
+  title: string;
+  contributors: string[];
+  type: ProductType;
+  links: ProductLink[];
+  openAlexTopicIds: string[];
+};

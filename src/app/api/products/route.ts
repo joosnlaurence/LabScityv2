@@ -10,7 +10,7 @@ const PAGE_SIZE = 10;
 function decodeCursor(raw: string | null) {
   try {
     return raw ?
-      JSON.parse(atob(raw)) as { created_at: string, product_id: number }
+      JSON.parse(atob(raw)) as { release_date: string | null, product_id: number }
       : null;
   } catch {
     return null;
@@ -75,12 +75,12 @@ export async function GET(request: Request) {
   if (cursor) {
     const op = descending ? 'lt' : 'gt';
     query = query.or(
-      `created_at.${op}.${cursor.created_at},and(created_at.eq.${cursor.created_at},product_id.${op}.${cursor.product_id})`
-    )
+      `release_date.${op}.${cursor.release_date},and(release_date.eq.${cursor.release_date},product_id.${op}.${cursor.product_id})`
+    );
   }
 
   const { data, error } = await query
-    .order("created_at", { ascending: !descending, nullsFirst: false })
+    .order("release_date", { ascending: !descending, nullsFirst: false })
     .order("product_id", { ascending: !descending })
     .limit(PAGE_SIZE + 1)
     .returns<(Product & {
@@ -114,7 +114,7 @@ export async function GET(request: Request) {
   let page = hasMore ? products.slice(0, PAGE_SIZE) : products;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last
-    ? { created_at: last.created_at, product_id: last.product_id }
+    ? { release_date: last.release_date, product_id: last.product_id }
     : null;
 
   let featuredProducts = []; 
