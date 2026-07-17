@@ -321,7 +321,7 @@ export default function LSOrcidLinker({ userId }: { userId: string }) {
           </Modal.Body>
         </Modal.Content>
       </Modal.Root>
-      <Button variant='outline' onClick={openOrcidInput}>
+      <Button bg='gray.0' variant='outline' onClick={openOrcidInput}>
         Add With ORCID iD
       </Button>
     </>

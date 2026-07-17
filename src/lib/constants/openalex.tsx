@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { OpenAlexWorkType } from "../types/openalex";
-import { IconAppWindow, IconBan, IconBook2, IconBooks, IconCertificate, IconClipboardText, IconClock, IconCode, IconCompass, IconCpu, IconDatabase, IconFile, IconFilePencil, IconFlask, IconFrame, IconMail, IconNews, IconNotebook, IconPaperclip, IconPresentation, IconSchool, IconSourceCode, IconTable, IconTool, IconUserCheck } from "@tabler/icons-react";
+import { IconAppWindow, IconBan, IconBook2, IconBooks, IconCertificate, IconClipboardText, IconClock, IconCode, IconCompass, IconCpu, IconDatabase, IconFile, IconFilePencil, IconFlask, IconFrame, IconMail, IconNews, IconNotebook, IconPaperclip, IconPencil, IconPresentation, IconSchool, IconSourceCode, IconTable, IconTool, IconUserCheck } from "@tabler/icons-react";
 
 export const OPENALEX_WORK_TYPE_LABELS = {
   journal_article: "Journal Article",
@@ -71,7 +71,7 @@ export const PUB_PRODUCT_TYPE_ICONS: Record<OpenAlexWorkType | string, ReactNode
   dataset: <IconDatabase {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
   dissertation: <IconSchool {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
   editorial: <IconNews {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
-  erratum: <IconFilePencil {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
+  erratum: <IconPencil {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
   letter: <IconMail {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
   libguides: <IconCompass {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,
   other: <IconFile {...PUB_PRODUCT_TYPE_ICON_PROPS}/>,

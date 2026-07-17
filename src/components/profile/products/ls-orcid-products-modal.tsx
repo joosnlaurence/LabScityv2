@@ -21,12 +21,11 @@ import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { orcidSchema } from "@/lib/validations/publication";
 import { useEffect, useMemo, useState } from "react";
-import { ParsedOpenAlexWork, PublicationType } from "@/lib/types/publication";
+import { ParsedOpenAlexWork } from "@/lib/types/publication";
 import { ApiResponse } from "@/lib/types/api";
 import { useQuery } from "@tanstack/react-query";
-// import LSPublicationReviewItem from "./ls-publication-review-item";
 import { useBulkInsertProducts } from "./use-products";
-import { IconBox, IconLink } from "@tabler/icons-react";
+import { IconBox } from "@tabler/icons-react";
 import OrcidInfo from "../publications/ls-orcid-info";
 import LSProductReviewItem from "./ls-product-review-item";
 import { PRODUCT_TYPE_LABELS, ProductType } from "@/lib/constants/product";
@@ -66,6 +65,9 @@ export default function LSOrcidProductsModal({userId}: {userId: string}) {
         const res = await fetch(`/api/openalex?orcid=${orcid}&type=product`);
         const json: ApiResponse<ParsedOpenAlexWork<ProductType>[]> = await res.json();
         if(!json.success) throw new Error(json.error);
+
+        console.log(json.data);
+
         return json.data;
       },
       enabled: !!orcid,
@@ -227,7 +229,7 @@ export default function LSOrcidProductsModal({userId}: {userId: string}) {
                 : isError ?
                 
                 <Text ta='center' size='sm' c='red' py='100'>
-                  {error instanceof Error ? error.message : "Failed to fetch publications"}
+                  {error instanceof Error ? error.message : "Failed to fetch research products"}
                 </Text> 
                 
                 : !products ?
@@ -239,14 +241,14 @@ export default function LSOrcidProductsModal({userId}: {userId: string}) {
                 : products.length === 0 ?
                 
                 <Text ta='center' size='sm' c='dimmed' py='100'>
-                  No publications found for this ORCID iD. Are you sure it is correct?
+                  No research products found for this ORCID iD. Are you sure it is correct?
                 </Text>
                 
                 : 
                 
                 <Stack>
                   <Text size="sm" c="dimmed">
-                    {products.length} publications found ·{" "}
+                    {products.length} research products found ·{" "}
                     <Text span c="navy.7">
                       {selected.size} selected
                     </Text>
@@ -310,7 +312,6 @@ export default function LSOrcidProductsModal({userId}: {userId: string}) {
                     bottom: '0',
                     background: 'var(--mantine-color-body)',
                     borderTop: '1px solid var(--mantine-color-gray-4)',
-                    // cancel Body's horizontal padding so the border spans full width:
                     marginInline: 'calc(var(--mantine-spacing-md) * -1)',
                     paddingInline: 'var(--mantine-spacing-md)',
                   }}
@@ -326,7 +327,7 @@ export default function LSOrcidProductsModal({userId}: {userId: string}) {
         </Modal.Content>
         
       </Modal.Root>
-      <Button variant='outline' onClick={openOrcidInput}>
+      <Button bg='gray.0' variant='outline' onClick={openOrcidInput}>
         Add With ORCID iD
       </Button>
     </>
