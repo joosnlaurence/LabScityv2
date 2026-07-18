@@ -1,9 +1,10 @@
 import { setSavedPublication } from "@/lib/actions/bookmarks";
-import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication } from "@/lib/actions/publication";
+import { addPublicationByDoi, bulkInsertPublications, deletePublication, setFeaturedPublication, updatePublication } from "@/lib/actions/publication";
 import { bookmarkKeys, publicationKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
 import { SavedItemsData } from "@/lib/types/bookmarks";
 import { InfinitePublications, ParsedOpenAlexWork, PubFilters, PublicationFacets } from "@/lib/types/publication";
+import { UpdatePublicationValues } from "@/lib/validations/publication";
 import { notifications } from "@mantine/notifications";
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -238,4 +239,31 @@ export function useSetSavedPublication(userId: string) {
       queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
     }
   })
+}
+
+export function useUpdatePublication({
+  userId, onSuccess,
+}: { userId: string, onSuccess: () => void }) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ publication_id, updates }:
+      { publication_id: number, updates: UpdatePublicationValues }) => {
+      const res = await updatePublication(publication_id, updates);
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    onSuccess: () => {
+      onSuccess?.();
+      notifications.show({ color: 'green', message: 'Publication updated!' });
+    },
+    onError: (error) => {
+      notifications.show({ color: 'red', title: 'Error updating publication', message: error.message });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: publicationKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: publicationKeys.facets(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.list(userId) });
+    },
+  });
 }

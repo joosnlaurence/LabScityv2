@@ -1,6 +1,7 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/tiptap/styles.css";
+import '@mantine/dates/styles.css';
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";

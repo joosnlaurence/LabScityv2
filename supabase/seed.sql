@@ -643,7 +643,7 @@ INSERT INTO "public"."profile" ("age", "about", "skill", "first_name", "user_id"
 	(NULL, 'I build computational microscopy pipelines and want to test every LabScity feature locally.', '{Python,Microscopy,"Machine Learning","Scientific Software"}', 'Jordan', '72795500-0000-4000-8000-000000000001', 'Olsen', NULL, 'Graduate Research Assistant', 'UCF CREOL', NULL, 'America/New_York', NULL, NULL, NULL, 'Computational Imaging Lab', 'Orlando, Florida, United States'),
 	(NULL, 'Photonics researcher working on metasurfaces, optical instrumentation, and reproducible data workflows.', '{Optics,Photonics,Python,Instrumentation}', 'Maya', '72795500-0000-4000-8000-000000000002', 'Patel', NULL, 'Postdoctoral Fellow', 'UCF CREOL', NULL, 'America/New_York', NULL, NULL, NULL, 'Nano-Photonics Group', 'Orlando, Florida, United States'),
 	(NULL, 'Bioimaging scientist developing open-source tools for segmentation and image quality metrics.', '{Bioimaging,Segmentation,Python,"Data Analysis"}', 'Noah', '72795500-0000-4000-8000-000000000003', 'Kim', NULL, 'Research Scientist', 'UCF College of Medicine', NULL, 'America/New_York', NULL, NULL, NULL, 'Biomedical Imaging Core', 'Lake Nona, Florida, United States'),
-	(NULL, 'Quantum optics faculty member recruiting students for integrated photonics and single-photon experiments.', '{Quantum,Photonics,Optics,Mentoring}', 'Sofia', '72795500-0000-4000-8000-000000000004', 'Ramirez', NULL, 'Assistant Professor', 'UCF Physics', NULL, 'America/New_York', NULL NULL, NULL, 'Quantum Optics Lab', 'Orlando, Florida, United States');
+	(NULL, 'Quantum optics faculty member recruiting students for integrated photonics and single-photon experiments.', '{Quantum,Photonics,Optics,Mentoring}', 'Sofia', '72795500-0000-4000-8000-000000000004', 'Ramirez', NULL, 'Assistant Professor', 'UCF Physics', NULL, 'America/New_York', NULL, NULL, NULL, 'Quantum Optics Lab', 'Orlando, Florida, United States');
 
 INSERT INTO "public"."posts" ("post_id", "category", "created_at", "text", "like_amount", "user_id", "group_id", "media_path", "scientific_field", "taken_down", "media_width", "media_height") VALUES
 	(101, 'general', now() - interval '7 days', 'Kicking off a local test dataset for computational imaging. I am comparing Richardson-Lucy deconvolution with a tiny learned prior on noisy microscopy frames.', 3, '72795500-0000-4000-8000-000000000001', NULL, NULL, 'Computational Imaging', false, NULL, NULL),
@@ -693,11 +693,6 @@ INSERT INTO "public"."user_publications" ("user_id", "publication_id", "is_featu
 	('72795500-0000-4000-8000-000000000002', 101, false, '{"role": "Co-author"}'),
 	('72795500-0000-4000-8000-000000000003', 102, true, '{"role": "Lead author"}'),
 	('72795500-0000-4000-8000-000000000004', 103, true, '{"role": "Lead author"}');
-
-INSERT INTO "public"."products" ("product_id", "title", "short_summary", "publication_id", "contributors", "is_featured", "product_type", "links") VALUES
-	(101, 'Microscopy Reconstruction Notebook', 'A reproducible Python notebook for sparse deconvolution experiments.', 101, '{Jordan Olsen,Maya Patel}', true, 'software', '[{"kind": "github", "url": "https://github.com/example/microscopy-reconstruction", "label": "GitHub"}]'::jsonb),
-	(102, 'Bioimage Segmentation Uncertainty Dataset', 'Small annotated image set for testing uncertainty-aware segmentation metrics.', 102, '{Noah Kim,Jordan Olsen}', true, 'dataset', '[{"kind": "website", "url": "https://example.com/datasets/bioimage-uncertainty", "label": "Dataset"}]'::jsonb),
-	(103, 'Quantum Optics Lab Manual', 'Teaching materials for integrated photonics alignment and photon counting labs.', 103, '{Sofia Ramirez}', false, 'software', '[{"kind": "other", "url": "https://example.com/manuals/quantum-optics-lab", "label": "Manual"}]'::jsonb);
 
 INSERT INTO "public"."product_tags" ("product_id", "tag_id") VALUES
 	(101, 101),

@@ -241,116 +241,82 @@ export async function createPublication(
     }
 }
 
-// validates the input, with partial letter users update fields optionally
-// gets the logged in user, returns early if not authenticated
-// make sure the publicationId is a valid positive integer
-// confirms that the user owns the publication, and returns unauthorized otherwise
-// user updates go to user_publications updates (jsonb) column
-// returns the existing publication row with the user specific updates merged on top
+async function syncUserPublicationTags(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  publicationId: number,
+  tags: { id: number | null; name: string }[],
+) {
+  const rows = tags.map((t) =>
+    t.id != null
+      ? { user_id: userId, publication_id: publicationId, tag_id: t.id, name: null }
+      : { user_id: userId, publication_id: publicationId, tag_id: null, name: t.name.trim() },
+  );
+  const { error: delErr } = await supabase
+    .from("user_publication_tags").delete()
+    .eq("user_id", userId).eq("publication_id", publicationId);
+  if (delErr) throw new Error(`tag delete failed: ${delErr.message}`);
+  if (rows.length) {
+    const { error: insErr } = await supabase.from("user_publication_tags").insert(rows);
+    if (insErr) throw new Error(`tag insert failed: ${insErr.message}`);
+  }
+}
 
 export async function updatePublication(
-    publicationId: number,
-    input: UpdatePublicationValues
+  publicationId: number,
+  input: UpdatePublicationValues,
 ): Promise<DataResponse<Publication>> {
-    try {
-        const parsed = updatePublicationSchema.parse(input); 
-        const supabase = await createClient(); 
+  try {
+    const parsed = updatePublicationSchema.parse(input);
+    const supabase = await createClient();
 
-        const { data: authData } = await supabase.auth.getUser(); 
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) return { success: false, error: "Authentication required" };
+    if (!Number.isInteger(publicationId) || publicationId <= 0)
+      return { success: false, error: "Invalid publication id" };
 
-        if(!authData.user){ // will return early if it's not authenticated
-            return {
-                success: false,
-                error: 'Authentication Required',
-            }
-        }
-        
-        if (!Number.isInteger(publicationId) || publicationId <= 0) {
-            return {
-                success: false,
-                error: "Invalid publication id",
-            };
-        }
+    const { data: owned, error: ownErr } = await supabase
+      .from("user_publications")
+      .select("publication_id")
+      .eq("user_id", authData.user.id)
+      .eq("publication_id", publicationId)
+      .maybeSingle();
+    if (ownErr) return { success: false, error: ownErr.message };
+    if (!owned) return { success: false, error: "Publication not found or unauthorized" };
 
-        const { data: existingPublication, error: ownershipError } = await supabase
-            .from("user_publications")
-            .select("publication_id")
-            .eq("user_id", authData.user.id)
-            .eq("publication_id", publicationId)
-            .maybeSingle(); 
+    const updates = {
+      title: parsed.title,
+      type: parsed.type,
+      journal: parsed.journal ?? null,
+      date_published: parsed.date_published ?? null,
+      authors: parsed.authors ?? [],
+      is_oa: parsed.is_oa ?? false,
+      pdf_url: parsed.pdf_url ?? null,
+    };
 
-        if (ownershipError) {
-            return {
-                success: false,
-                error: ownershipError.message,
-            };
-        }
+    const { error: overlayErr } = await supabase
+      .from("user_publications")
+      .update({ updates, tags_overridden: true })
+      .eq("user_id", authData.user.id)
+      .eq("publication_id", publicationId);
+    if (overlayErr) return { success: false, error: overlayErr.message };
 
-        if (!existingPublication) {
-            return { 
-                success: false, 
-                error: "Publication not found or unauthorized" 
-            };
-        }
+    await syncUserPublicationTags(supabase, authData.user.id, publicationId, parsed.tags ?? []);
 
-        const updates = Object.fromEntries(
-            Object.entries({
-                title: parsed.title,
-                doi: parsed.doi,
-                journal: parsed.journal,
-                date_published: parsed.datePublished,
-                authors: parsed.authors,
-                preview_path: parsed.previewPath,
-                is_oa: parsed.isOA,
-                pdf_url: parsed.pdfUrl,
-                type: parsed.publicationType ?? "other",
-            }).filter(([, value]) => value !== undefined)
-        );
+    const { data: merged, error: readErr } = await supabase
+      .from("user_publications_full")
+      .select("*")
+      .eq("user_id", authData.user.id)
+      .eq("publication_id", publicationId)
+      .single();
+    if (readErr) return { success: false, error: readErr.message };
 
-        const { error: updateError } = await supabase
-            .from("user_publications")
-            .update({ updates })
-            .eq("user_id", authData.user.id)
-            .eq("publication_id", publicationId);
-
-
-        if (updateError){
-            return {
-                success: false,
-                error: updateError.message
-            };
-        }    
-
-        const { data: publication, error: fetchError } = await supabase
-            .from("publications")
-            .select("*")
-            .eq("publication_id", publicationId)
-            .single();
-
-        if (fetchError || !publication) {
-            return {
-                success: false,
-                error: fetchError?.message ?? "Failed to fetch publication"
-            };
-        }
-
-        return {
-            success: true,
-            data: { ...publication, ...updates },
-        };
-
-    } catch (error){
-        if(error instanceof z.ZodError){
-            return {
-                success: false,
-                error: error.issues[0]?.message ?? "Validation failed",
-            };
-        }
-        return { 
-            success: false, 
-            error: "failed to update the publication"
-        };
-    }
+    return { success: true, data: merged as Publication };
+  } catch (error) {
+    if (error instanceof z.ZodError)
+      return { success: false, error: error.issues[0]?.message ?? "Validation failed" };
+    return { success: false, error: "Failed to update publication" };
+  }
 }
 
 // gets the logged in user, checks that the publication id is valid and belongs to the user, then deletes the row

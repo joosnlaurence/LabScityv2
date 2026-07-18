@@ -7,21 +7,51 @@ import { InfiniteProducts } from "@/lib/types/products";
 
 const PAGE_SIZE = 10;
 
+const PRODUCT_SELECT =
+  "*, product_tags(tag_id, name, tags(id, name)), product_images(image_path, width, height)";
+
+type ProductRow = Product & {
+  created_at: string;
+  user_id: string;
+  product_tags: {
+    tag_id: number | null;
+    name: string | null;
+    tags: { id: number; name: string } | null;
+  }[];
+  product_images: { image_path: string; width: number; height: number }[];
+};
+
 function decodeCursor(raw: string | null) {
   try {
     return raw ?
-      JSON.parse(atob(raw)) as { release_date: string | null, product_id: number }
+      JSON.parse(atob(raw)) as { sort_date: string | null, product_id: number }
       : null;
   } catch {
     return null;
   }
 }
 
-/**
- * GET /api/products?userId=...&cursorCreatedAt=...&cursorProductId=...
- * Returns the next 10 products for a user after the specified cursor
- * query params = userId 
- */
+function mapProductRow(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  { is_featured, product_tags, product_images, ...prod }: ProductRow,
+) {
+  return {
+    ...prod,
+    is_featured,
+    tags: product_tags.map((pt) => ({
+      id: pt.tag_id, 
+      name: pt.name ?? pt.tags?.name ?? "",
+    })),
+    images: product_images?.map((pi) => ({
+      image_path: pi.image_path,   // add this
+      url: supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(pi.image_path).data.publicUrl,
+      width: pi.width,
+      height: pi.height
+    })) ?? []
+  };
+}
+
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
@@ -61,7 +91,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("user_products_full")
-    .select("*, product_tags(tags(name)), product_images(image_path, width, height)")
+    .select(PRODUCT_SELECT)
     .eq("user_id", userId);
 
   if (!hasFilters) {
@@ -75,20 +105,15 @@ export async function GET(request: Request) {
   if (cursor) {
     const op = descending ? 'lt' : 'gt';
     query = query.or(
-      `release_date.${op}.${cursor.release_date},and(release_date.eq.${cursor.release_date},product_id.${op}.${cursor.product_id})`
+      `sort_date.${op}.${cursor.sort_date},and(sort_date.eq.${cursor.sort_date},product_id.${op}.${cursor.product_id})`
     );
   }
 
   const { data, error } = await query
-    .order("release_date", { ascending: !descending, nullsFirst: false })
+    .order("sort_date", { ascending: !descending, nullsFirst: false })
     .order("product_id", { ascending: !descending })
     .limit(PAGE_SIZE + 1)
-    .returns<(Product & {
-      created_at: string;
-      user_id: string;
-      product_tags: { tags: { name: string } }[];
-      product_images: { image_path: string; width: number; height: number }[]
-    })[]>();
+    .returns<ProductRow[]>();
 
   if (error) return NextResponse.json<ApiResponse<Product[]>>(
     {
@@ -97,41 +122,25 @@ export async function GET(request: Request) {
     }, { status: 500 }
   );
 
-  const products = data.map(
-    ({ is_featured, product_tags, product_images, ...prod }) => ({
-      ...prod,
-      is_featured,
-      topics: product_tags.map((pt) => pt.tags.name),
-      images: product_images?.map((pi) => ({
-        url: supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(pi.image_path).data.publicUrl,
-        width: pi.width,
-        height: pi.height
-      })) ?? []
-    })
-  );
+  const products = data.map((row) => mapProductRow(supabase, row));
 
   const hasMore = products.length > PAGE_SIZE;
   let page = hasMore ? products.slice(0, PAGE_SIZE) : products;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last
-    ? { release_date: last.release_date, product_id: last.product_id }
+    ? { sort_date: last.sort_date, product_id: last.product_id }
     : null;
 
   let featuredProducts = []; 
   if (!cursor && !hasFilters) {
     const { data: featuredData, error: featuredError } = await supabase
       .from("user_products_full")
-      .select("*, product_tags(tags(name)), product_images(image_path, width, height)")
+      .select(PRODUCT_SELECT)
       .eq("user_id", userId)
       .eq("is_featured", true)
-      .order("created_at", { ascending: !descending })
+      .order("sort_date", { ascending: !descending, nullsFirst: false })
       .order("product_id", { ascending: !descending })
-      .returns<(Product & { 
-        created_at: string;
-        user_id: string;
-        product_tags: { tags: { name: string } }[];
-        product_images: { image_path: string; width: number; height: number }[];
-      })[]>();
+      .returns<ProductRow[]>();
     
     if(featuredError){
       return NextResponse.json<ApiResponse<Product[]>>({
@@ -140,18 +149,7 @@ export async function GET(request: Request) {
       }, {status: 500});
     }
 
-    featuredProducts = featuredData.map(
-      ({ is_featured, product_tags, product_images, ...prod }) => ({
-        ...prod,
-        is_featured: is_featured,
-        topics: product_tags.map((pt) => pt.tags.name),
-        images: product_images?.map((pi) => ({
-          url: supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(pi.image_path).data.publicUrl,
-          width: pi.width,
-          height: pi.height
-        })) ?? []
-      })
-    );
+    featuredProducts = featuredData.map((row) => mapProductRow(supabase, row));
 
     page = featuredProducts.concat(page);
   }

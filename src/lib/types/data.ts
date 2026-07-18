@@ -1,6 +1,7 @@
 import { FeedCommentItem, FeedPostItem, User } from '@/lib/types/feed'
 import { PublicationType } from './publication';
 import { OpenAlexWorkType } from './openalex';
+import { ProductType } from '../constants/product';
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -48,9 +49,15 @@ export interface ProductImageDraft {
 }
 
 export interface ProductImage {
+  image_path: string;
   url: string;
   width: number;
   height: number;
+}
+
+export interface TagValue {
+  id: number | null;
+  name: string;
 }
 
 export interface Product {
@@ -64,11 +71,11 @@ export interface Product {
   }[];
   publication_id: number | null;
   images: ProductImage[];
-  release_date: string | null;
+  sort_date: string | null;
   contributors: string[] | null;
   is_featured: boolean;
-  product_type: OpenAlexWorkType | null;
-  topics: string[] | null;
+  product_type: ProductType | null;
+  tags: TagValue[] | null;
   isSaved: boolean;
 }
 
@@ -84,7 +91,7 @@ export interface Publication {
   pdf_url: string | null;
   type: PublicationType | null;
   is_featured: boolean;
-  topics: Array<string> | null;
+  tags: TagValue[] | null;
   isSaved: boolean;
 }
 

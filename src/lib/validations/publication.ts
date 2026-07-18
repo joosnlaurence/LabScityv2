@@ -78,7 +78,21 @@ export const parsedOpenAlexWorkSchema = z.object({
       .nullable()
 })
 
-export const updatePublicationSchema = createPublicationSchema.partial();
+const publicationTagSchema = z.object({
+  id: z.number().int().positive().nullable(),
+  name: z.string().trim().min(2).max(60),
+});
+
+export const updatePublicationSchema = z.object({
+  title: z.string().min(1, { message: "Title is required" }).max(500),
+  type: z.enum(OPENALEX_TYPE_VALUES),
+  journal: z.string().trim().max(300).nullable().optional(),
+  date_published: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date").nullable().optional(),
+  authors: z.array(z.string().trim().min(1)).optional(),
+  is_oa: z.boolean().optional(),
+  pdf_url: z.url().nullable().optional(),
+  tags: z.array(publicationTagSchema).max(5).optional(),
+});
 
 export const parsedProductWorkSchema = z.object({
   workId: z.string().min(1),

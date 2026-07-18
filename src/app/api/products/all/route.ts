@@ -59,7 +59,7 @@ export async function GET(request: Request) {
               .filter((row) => row !== null)
               .map(({ product_tags, ...product }) => ({
                 ...product,
-                topics: (product_tags ?? [])
+                tags: (product_tags ?? [])
                   .map((pt) => pt.tags?.name)
                   .filter((name): name is string => Boolean(name)),
               }))

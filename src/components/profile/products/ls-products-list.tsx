@@ -1,20 +1,23 @@
 'use client';
 
-import { Text, Center, Group, Loader, Stack, TextInput, Divider, Select, OptionsFilter, ComboboxItem } from "@mantine/core";
-import { IconAdjustmentsHorizontal, IconBoxOff, IconSearch } from "@tabler/icons-react";
+import { Text, Center, Group, Loader, Stack, TextInput, Divider, Select, OptionsFilter, ComboboxItem, Button } from "@mantine/core";
+import { IconAdjustmentsHorizontal, IconBoxOff, IconPlus, IconSearch } from "@tabler/icons-react";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useDebouncedValue, useIntersection } from "@mantine/hooks";
 import { useEffect, useRef, useState } from "react";
 import { ProductFilters } from "@/lib/types/products";
 import LSProduct from "./ls-product";
-import LSAddProductModal from "./ls-add-product-modal";
+import LSProductFormModal from "./ls-product-form-modal";
 import { useDeleteProduct, useGetProductFacets, useProducts, useSetFeaturedProduct, useSetSavedProduct } from "./use-products";
 import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 import { useUserProfile } from "../use-profile";
 import LSOrcidProductsModal from "./ls-orcid-products-modal";
 import OrcidInfo from "../publications/ls-orcid-info";
+import { Product } from "@/lib/types/data";
 
 export default function LSProductsList({ userId }: { userId: string }) {
+  const [productModal, setProductModal] = useState<{ mode: 'add'} | { mode: 'edit', product: Product} | null>(null);
+  
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
 
@@ -104,7 +107,19 @@ export default function LSProductsList({ userId }: { userId: string }) {
         {
           isOwner &&
           <Group>
-            <LSAddProductModal userId={userId} />
+            <LSProductFormModal 
+              key={productModal?.mode ?? 'add'}
+              userId={userId}
+              product={productModal?.mode === 'edit' ? productModal.product : undefined}
+              opened={productModal !== null}
+              onClose={() => setProductModal(null)}
+            />
+            <Button 
+              rightSection={ <IconPlus size='1rem'/> }
+              onClick={() => setProductModal({ mode: 'add' })}
+            >
+              Add Product
+            </Button>  
             <LSOrcidProductsModal userId={userId}/>
             <OrcidInfo size='2rem' />
           </Group>
@@ -193,6 +208,7 @@ export default function LSProductsList({ userId }: { userId: string }) {
                   onFeaturedClick={() => setFeaturedProduct.mutate({ productId: p.product_id, isFeatured: !p.is_featured })}
                   featureBtnDisabled={featuredCount >= MAX_FEATURED_PRODUCTS && !p.is_featured}
                   onSaveClick={() => setSavedProduct.mutate({ productId: p.product_id, isSaved: !p.isSaved })}
+                  onEditClick={() => setProductModal({ mode: 'edit', product: p })}
                 />
               )
             }

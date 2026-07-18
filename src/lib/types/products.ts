@@ -19,7 +19,7 @@ export interface ProductFacets {
 export interface InfiniteProducts {
   products: Product[],
   nextCursor: {
-    release_date: string | null,
+    sort_date: string | null,
     product_id: number
   } | null
 }

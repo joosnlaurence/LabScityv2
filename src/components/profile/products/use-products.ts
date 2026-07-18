@@ -1,14 +1,14 @@
 import { setSavedProduct } from "@/lib/actions/bookmarks";
-import { bulkInsertProducts, createProduct, createProductImageUploadUrl, deleteProduct, saveProductImagePaths, setFeaturedProduct } from "@/lib/actions/product";
+import { bulkInsertProducts, createProduct, createProductImageUploadUrl, deleteProduct, deleteProductImages, saveProductImagePaths, setFeaturedProduct, updateProduct } from "@/lib/actions/product";
 import { ProductType } from "@/lib/constants/product";
 import { TAGS_SEARCH_SIZE } from "@/lib/constants/profile";
 import { bookmarkKeys, productKeys, tagKeys } from "@/lib/query-keys";
 import { ApiResponse, InfiniteScrollResponse } from "@/lib/types/api";
 import { SavedItemsData } from "@/lib/types/bookmarks";
-import { ProductImageDraft } from "@/lib/types/data";
+import { Product, ProductImageDraft } from "@/lib/types/data";
 import { InfiniteProducts, ProductFacets, ProductFilters } from "@/lib/types/products";
 import { ParsedOpenAlexWork } from "@/lib/types/publication";
-import { CreateProductValues } from "@/lib/validations/product";
+import { CreateProductValues, UpdateProductValues } from "@/lib/validations/product";
 import { Tag } from "@/lib/validations/profile";
 import { createClient } from "@/supabase/client";
 import { notifications } from "@mantine/notifications";
@@ -17,7 +17,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 export function useProducts(userId: string, filters: ProductFilters) {
   return useInfiniteQuery({
       queryKey: productKeys.list(userId, filters),
-      initialPageParam: null as { release_date: string | null, product_id: number } | null,
+      initialPageParam: null as { sort_date: string | null, product_id: number } | null,
       queryFn: async ({ pageParam }) => {
         const params = new URLSearchParams({ userId });
         if(filters.search) params.set('search', filters.search);
@@ -311,6 +311,72 @@ export function useBulkInsertProducts({
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
       queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
+    }
+  })
+}
+
+export function useUpdateProduct({
+  userId,
+  onSuccess,
+}: {
+  userId: string,
+  onSuccess: () => void
+}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ product_id, updates, newImages, removedPaths }: {
+      product_id: number,
+      updates: UpdateProductValues,
+      newImages: ProductImageDraft[],
+      removedPaths: string[],
+    }) => {
+      const res = await updateProduct(product_id, updates);
+      if (!res.success) throw new Error(res.error);
+
+      if (removedPaths.length > 0) {
+        const del = await deleteProductImages(product_id, removedPaths);
+        if (!del.success) {
+          notifications.show({
+            color: "yellow",
+            title: "Some images couldn't be removed",
+            message: del.error,
+          });
+        }
+      }
+
+      if (newImages.length > 0) {
+        try {
+          const { total, uploaded } = await uploadProductImages(product_id, newImages);
+          if (uploaded < total) {
+            notifications.show({
+              color: "yellow",
+              title: "Some images didn't upload",
+              message: `${uploaded} of ${total} previews saved.`,
+            });
+          }
+        } catch {
+          notifications.show({
+            color: "yellow",
+            title: "Error uploading images",
+            message: "There was an unknown error uploading some images.",
+          });
+        }
+      }
+
+      return res.data;
+    },
+    onSuccess: () => {
+      onSuccess?.();
+      notifications.show({ color: 'green', message: `Research product updated!` });
+    },
+    onError: (error) => {
+      notifications.show({ color: "red", title: "Error updating product...", message: error.message });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.list(userId) });
+      queryClient.invalidateQueries({ queryKey: productKeys.facets(userId) });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.list(userId) });
     }
   })
 }

@@ -11,146 +11,32 @@ import {
   type UpdateProductValues,
 } from "@/lib/validations/product";
 
-import type { DataResponse, Product } from "@/lib/types/data";
+import type { DataResponse, Product, TagValue } from "@/lib/types/data";
 import type { ProductImageUploadData } from "@/lib/types/api";
 import { MAX_PRODUCT_IMAGE_BYTES, PRODUCT_IMAGE_BUCKET, extensionFromMime } from "@/lib/utils/storage";
 import { MAX_FEATURED_PRODUCTS, MAX_IMAGE_UPLOADS as MAX_PRODUCT_PREVIEWS, ProductType } from "../constants/product";
 import { ParsedOpenAlexWork } from "../types/publication";
 import { doiSchema, parsedProductWorkSchema } from "../validations/publication";
 import { ProductInsertRow, ProductLink } from "../types/products";
-// allows the user to remove a productTag
-export async function deleteProductTopics(
+
+async function syncProductTags(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   productId: number,
-  tagId: number,
-): Promise<DataResponse<{ tag_id: number }>> {
-  const supabase = await createClient();
+  tags: { id: number | null; name: string }[],
+) {
+  const rows = tags.map((t) =>
+    t.id !== null
+      ? { product_id: productId, tag_id: t.id, name: null }
+      : { product_id: productId, tag_id: null, name: t.name.trim() },
+  );
+  const { error: delErr } = await supabase
+    .from("product_tags").delete().eq("product_id", productId);
+  if (delErr) throw new Error(`tag delete failed: ${delErr.message}`);
 
-  const { data: authData } = await supabase.auth.getUser();
-
-  if (!authData.user) {
-    return {
-      success: false,
-      error: 'Authentication Required'
-    };
+  if (rows.length) {
+    const { error: insErr } = await supabase.from("product_tags").insert(rows);
+    if (insErr) throw new Error(`tag insert failed: ${insErr.message}`);
   }
-
-  const { data: existingProduct, error: ownershipError } = await supabase
-    .from('user_products')
-    .select('product_id')
-    .eq('user_id', authData.user.id)
-    .eq('product_id', productId)
-    .maybeSingle();
-
-  if (ownershipError) {
-    return {
-      success: false,
-      error: ownershipError.message,
-    };
-  }
-
-  if (!existingProduct) {
-    return {
-      success: false,
-      error: "Product not found or unauthorized"
-    };
-  }
-
-  const { error: deleteError } = await supabase
-    .from("product_tags")
-    .delete()
-    .eq("product_id", productId)
-    .eq('tag_id', tagId);
-
-  if (deleteError) {
-    return {
-      success: false,
-      error: deleteError.message,
-    };
-  }
-
-  return {
-    success: true,
-    data: {
-      tag_id: tagId,
-    },
-  };
-}
-
-async function linkProductTopics(
-  productId: number,
-  tagIds: number[],
-): Promise<void> {
-  const supabase = await createClient();
-
-  const links = tagIds.map((tagId) => ({
-    product_id: productId,
-    tag_id: tagId,
-  }));
-
-  const { error: linkError } = await supabase
-    .from("product_tags")
-    .upsert(links, { onConflict: "product_id,tag_id" });
-  // onConflict prevents the user from adding duplicate tags
-
-  if (linkError) {
-    console.warn("Failed to link product tags:", linkError.message);
-  }
-}
-
-// to add new tags after creating a product
-// user will search for a tag with autofil
-// user can select tags from results, tags will be linked in product_tags 
-export async function addProductTopics(
-  productId: number,
-  tagIds: number[],
-): Promise<DataResponse<void>> {
-  const supabase = await createClient();
-
-  const { data: authData } = await supabase.auth.getUser();
-
-  if (!authData.user) {
-    return {
-      success: false, error: 'Authentication Required'
-    };
-  }
-
-  const { data: existingProduct, error: ownershipError } = await supabase
-    .from("user_products")
-    .select("product_id")
-    .eq("user_id", authData.user.id)
-    .eq("product_id", productId)
-    .maybeSingle();
-
-  if (ownershipError) {
-    return {
-      success: false, error: ownershipError.message
-    };
-  }
-
-  if (!existingProduct) {
-    return {
-      success: false,
-      error: "Product not found or unauthorized"
-    };
-  }
-
-  // counts the total number of rows
-  const { count, error: countError } = await supabase
-    .from("product_tags")
-    .select("*", { count: "exact", head: true })
-    .eq("product_id", productId);
-
-  if (countError) {
-    return { success: false, error: countError.message };
-  }
-
-  if ((count ?? 0) + tagIds.length > 3) {
-    return { success: false, error: "Maximum of 3 tags allowed" };
-  }
-
-  await linkProductTopics(productId, tagIds);
-
-  return { success: true };
 }
 
 // user fills out a product form passing in title, summary, link, and optional tags
@@ -230,10 +116,8 @@ export async function createProduct(
       };
     }
 
-    // user can search for tags using tags/search autofill
-    // will select a tag, and then attempts to add parsed product id and tag_ids to the product_tags table
-    if (parsed.tag_ids && parsed.tag_ids.length > 0) {
-      await linkProductTopics(product.product_id, parsed.tag_ids);
+    if(parsed.tags && parsed.tags.length > 0) {
+      await syncProductTags(supabase, product.product_id, parsed.tags);
     }
 
     return {
@@ -352,17 +236,7 @@ export async function updateProduct(
       };
     }
 
-    if (parsed.is_featured !== undefined) {
-      const { error: setFeaturedProductError } = await supabase
-        .from("user_products")
-        .update({ is_featured: parsed.is_featured })
-        .eq("product_id", productId)
-        .eq("user_id", authData.user.id);
-
-      if (setFeaturedProductError) {
-        return { success: false, error: setFeaturedProductError.message };
-      }
-    }
+    await syncProductTags(supabase, productId, parsed.tags ?? []);
 
     return {
       success: true,
@@ -793,4 +667,49 @@ export async function bulkInsertProducts(
     return { success: false, error: 'Failed to add products'};
   }
 
+}
+
+export async function deleteProductImages(
+  productId: number,
+  imagePaths: string[],
+): Promise<DataResponse<{ removed: number }>> {
+  try {
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) return { success: false, error: "Authentication required" };
+
+    if (!Number.isInteger(productId) || productId <= 0) {
+      return { success: false, error: "Invalid product id" };
+    }
+    if (imagePaths.length === 0) return { success: true, data: { removed: 0 } };
+
+    const { data: existingProduct, error: ownershipError } = await supabase
+      .from("user_products")
+      .select("product_id")
+      .eq("user_id", authData.user.id)
+      .eq("product_id", productId)
+      .maybeSingle();
+    if (ownershipError) return { success: false, error: ownershipError.message };
+    if (!existingProduct) return { success: false, error: "Product not found or unauthorized" };
+
+    if (imagePaths.some((p) => !p.startsWith(`products/${productId}/`))) {
+      return { success: false, error: "Invalid image path" };
+    }
+
+    const { error: dbErr } = await supabase
+      .from("product_images")
+      .delete()
+      .eq("product_id", productId)
+      .in("image_path", imagePaths);
+    if (dbErr) return { success: false, error: dbErr.message };
+
+    const { error: storageErr } = await supabase.storage
+      .from(PRODUCT_IMAGE_BUCKET)
+      .remove(imagePaths);
+    if (storageErr) console.warn("Failed to remove storage objects:", storageErr.message);
+
+    return { success: true, data: { removed: imagePaths.length } };
+  } catch {
+    return { success: false, error: "Failed to delete images" };
+  }
 }

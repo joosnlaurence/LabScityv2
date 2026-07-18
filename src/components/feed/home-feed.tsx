@@ -510,7 +510,7 @@ function CreatePostCard({
       ...(selectedPublication.is_oa || selectedPublication.pdf_url
         ? ["Full-text available"]
         : []),
-      ...(selectedPublication.topics ?? []),
+      ...(selectedPublication.tags ?? []),
     ]);
 
     setDraftTitle(selectedPublication.title);
