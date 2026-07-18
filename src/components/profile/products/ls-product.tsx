@@ -34,9 +34,9 @@ import {
 // import NextLink from 'next/link';
 import { useDisclosure } from "@mantine/hooks";
 import { Product } from "@/lib/types/data";
-import { MAX_FEATURED_PRODUCTS } from "@/lib/constants/product";
+import { MAX_FEATURED_PRODUCTS, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 import classes from './ls-product.module.css';
-import { OPENALEX_WORK_TYPE_LABELS, PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
+import { PUB_PRODUCT_TYPE_ICONS } from "@/lib/constants/openalex";
 import { Fragment } from "react/jsx-runtime";
 
 export default function LSProduct(
@@ -48,6 +48,7 @@ export default function LSProduct(
     onFeaturedClick,
     featureBtnDisabled,
     onSaveClick,
+    onEditClick,
   }
   : 
   { 
@@ -58,6 +59,7 @@ export default function LSProduct(
     onFeaturedClick?: () => void,
     featureBtnDisabled?: boolean,
     onSaveClick?: () => void,
+    onEditClick?: () => void,
   } 
 )  {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
@@ -71,11 +73,11 @@ export default function LSProduct(
   const visibleAuthors = (product?.contributors ?? []).slice(0, 3);
   const authorOverflow = (product?.contributors ?? []).length - visibleAuthors.length;
 
-  const date = product.release_date ? 
+  const date = product.sort_date ? 
     new Intl.DateTimeFormat("en-US", { 
       year: "numeric", 
       month: "long",  
-    }).format(new Date(product.release_date))
+    }).format(new Date(product.sort_date))
     : undefined;
 
   return (
@@ -179,7 +181,7 @@ export default function LSProduct(
               lh='1rem'
               leftSection={typeIcon}
             >
-              {OPENALEX_WORK_TYPE_LABELS[product.product_type ?? 'other']}
+              {PRODUCT_TYPE_LABELS[product.product_type ?? 'other']}
             </Badge>
           </Group>
 
@@ -269,10 +271,11 @@ export default function LSProduct(
                 href={websiteLink.url}
                 target="_blank"
                 rel="noreferrer"
+                c='indigo.5'
               >
                 <Group align="center" gap='4'>
                   <IconWorld color='var(--mantine-color-indigo-5)' size='1rem'/>
-                  <Text component='span' c='indigo.5' fz='xs'>
+                  <Text component='span' fz='xs'>
                     {websiteLink.label ?? new URL(websiteLink.url).hostname}  
                   </Text> 
                 </Group>
@@ -289,7 +292,7 @@ export default function LSProduct(
                 <Group align="center" gap='4'>
                   <IconBrandGithub size='1rem'/>
                   <Text component='span' fz='xs'>
-                    {githubLink.label}  
+                    {githubLink.label ?? new URL(githubLink.url).hostname}  
                   </Text> 
                 </Group>
               </Anchor> 
@@ -306,7 +309,7 @@ export default function LSProduct(
                   <Group align="center" gap='4'>
                     <IconLink size='1rem'/>
                     <Text component='span' fz='xs'>
-                      {link.label}  
+                      {link.label ?? new URL(link.url).hostname}  
                     </Text> 
                   </Group>
                 </Anchor> 
@@ -316,22 +319,22 @@ export default function LSProduct(
 
           {/* Topics */}
           {
-            (product?.topics && product.topics.length > 0) ?
+            (product?.tags && product.tags.length > 0) ?
             <Group gap='xs' py='6'>
               {
-              product.topics.map((topic) =>  
-                <Badge
-                  key={topic}
-                  bd={product.is_featured ? '1px solid indigo.2' : undefined}
-                  bg={product.is_featured ? 'indigo.0' : 'gray.2'}
-                  c={product.is_featured ? 'indigo.9' : 'var(--mantine-color-text)'}
-                  fw='500'
-                  tt='none'
-                  fz='0.75rem'
-                >
-                  {topic}
-                </Badge>
-                )
+                product.tags.map((tag) =>  
+                  <Badge
+                    key={tag.id}
+                    bd={product.is_featured ? '1px solid indigo.2' : undefined}
+                    bg={product.is_featured ? 'indigo.0' : 'gray.2'}
+                    c={product.is_featured ? 'indigo.9' : 'var(--mantine-color-text)'}
+                    fw='500'
+                    tt='none'
+                    fz='0.75rem'
+                  >
+                    {tag.name}
+                  </Badge>
+                  )
               }
             </Group>
             : undefined
@@ -376,7 +379,10 @@ export default function LSProduct(
                   </ActionIcon>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item leftSection={<IconEdit size='1rem' />}>
+                  <Menu.Item 
+                    leftSection={<IconEdit size='1rem' />}
+                    onClick={onEditClick}
+                  >
                     Edit
                   </Menu.Item>
                   <Menu.Divider />

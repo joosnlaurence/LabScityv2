@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Avatar,
   Badge,
   Box,
   Button,
@@ -20,22 +21,42 @@ import {
   IconChevronRight,
   IconExternalLink,
   IconFlag,
+  IconMail,
   IconMapPin,
   IconShare3,
+  IconUser,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
-import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
-import type { JobViewModel } from "./job-view-model";
 import { useAuth } from "@/components/auth/use-auth";
+import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
+import { copyJobLink } from "./job-share";
+import type { JobViewModel } from "./job-view-model";
 import { useSetSavedJob } from "./use-jobs";
 
 interface JobDetailsPageProps {
   job: JobViewModel;
   similarJobs: JobViewModel[];
+  poster: JobPosterViewModel | null;
 }
 
-export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
+interface JobPosterViewModel {
+  userId: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  occupation: string | null;
+  workplace: string | null;
+  about: string | null;
+  location: string | null;
+  labDepartment: string | null;
+}
+
+export function JobDetailsPage({
+  job,
+  similarJobs,
+  poster,
+}: JobDetailsPageProps) {
   const { user } = useAuth();
   const [saved, setSaved] = useState(job.isSaved);
   const setSavedJob = useSetSavedJob(user?.id ?? "");
@@ -166,7 +187,7 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                   variant="outline"
                   color="gray"
                   leftSection={<IconShare3 size={16} />}
-                  disabled
+                  onClick={() => void copyJobLink(job.id)}
                 >
                   Share
                 </Button>
@@ -183,6 +204,14 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
             </Card>
 
             <Card radius="md" shadow="xs" padding="xl" withBorder>
+              {job.summary?.trim() ? (
+                <JobSection title="Short Summary">
+                  <Text size="sm" c="gray.7" lh={1.7}>
+                    {job.summary.trim()}
+                  </Text>
+                </JobSection>
+              ) : null}
+
               <JobSection title="Full Description">
                 <PostRichTextContent html={job.description} />
               </JobSection>
@@ -193,26 +222,39 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                     ? "Use the external application link below to continue."
                     : "No application link has been published for this listing yet."}
                 </Text>
-                {job.applyUrl ? (
-                  <Button
-                    component={Link}
-                    href={job.applyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    color="navy"
-                    leftSection={<IconExternalLink size={16} />}
-                  >
-                    Apply via External Portal
-                  </Button>
-                ) : (
-                  <Button
-                    color="navy"
-                    leftSection={<IconExternalLink size={16} />}
-                    disabled
-                  >
-                    Apply via External Portal
-                  </Button>
-                )}
+                <Group gap="xs">
+                  {job.applyUrl ? (
+                    <Button
+                      component={Link}
+                      href={job.applyUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      color="navy"
+                      leftSection={<IconExternalLink size={16} />}
+                    >
+                      Apply via External Portal
+                    </Button>
+                  ) : (
+                    <Button
+                      color="navy"
+                      leftSection={<IconExternalLink size={16} />}
+                      disabled
+                    >
+                      Apply via External Portal
+                    </Button>
+                  )}
+                  {job.contactEmail ? (
+                    <Button
+                      component={Link}
+                      href={`mailto:${job.contactEmail}`}
+                      variant="outline"
+                      color="gray"
+                      leftSection={<IconMail size={16} />}
+                    >
+                      Contact
+                    </Button>
+                  ) : null}
+                </Group>
               </JobSection>
             </Card>
           </Stack>
@@ -244,6 +286,8 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
               />
             </Card>
 
+            <PosterCard poster={poster} />
+
             <Card radius="md" shadow="xs" padding="md" withBorder bg="blue.0">
               <Text size="sm" c="dimmed" mb="sm">
                 Ready to apply?
@@ -265,6 +309,19 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                   Apply Now
                 </Button>
               )}
+              {job.contactEmail ? (
+                <Button
+                  component={Link}
+                  href={`mailto:${job.contactEmail}`}
+                  fullWidth
+                  variant="outline"
+                  color="gray"
+                  mb="xs"
+                  leftSection={<IconMail size={16} />}
+                >
+                  Contact
+                </Button>
+              ) : null}
               <Button
                 fullWidth
                 variant={saved ? "light" : "outline"}
@@ -308,8 +365,8 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
                   posted.
                 </Text>
               )} */}
-              <Text size='sm' c='dimmed'>
-                Similar jobs will be displayed here once the frontend for them 
+              <Text size="sm" c="dimmed">
+                Similar jobs will be displayed here once the frontend for them
                 is wired up
               </Text>
             </Card>
@@ -317,6 +374,108 @@ export function JobDetailsPage({ job, similarJobs }: JobDetailsPageProps) {
         </Flex>
       </Box>
     </Box>
+  );
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function PosterCard({ poster }: { poster: JobPosterViewModel | null }) {
+  if (!poster) {
+    return (
+      <Card radius="md" shadow="xs" padding="md" withBorder>
+        <Text size="sm" fw={800} mb="sm">
+          Posted by
+        </Text>
+        <Text size="sm" c="dimmed">
+          Poster details are unavailable.
+        </Text>
+      </Card>
+    );
+  }
+
+  const roleLine = [poster.occupation, poster.workplace]
+    .filter(Boolean)
+    .join(" - ");
+
+  return (
+    <Card radius="md" shadow="xs" padding="md" withBorder>
+      <Text size="sm" fw={800} mb="sm">
+        Posted by
+      </Text>
+
+      <Group align="flex-start" wrap="nowrap" mb="sm">
+        <Avatar
+          size={52}
+          radius="xl"
+          color="navy.7"
+          bg={poster.avatarUrl ? undefined : "navy.7"}
+          src={poster.avatarUrl ?? undefined}
+        >
+          {getInitials(poster.name)}
+        </Avatar>
+        <Box miw={0}>
+          <Text fw={800} c="gray.9" lineClamp={1}>
+            {poster.name}
+          </Text>
+          {roleLine ? (
+            <Text size="sm" c="dimmed" lineClamp={2}>
+              {roleLine}
+            </Text>
+          ) : null}
+        </Box>
+      </Group>
+
+      {poster.about ? (
+        <Text size="sm" c="gray.7" lineClamp={3} mb="sm">
+          {poster.about}
+        </Text>
+      ) : null}
+
+      <Stack gap={8} mb="md">
+        <PosterFact icon={<IconMail size={15} />} value={poster.email} />
+        {poster.location ? (
+          <PosterFact icon={<IconMapPin size={15} />} value={poster.location} />
+        ) : null}
+        {poster.labDepartment ? (
+          <PosterFact
+            icon={<IconBuilding size={15} />}
+            value={poster.labDepartment}
+          />
+        ) : null}
+      </Stack>
+
+      <Button
+        component={Link}
+        href={`/profile/${poster.userId}`}
+        fullWidth
+        variant="outline"
+        color="gray"
+        leftSection={<IconUser size={16} />}
+      >
+        View Profile
+      </Button>
+    </Card>
+  );
+}
+
+function PosterFact({ icon, value }: { icon: React.ReactNode; value: string }) {
+  return (
+    <Group gap={8} wrap="nowrap" align="flex-start">
+      <Box c="gray.5" mt={2}>
+        {icon}
+      </Box>
+      <Text size="sm" c="gray.7" lineClamp={2}>
+        {value}
+      </Text>
+    </Group>
   );
 }
 

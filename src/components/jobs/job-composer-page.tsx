@@ -6,16 +6,17 @@ import {
   Box,
   Button,
   Card,
-  Checkbox,
   Flex,
   Group,
+  Loader,
+  MultiSelect,
   Select,
   Stack,
-  TagsInput,
   Text,
+  Textarea,
   TextInput,
-  Loader,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
   IconBriefcase,
@@ -30,11 +31,15 @@ import {
 } from "@tabler/icons-react";
 import { useEditor } from "@tiptap/react";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
-import { useDebouncedValue } from "@mantine/hooks";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
-import type { createJob } from "@/lib/actions/job";
-import { useLocationSearch } from "@/components/profile/use-profile-search";
+import {
+  useLocationSearch,
+  useSkillSearch,
+  useTagSearch,
+} from "@/components/profile/use-profile-search";
+import type { addJobSkill, addJobTag, createJob } from "@/lib/actions/job";
+import { JOB_SUMMARY_MAX_LENGTH } from "@/lib/validations/job";
 import {
   formatJobTypeLabel,
   formatWorkModeLabel,
@@ -59,15 +64,21 @@ export interface JobDraft {
   remote: "on-site" | "hybrid" | "remote";
   contactEmail: string;
   applyUrl: string;
+  summary: string;
   description: string;
-  tags: string[];
 }
 
 interface JobComposerPageProps {
   createJobAction: typeof createJob;
+  addJobTagAction: typeof addJobTag;
+  addJobSkillAction: typeof addJobSkill;
 }
 
-export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
+export function JobComposerPage({
+  createJobAction,
+  addJobTagAction,
+  addJobSkillAction,
+}: JobComposerPageProps) {
   const [isPending, startTransition] = useTransition();
   const [draft, setDraft] = useState<JobDraft>({
     title: "",
@@ -78,18 +89,130 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
     remote: "on-site",
     contactEmail: "",
     applyUrl: "",
+    summary: "",
     description: "",
-    tags: ["Optics", "Computer Vision"],
   });
 
-  const [publishNow, setPublishNow] = useState(true);
-  const [featured, setFeatured] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [requiredAreaIds, setRequiredAreaIds] = useState<string[]>([]);
+  const [recommendedAreaIds, setRecommendedAreaIds] = useState<string[]>([]);
+  const [requiredSkillIds, setRequiredSkillIds] = useState<string[]>([]);
+  const [recommendedSkillIds, setRecommendedSkillIds] = useState<string[]>([]);
+  const [tagLabelsById, setTagLabelsById] = useState<Record<string, string>>(
+    {},
+  );
+  const [skillLabelsById, setSkillLabelsById] = useState<
+    Record<string, string>
+  >({});
+  const [requiredAreaSearch, setRequiredAreaSearch] = useState("");
+  const [recommendedAreaSearch, setRecommendedAreaSearch] = useState("");
+  const [requiredSkillSearch, setRequiredSkillSearch] = useState("");
+  const [recommendedSkillSearch, setRecommendedSkillSearch] = useState("");
   const [debouncedLocation] = useDebouncedValue(draft.location, 500);
+  const [debouncedRequiredAreaSearch] = useDebouncedValue(
+    requiredAreaSearch,
+    300,
+  );
+  const [debouncedRecommendedAreaSearch] = useDebouncedValue(
+    recommendedAreaSearch,
+    300,
+  );
+  const [debouncedRequiredSkillSearch] = useDebouncedValue(
+    requiredSkillSearch,
+    300,
+  );
+  const [debouncedRecommendedSkillSearch] = useDebouncedValue(
+    recommendedSkillSearch,
+    300,
+  );
   const locationSearchQuery = useLocationSearch(debouncedLocation);
+  const requiredAreaQuery = useTagSearch(debouncedRequiredAreaSearch);
+  const recommendedAreaQuery = useTagSearch(debouncedRecommendedAreaSearch);
+  const requiredSkillQuery = useSkillSearch(debouncedRequiredSkillSearch);
+  const recommendedSkillQuery = useSkillSearch(debouncedRecommendedSkillSearch);
   const locationOptions = useMemo(
     () => (locationSearchQuery.data ?? []).map((result) => result.display_name),
     [locationSearchQuery.data],
+  );
+  const selectedAreaIds = useMemo(
+    () => [...requiredAreaIds, ...recommendedAreaIds],
+    [recommendedAreaIds, requiredAreaIds],
+  );
+  const selectedSkillIds = useMemo(
+    () => [...requiredSkillIds, ...recommendedSkillIds],
+    [recommendedSkillIds, requiredSkillIds],
+  );
+
+  useEffect(() => {
+    setTagLabelsById((current) =>
+      mergeLabels(current, [
+        ...(requiredAreaQuery.data ?? []),
+        ...(recommendedAreaQuery.data ?? []),
+      ]),
+    );
+  }, [recommendedAreaQuery.data, requiredAreaQuery.data]);
+
+  useEffect(() => {
+    setSkillLabelsById((current) =>
+      mergeLabels(current, [
+        ...(requiredSkillQuery.data ?? []),
+        ...(recommendedSkillQuery.data ?? []),
+      ]),
+    );
+  }, [recommendedSkillQuery.data, requiredSkillQuery.data]);
+
+  const requiredAreaOptions = useMemo(
+    () =>
+      buildSelectOptions(
+        requiredAreaQuery.data ?? [],
+        selectedAreaIds,
+        tagLabelsById,
+      ),
+    [requiredAreaQuery.data, selectedAreaIds, tagLabelsById],
+  );
+  const recommendedAreaOptions = useMemo(
+    () =>
+      buildSelectOptions(
+        recommendedAreaQuery.data ?? [],
+        selectedAreaIds,
+        tagLabelsById,
+      ),
+    [recommendedAreaQuery.data, selectedAreaIds, tagLabelsById],
+  );
+  const requiredSkillOptions = useMemo(
+    () =>
+      buildSelectOptions(
+        requiredSkillQuery.data ?? [],
+        selectedSkillIds,
+        skillLabelsById,
+      ),
+    [requiredSkillQuery.data, selectedSkillIds, skillLabelsById],
+  );
+  const recommendedSkillOptions = useMemo(
+    () =>
+      buildSelectOptions(
+        recommendedSkillQuery.data ?? [],
+        selectedSkillIds,
+        skillLabelsById,
+      ),
+    [recommendedSkillQuery.data, selectedSkillIds, skillLabelsById],
+  );
+  const previewTags = useMemo(
+    () =>
+      [
+        ...requiredAreaIds.map((id) => tagLabelsById[id]),
+        ...requiredSkillIds.map((id) => skillLabelsById[id]),
+        ...recommendedAreaIds.map((id) => tagLabelsById[id]),
+        ...recommendedSkillIds.map((id) => skillLabelsById[id]),
+      ].filter(Boolean),
+    [
+      recommendedAreaIds,
+      recommendedSkillIds,
+      requiredAreaIds,
+      requiredSkillIds,
+      skillLabelsById,
+      tagLabelsById,
+    ],
   );
 
   const updateDraft = <K extends keyof JobDraft>(
@@ -113,7 +236,10 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
   const tips = useMemo(
     () => [
       { text: "Use a clear, specific job title", done: draft.title.length > 0 },
-      { text: "Include required skills as tags", done: draft.tags.length > 0 },
+      {
+        text: "Include required skills or research areas",
+        done: requiredAreaIds.length > 0 || requiredSkillIds.length > 0,
+      },
       {
         text: "Add an external application link",
         done: draft.applyUrl.length > 0,
@@ -127,7 +253,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
         done: draft.description.length > 80,
       },
     ],
-    [draft],
+    [draft, requiredAreaIds.length, requiredSkillIds.length],
   );
 
   const hasPublishableDescription = useMemo(() => {
@@ -167,6 +293,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
       const result = await createJobAction({
         title: draft.title,
         description: draft.description,
+        summary: draft.summary.trim() || undefined,
         location: draft.location || undefined,
         department: draft.department || undefined,
         organization: draft.organization || undefined,
@@ -174,10 +301,35 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
         job_type: jobTypeValue,
         academia_role: roleValue,
         application_link: draft.applyUrl || undefined,
+        contact_email: draft.contactEmail.trim() || undefined,
       });
 
       if (!result.success || !result.data) {
         setErrorMessage(result.error ?? "Failed to publish job");
+        return;
+      }
+
+      const jobId = result.data.id;
+      const fitResults = await Promise.all([
+        ...requiredAreaIds.map((id) =>
+          addJobTagAction(jobId, Number(id), true),
+        ),
+        ...recommendedAreaIds.map((id) =>
+          addJobTagAction(jobId, Number(id), false),
+        ),
+        ...requiredSkillIds.map((id) =>
+          addJobSkillAction(jobId, Number(id), true),
+        ),
+        ...recommendedSkillIds.map((id) =>
+          addJobSkillAction(jobId, Number(id), false),
+        ),
+      ]);
+      const fitError = fitResults.find((fitResult) => !fitResult.success);
+
+      if (fitError && !fitError.success) {
+        setErrorMessage(
+          `Job was created, but research fit could not be saved: ${fitError.error}`,
+        );
         return;
       }
 
@@ -252,7 +404,9 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   data={locationOptions}
                   leftSection={<IconMapPin size={16} />}
                   rightSection={
-                    locationSearchQuery.isFetching ? <Loader size={14} /> : undefined
+                    locationSearchQuery.isFetching ? (
+                      <Loader size={14} />
+                    ) : undefined
                   }
                   style={{ flex: 1 }}
                 />
@@ -284,9 +438,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                       radius="xl"
                       variant={draft.type === type.value ? "filled" : "outline"}
                       color={draft.type === type.value ? "navy" : "gray"}
-                      onClick={() =>
-                        updateDraft("type", type.value)
-                      }
+                      onClick={() => updateDraft("type", type.value)}
                     >
                       {type.label}
                     </Button>
@@ -296,9 +448,31 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
             </FormSection>
 
             <FormSection title="Description" icon={<IconTag size={18} />}>
+              <Textarea
+                label="Short Summary"
+                description="Optional preview text shown on job cards."
+                placeholder="A concise 1-3 line overview for researchers browsing jobs..."
+                value={draft.summary}
+                onChange={(event) =>
+                  updateDraft("summary", event.currentTarget.value)
+                }
+                autosize
+                minRows={2}
+                maxRows={3}
+                maxLength={JOB_SUMMARY_MAX_LENGTH}
+                rightSectionWidth={64}
+                rightSection={
+                  <Text size="xs" c="dimmed" pr="xs">
+                    {draft.summary.length}/{JOB_SUMMARY_MAX_LENGTH}
+                  </Text>
+                }
+              />
               <Box>
                 <Text size="sm" fw={500} mb={6}>
-                  Full Description <Text span c="red">*</Text>
+                  Full Description{" "}
+                  <Text span c="red">
+                    *
+                  </Text>
                 </Text>
                 <RichTextEditor
                   editor={descriptionEditor}
@@ -331,26 +505,97 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
             </FormSection>
 
             <FormSection title="Research Fit" icon={<IconTag size={18} />}>
-              <TagsInput
-                label="Skills & Research Tags"
-                value={draft.tags}
-                onChange={(tags) => updateDraft("tags", tags)}
-                placeholder="Add tags and press Enter..."
-                data={[
-                  "Optics",
-                  "Computer Vision",
-                  "Machine Learning",
-                  "Microscopy",
-                  "Physics-Informed NN",
-                  "Holography",
-                ]}
-              />
+              <Flex gap="md" direction={{ base: "column", md: "row" }}>
+                <MultiSelect
+                  label="Required Research Areas"
+                  placeholder="Search research areas..."
+                  data={requiredAreaOptions}
+                  value={requiredAreaIds}
+                  onChange={(next) => {
+                    setRequiredAreaIds(next);
+                    setRecommendedAreaIds((current) =>
+                      current.filter((id) => !next.includes(id)),
+                    );
+                  }}
+                  searchValue={requiredAreaSearch}
+                  onSearchChange={setRequiredAreaSearch}
+                  searchable
+                  clearable
+                  hidePickedOptions
+                  nothingFoundMessage="No matching research areas"
+                  comboboxProps={{ shadow: "sm" }}
+                  style={{ flex: 1 }}
+                />
+                <MultiSelect
+                  label="Recommended Research Areas"
+                  placeholder="Search research areas..."
+                  data={recommendedAreaOptions}
+                  value={recommendedAreaIds}
+                  onChange={(next) => {
+                    setRecommendedAreaIds(next);
+                    setRequiredAreaIds((current) =>
+                      current.filter((id) => !next.includes(id)),
+                    );
+                  }}
+                  searchValue={recommendedAreaSearch}
+                  onSearchChange={setRecommendedAreaSearch}
+                  searchable
+                  clearable
+                  hidePickedOptions
+                  nothingFoundMessage="No matching research areas"
+                  comboboxProps={{ shadow: "sm" }}
+                  style={{ flex: 1 }}
+                />
+              </Flex>
+              <Flex gap="md" direction={{ base: "column", md: "row" }}>
+                <MultiSelect
+                  label="Required Skills"
+                  placeholder="Search skills..."
+                  data={requiredSkillOptions}
+                  value={requiredSkillIds}
+                  onChange={(next) => {
+                    setRequiredSkillIds(next);
+                    setRecommendedSkillIds((current) =>
+                      current.filter((id) => !next.includes(id)),
+                    );
+                  }}
+                  searchValue={requiredSkillSearch}
+                  onSearchChange={setRequiredSkillSearch}
+                  searchable
+                  clearable
+                  hidePickedOptions
+                  nothingFoundMessage="No matching skills"
+                  comboboxProps={{ shadow: "sm" }}
+                  style={{ flex: 1 }}
+                />
+                <MultiSelect
+                  label="Recommended Skills"
+                  placeholder="Search skills..."
+                  data={recommendedSkillOptions}
+                  value={recommendedSkillIds}
+                  onChange={(next) => {
+                    setRecommendedSkillIds(next);
+                    setRequiredSkillIds((current) =>
+                      current.filter((id) => !next.includes(id)),
+                    );
+                  }}
+                  searchValue={recommendedSkillSearch}
+                  onSearchChange={setRecommendedSkillSearch}
+                  searchable
+                  clearable
+                  hidePickedOptions
+                  nothingFoundMessage="No matching skills"
+                  comboboxProps={{ shadow: "sm" }}
+                  style={{ flex: 1 }}
+                />
+              </Flex>
             </FormSection>
 
             <FormSection title="Logistics" icon={<IconCalendar size={18} />}>
               <Flex gap="md" direction={{ base: "column", sm: "row" }}>
                 <TextInput
                   label="Contact Email"
+                  type="email"
                   placeholder="hr@university.edu"
                   value={draft.contactEmail}
                   onChange={(event) =>
@@ -370,24 +615,6 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                 />
               </Flex>
             </FormSection>
-
-            <FormSection
-              title="Visibility & Publishing"
-              icon={<IconEye size={18} />}
-            >
-              <Checkbox
-                checked={publishNow}
-                onChange={(event) => setPublishNow(event.currentTarget.checked)}
-                label="Publish immediately"
-              />
-              <Checkbox
-                checked={featured}
-                onChange={(event) => setFeatured(event.currentTarget.checked)}
-                label="Featured listing"
-                description="Currently visual only until a featured-jobs backend exists."
-                color="yellow"
-              />
-            </FormSection>
           </Stack>
 
           <Stack w={310} gap="md" visibleFrom="lg" pos="sticky" top={80}>
@@ -398,7 +625,7 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
                   Live Preview
                 </Text>
               </Group>
-              <MiniPreviewCard draft={draft} />
+              <MiniPreviewCard draft={draft} previewTags={previewTags} />
               <Text size="xs" c="dimmed" ta="center" mt="sm">
                 Updates as you type.
               </Text>
@@ -437,29 +664,19 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
               icon={<IconInfoCircle size={16} />}
               title="What gets saved"
             >
-              Title, description, organization, location, department, job type,
-              work mode, and application link are stored on publish. Tags,
-              contact email, and featured status are not yet backed and will be
-              discarded.
+              Title, summary, description, organization, location, department,
+              job type, work mode, application link, research areas, and skills
+              are stored on publish.
             </Alert>
 
             <Card radius="md" shadow="xs" padding="md" withBorder>
               <Stack gap="xs">
-                <Button
-                  variant="outline"
-                  color="gray"
-                  leftSection={<IconEye size={16} />}
-                  disabled
-                >
-                  Preview Full Listing
-                </Button>
                 <Button
                   color="navy"
                   leftSection={<IconSend size={16} />}
                   onClick={handlePublish}
                   loading={isPending}
                   disabled={
-                    !publishNow ||
                     draft.title.trim().length === 0 ||
                     !hasPublishableDescription
                   }
@@ -473,6 +690,50 @@ export function JobComposerPage({ createJobAction }: JobComposerPageProps) {
       </Box>
     </Box>
   );
+}
+
+type SearchOption = {
+  id: number | null;
+  name: string;
+};
+
+function mergeLabels(current: Record<string, string>, results: SearchOption[]) {
+  if (results.length === 0) {
+    return current;
+  }
+
+  const next = { ...current };
+  for (const result of results) {
+    if (result.id === null) {
+      continue;
+    }
+    next[String(result.id)] = result.name;
+  }
+  return next;
+}
+
+function buildSelectOptions(
+  results: SearchOption[],
+  selectedIds: string[],
+  labelsById: Record<string, string>,
+) {
+  const options = new Map<string, string>();
+
+  for (const id of selectedIds) {
+    const label = labelsById[id];
+    if (label) {
+      options.set(id, label);
+    }
+  }
+
+  for (const result of results) {
+    if (result.id === null) {
+      continue;
+    }
+    options.set(String(result.id), result.name);
+  }
+
+  return Array.from(options, ([value, label]) => ({ value, label }));
 }
 
 function FormSection({
@@ -502,7 +763,13 @@ function FormSection({
   );
 }
 
-function MiniPreviewCard({ draft }: { draft: JobDraft }) {
+function MiniPreviewCard({
+  draft,
+  previewTags,
+}: {
+  draft: JobDraft;
+  previewTags: string[];
+}) {
   return (
     <Card radius="md" withBorder padding="sm">
       <Text size="sm" fw={800} lineClamp={2}>
@@ -535,9 +802,9 @@ function MiniPreviewCard({ draft }: { draft: JobDraft }) {
           {formatWorkModeLabel(draft.remote)}
         </Button>
       </Group>
-      {draft.tags.length > 0 ? (
+      {previewTags.length > 0 ? (
         <Group gap={4} mt="sm">
-          {draft.tags.slice(0, 3).map((tag) => (
+          {previewTags.slice(0, 3).map((tag) => (
             <Button key={tag} size="compact-xs" variant="light" color="gray">
               {tag}
             </Button>

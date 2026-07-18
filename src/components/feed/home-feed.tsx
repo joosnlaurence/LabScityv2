@@ -510,7 +510,7 @@ function CreatePostCard({
       ...(selectedPublication.is_oa || selectedPublication.pdf_url
         ? ["Full-text available"]
         : []),
-      ...(selectedPublication.topics ?? []),
+      ...(selectedPublication.tags?.map(t => t.name) ?? []),
     ]);
 
     setDraftTitle(selectedPublication.title);
@@ -1587,6 +1587,7 @@ function HomeLeftRail({ currentUser }: HomeFeedProps) {
           <RailButton
             icon={<IconFileText size={16} />}
             label="Add Publication"
+            href="/profile?tab=publications&action=add-publication"
           />
           <RailButton
             icon={<IconBriefcase size={16} />}
@@ -1596,8 +1597,13 @@ function HomeLeftRail({ currentUser }: HomeFeedProps) {
           <RailButton
             icon={<IconFolderPlus size={16} />}
             label="Create Group"
+            href="/groups?tab=mine&action=create"
           />
-          <RailButton icon={<IconPlus size={16} />} label="Add Product" />
+          <RailButton
+            icon={<IconPlus size={16} />}
+            label="Add Product"
+            href="/profile?tab=products&action=add-product"
+          />
         </Stack>
       </Card>
     </Stack>

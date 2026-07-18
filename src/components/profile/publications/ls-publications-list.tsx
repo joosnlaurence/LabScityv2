@@ -5,6 +5,7 @@ import { IconAdjustmentsHorizontal, IconArticleOff, IconLink, IconPlus, IconSear
 import LSOrcidLinker from "./ls-orcid-link-modal";
 import OrcidInfo from "./ls-orcid-info";
 import LSPublication from "./ls-publication";
+import LSPublicationFormModal from "./ls-publication-form-modal";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { useDebouncedValue, useDisclosure, useIntersection } from "@mantine/hooks";
 import { useAddPubByDoi, useDeletePublication, useGetPublicationFacets, usePublications, useSetFeaturedPublication, useSetSavedPublication } from "./use-publications";
@@ -13,10 +14,17 @@ import { useForm } from "@mantine/form";
 import { MAX_FEATURED_PUBLICATIONS } from "@/lib/constants/publications";
 import { useEffect, useRef, useState } from "react";
 import { PubFilters } from "@/lib/types/publication";
+import { Publication } from "@/lib/types/data";
 import { useUserProfile } from "../use-profile";
 import { OPENALEX_WORK_TYPE_LABELS } from "@/lib/constants/openalex";
 
-export default function LSPublicationsList({userId}: {userId: string}) {  
+export default function LSPublicationsList({
+  userId,
+  autoOpenOrcid = false,
+}: {
+  userId: string;
+  autoOpenOrcid?: boolean;
+}) {  
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
 
@@ -109,6 +117,16 @@ export default function LSPublicationsList({userId}: {userId: string}) {
 
   const [doiModalOpened, { open: openDoiModal, close: closeDoiModal }] = useDisclosure(false);
 
+  const [pubModal, setPubModal] = useState<Publication | null>(null);
+  const [modalOpened, setModalOpened] = useState(false);
+  const sessionRef = useRef(0);
+
+  const openPubModal = (pub: Publication) => {
+    sessionRef.current++;
+    setPubModal(pub);
+    setModalOpened(true);
+  };
+
   if(isLoadingUserPubs || isLoadingFacets || userLoading) {
     return (
       <Center py='xl'>
@@ -127,6 +145,17 @@ export default function LSPublicationsList({userId}: {userId: string}) {
 
   return (
     <Stack w='100%' maw='800'>
+      {
+        isOwner &&
+        <LSPublicationFormModal
+          key={`${sessionRef.current}`}
+          userId={userId}
+          pub={pubModal ?? undefined}
+          opened={modalOpened}
+          onClose={() => setModalOpened(false)}
+          onClosed={() => setPubModal(null)}
+        />
+      }
       <Group wrap='nowrap'>
         <Stack gap='0'>
           <Text fw='bold'>Publications</Text>
@@ -194,7 +223,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
             </Button>
           </Group>
           <Group wrap='nowrap'>
-            <LSOrcidLinker userId={userId}/>
+            <LSOrcidLinker userId={userId} autoOpen={autoOpenOrcid}/>
             <OrcidInfo size='2rem' />
           </Group>
           </>
@@ -297,6 +326,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
                 })}
                 featureBtnDisabled={!pub.is_featured && featuredCount >= MAX_FEATURED_PUBLICATIONS}
                 onSaveClick={() => setSavedPub.mutate({ publicationId: pub.publication_id, isSaved: !pub.isSaved })}
+                onEditClick={() => openPubModal(pub)}
               />
             )
             :

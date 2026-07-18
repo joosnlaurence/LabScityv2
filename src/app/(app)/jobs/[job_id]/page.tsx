@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JobDetailsPage } from "@/components/jobs/job-details-page";
 import { toJobViewModel } from "@/components/jobs/job-view-model";
+import { getUser } from "@/lib/actions/data";
 import { getJobById, listJobs } from "@/lib/actions/job";
 
 interface JobDetailsRouteProps {
@@ -42,7 +43,26 @@ export default async function JobDetailsRoutePage({
     notFound();
   }
 
+  const posterResult = await getUser(jobResult.data.poster_id);
   const job = toJobViewModel(jobResult.data);
+  const poster =
+    posterResult?.success && posterResult.data
+      ? {
+          userId: posterResult.data.user_id,
+          name:
+            [posterResult.data.first_name, posterResult.data.last_name]
+              .filter(Boolean)
+              .join(" ")
+              .trim() || posterResult.data.email,
+          email: posterResult.data.email,
+          avatarUrl: posterResult.data.avatar_url ?? null,
+          occupation: posterResult.data.occupation ?? null,
+          workplace: posterResult.data.workplace ?? null,
+          about: posterResult.data.about ?? null,
+          location: posterResult.data.location ?? null,
+          labDepartment: posterResult.data.lab_department ?? null,
+        }
+      : null;
   const similarJobs =
     jobsResult.success && jobsResult.data
       ? jobsResult.data
@@ -51,5 +71,5 @@ export default async function JobDetailsRoutePage({
           .map(toJobViewModel)
       : [];
 
-  return <JobDetailsPage job={job} similarJobs={similarJobs} />;
+  return <JobDetailsPage job={job} similarJobs={similarJobs} poster={poster} />;
 }

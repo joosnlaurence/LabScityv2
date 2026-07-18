@@ -6,177 +6,153 @@ import { InfinitePublications } from "@/lib/types/publication";
 
 const PAGE_SIZE = 10;
 
+type PubRow = Publication & { user_id: string };
+
 function decodeCursor(raw: string | null) {
   try {
-    return raw ? 
-      JSON.parse(atob(raw)) as { date_published: string | null, publication_id: number } 
+    return raw
+      ? JSON.parse(atob(raw)) as { date_published: string | null, publication_id: number }
       : null;
   } catch {
     return null;
   }
 }
 
-/**
- * GET /api/publications?userId=...&cursorDatePublished=...&cursorPubId=...
- * Returns the next 10 publications for a user after the specified cursor
- * query params = userId 
- */
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url); // searchParams = everything after ?
-    const userId = searchParams.get("userId");
-    const search = searchParams.get('search');
-    const year = searchParams.get('year');
-    const tagId = searchParams.get('tagId');
-    const type = searchParams.get('type');
-    const sort = searchParams.get('sort');
-    
-    const cursor = decodeCursor(searchParams.get('cursor'));
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get("userId");
+  const search = searchParams.get('search');
+  const year = searchParams.get('year');
+  const tagId = searchParams.get('tagId');
+  const type = searchParams.get('type');
+  const sort = searchParams.get('sort');
 
-    if (!userId) 
-      return NextResponse.json<ApiResponse<Publication[]>>(
-        { success: false, error: "userId required" },
-        { status: 400 }
-      );
+  const cursor = decodeCursor(searchParams.get('cursor'));
 
-    const supabase = await createClient();
-    // const { data: authData } = await supabase.auth.getUser();
-    // const currentUserId = authData?.user?.id ?? null;
-
-    const hasFilters = !!(search || year || tagId || type);
-    const descending = sort !== 'oldest';
-
-    let tagPubIds: number[] | null = null;
-    if(tagId) {
-      const { data: tagRows, error: tagErr } = await supabase
-        .from("publication_tags")
-        .select("publication_id")
-        .eq("tag_id", Number(tagId));
-      
-      if(tagErr) {
-        return NextResponse.json<ApiResponse<Publication[]>>({
-          success: false,
-          error: tagErr.message
-        }, { status: 500 });
-      }
-      tagPubIds = (tagRows ?? []).map((r) => r.publication_id);
-    }
-
-    let query = supabase
-        .from("user_publications_full")
-        .select("*, publication_tags(tags(name))")
-        .eq("user_id", userId)
-    
-    if(!hasFilters) {
-      query = query.eq("is_featured", false);
-    }
-    
-    if(search) query = query.ilike("title", `%${search}%`);
-    if(type) query = query.eq("type", type);
-    if(tagPubIds) query = query.in("publication_id", tagPubIds);
-    if(year && !Number.isNaN(Number(year))) {
-      query = query
-        .gte('date_published', `${year}-01-01`)
-        .lt('date_published', `${Number(year) + 1}-01-01`);
-    }
-
-    if (cursor) {
-      const op = descending ? 'lt' : 'gt';
-      query = query.or(
-        `date_published.${op}.${cursor.date_published},and(date_published.eq.${cursor.date_published},publication_id.${op}.${cursor.publication_id})`
-      )
-    }
-    
-    const { data, error } = await query
-      .order("date_published", { ascending: !descending, nullsFirst: false })
-      .order("publication_id", { ascending: !descending })
-      .limit(PAGE_SIZE + 1)
-      .returns<(Publication & { 
-        user_id: string;
-        publication_tags: { tags: { name: string } }[]
-      })[]>();
-
-    if (error) { 
-      return NextResponse.json<ApiResponse<Publication[]>>(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
-    
-    const pubs = data.map(
-      ({ is_featured, publication_tags, ...pub }) => ({
-        ...pub,
-        is_featured: is_featured,
-        topics: publication_tags.map((pt) => pt.tags.name)
-      })
+  if (!userId)
+    return NextResponse.json<ApiResponse<Publication[]>>(
+      { success: false, error: "userId required" },
+      { status: 400 },
     );
 
-    const hasMore = pubs.length > PAGE_SIZE;
-    let page = hasMore ? pubs.slice(0, PAGE_SIZE) : pubs;
-    const last = page[page.length - 1];
-    const nextCursor = hasMore && last
-      ? { date_published: last.date_published, publication_id: last.publication_id }
-      : null;
+  const supabase = await createClient();
 
-    let featuredPubs = []; 
-    if (!cursor && !hasFilters) {
-      const { data: featuredData, error: featuredError } = await supabase
-        .from("user_publications_full")
-        .select("*, publication_tags(tags(name))")
-        .eq("user_id", userId)
-        .eq("is_featured", true)
-        .order("date_published", { ascending: !descending, nullsFirst: false })
-        .order("publication_id", { ascending: !descending })
-        .returns<(Publication & { 
-          user_id: string;
-          publication_tags: { tags: { name: string } }[]
-        })[]>();
-     
-      if(featuredError){
-        return NextResponse.json<ApiResponse<Publication[]>>({
-          success: false,
-          error: featuredError.message
-        }, {status: 500});
-      }
+  const hasFilters = !!(search || year || tagId || type);
+  const descending = sort !== 'oldest';
 
-      featuredPubs = featuredData.map(
-        ({ is_featured, publication_tags, ...pub }) => ({
-          ...pub,
-          is_featured: is_featured,
-          topics: publication_tags.map((pt) => pt.tags.name)
-        })
-      );
+  let tagPubIds: number[] | null = null;
+  if (tagId) {
+    const { data: tagRows, error: tagErr } = await supabase
+      .from("effective_publication_tags")
+      .select("publication_id")
+      .eq("user_id", userId)
+      .eq("tag_id", Number(tagId));
 
-      page = featuredPubs.concat(page);
+    if (tagErr) {
+      return NextResponse.json<ApiResponse<Publication[]>>(
+        { success: false, error: tagErr.message }, { status: 500 });
     }
-    
-    let savedIds = new Set<number>();
-    if(page.length > 0) {
-      const { data: savedRows, error: savedError } = await supabase
-        .from("saved_publications")
-        .select("publication_id")
-        .eq("profile_user_id", userId)
-        .in("publication_id", page.map(pub => pub.publication_id));
-      
-      if (savedError) {
-        return NextResponse.json<ApiResponse<Publication[]>>(
-          { success: false, error: savedError.message },
-          { status: 500 },
-        );
-      }
+    tagPubIds = (tagRows ?? []).map((r) => r.publication_id);
+  }
 
-      savedIds = new Set((savedRows ?? []).map((r) => r.publication_id));
+  let query = supabase
+    .from("user_publications_full")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (!hasFilters) query = query.eq("is_featured", false);
+  if (search) query = query.ilike("title", `%${search}%`);
+  if (type) query = query.eq("type", type);
+  if (tagPubIds) query = query.in("publication_id", tagPubIds);
+  if (year && !Number.isNaN(Number(year))) {
+    query = query
+      .gte('date_published', `${year}-01-01`)
+      .lt('date_published', `${Number(year) + 1}-01-01`);
+  }
+
+  if (cursor) {
+    const op = descending ? 'lt' : 'gt';
+    query = query.or(
+      `date_published.${op}.${cursor.date_published},and(date_published.eq.${cursor.date_published},publication_id.${op}.${cursor.publication_id})`
+    );
+  }
+
+  const { data, error } = await query
+    .order("date_published", { ascending: !descending, nullsFirst: false })
+    .order("publication_id", { ascending: !descending })
+    .limit(PAGE_SIZE + 1)
+    .returns<PubRow[]>();
+
+  if (error)
+    return NextResponse.json<ApiResponse<Publication[]>>(
+      { success: false, error: error.message }, { status: 500 });
+
+  const hasMore = data.length > PAGE_SIZE;
+  let page: PubRow[] = hasMore ? data.slice(0, PAGE_SIZE) : data;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last
+    ? { date_published: last.date_published, publication_id: last.publication_id }
+    : null;
+
+  if (!cursor && !hasFilters) {
+    const { data: featuredData, error: featuredError } = await supabase
+      .from("user_publications_full")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_featured", true)
+      .order("date_published", { ascending: !descending, nullsFirst: false })
+      .order("publication_id", { ascending: !descending })
+      .returns<PubRow[]>();
+
+    if (featuredError)
+      return NextResponse.json<ApiResponse<Publication[]>>(
+        { success: false, error: featuredError.message }, { status: 500 });
+
+    page = (featuredData ?? []).concat(page);
+  }
+
+  const tagsByPub = new Map<number, { id: number | null; name: string }[]>();
+  if (page.length > 0) {
+    const { data: tagRows, error: tagsErr } = await supabase
+      .from("effective_publication_tags")
+      .select("publication_id, tag_id, name")
+      .eq("user_id", userId)
+      .in("publication_id", page.map((p) => p.publication_id));
+
+    if (tagsErr)
+      return NextResponse.json<ApiResponse<Publication[]>>(
+        { success: false, error: tagsErr.message }, { status: 500 });
+
+    for (const r of tagRows ?? []) {
+      const arr = tagsByPub.get(r.publication_id) ?? [];
+      arr.push({ id: r.tag_id, name: r.name });
+      tagsByPub.set(r.publication_id, arr);
     }
+  }
 
-    page = page.map(pub => ({
-      ...pub,
-      isSaved: savedIds.has(pub.publication_id)
-    }));
+  let savedIds = new Set<number>();
+  if (page.length > 0) {
+    const { data: savedRows, error: savedError } = await supabase
+      .from("saved_publications")
+      .select("publication_id")
+      .eq("profile_user_id", userId)
+      .in("publication_id", page.map((pub) => pub.publication_id));
 
-    return NextResponse.json<ApiResponse<InfinitePublications>>({ 
-      success: true, 
-      data: {
-        publications: page,
-        nextCursor
-      }
-    });
+    if (savedError)
+      return NextResponse.json<ApiResponse<Publication[]>>(
+        { success: false, error: savedError.message }, { status: 500 });
+
+    savedIds = new Set((savedRows ?? []).map((r) => r.publication_id));
+  }
+
+  const publications = page.map((pub) => ({
+    ...pub,
+    tags: tagsByPub.get(pub.publication_id) ?? [],
+    isSaved: savedIds.has(pub.publication_id),
+  }));
+
+  return NextResponse.json<ApiResponse<InfinitePublications>>({
+    success: true,
+    data: { publications, nextCursor },
+  });
 }

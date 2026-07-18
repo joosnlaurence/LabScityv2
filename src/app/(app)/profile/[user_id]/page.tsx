@@ -42,6 +42,10 @@ interface ProfilePageProps {
   params: Promise<{
     user_id: string;
   }>;
+  searchParams?: Promise<{
+    action?: string;
+    tab?: string;
+  }>;
 }
 
 /**
@@ -53,8 +57,12 @@ interface ProfilePageProps {
  * - Passes all server actions (profile update, follow, media upload, feed actions) as props
  *   so the client component never imports actions directly.
  */
-export default async function ProfilePage({ params }: ProfilePageProps) {
+export default async function ProfilePage({
+  params,
+  searchParams,
+}: ProfilePageProps) {
   const { user_id } = await params;
+  const query = await searchParams;
   const userId = user_id;
 
   const supabase = await createClient();
@@ -161,6 +169,17 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     likeCommentAction: likeComment,
     deletePostAction: deletePost,
     updatePostAction: updatePost,
+    initialTab:
+      query?.tab === "publications" ||
+      query?.tab === "products" ||
+      (query?.tab === "bookmarks" && isOwnProfile)
+        ? query.tab
+        : undefined,
+    profileAction:
+      isOwnProfile &&
+      (query?.action === "add-publication" || query?.action === "add-product")
+        ? query.action
+        : undefined,
   };
 
   return (

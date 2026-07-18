@@ -28,24 +28,24 @@ export async function GET(request: Request) {
   const [pubRows, productRows, postRows, jobRows] = await Promise.all([
     supabase
       .from("saved_publications")
-      .select("publication_id, created_at, publications(*, publication_tags(tags(name)))")
+      .select("publication_id, created_at, publications(*, publication_tags(tag_id, name, tags(id, name)))")
       .eq("profile_user_id", userId)
       .order("created_at", { ascending: false })
       .returns<{ 
         publication_id: number; 
         created_at: string; 
-        publications: Publication & { publication_tags: { tags: { name: string } }[] }
+        publications: Publication & { publication_tags: { tag_id: number, name: string, tags: { id: number, name: string } }[] }
       }[]>(),
     supabase
       .from("saved_products")
-      .select("product_id, created_at, products(*, product_tags(tags(name)), product_images(image_path, width, height))")
+      .select("product_id, created_at, products(*, product_tags(tag_id, name, tags(id, name)), product_images(image_path, width, height))")
       .eq("profile_user_id", userId)
       .order("created_at", { ascending: false })
       .returns<{ 
         product_id: number; 
         created_at: string; 
         products: Product & 
-          { product_tags: { tags: { name: string } }[] } & 
+          { product_tags: { tag_id: number | null; name: string | null; tags: { id: number; name: string } | null }[] } & 
           { product_images: { image_path: string; width: number; height: number }[] }
       }[]>(),
     supabase
@@ -99,7 +99,10 @@ export async function GET(request: Request) {
       ...row,
       publications: {
         ...pub,
-        topics: (publication_tags ?? []).map((pt: any) => pt.tags.name),
+        tags: (publication_tags ?? []).map((pt) => ({
+          id: pt.tag_id,
+          name: pt.name ?? pt.tags?.name ?? "",
+        })),
         isSaved: true,
       },
     };
@@ -111,9 +114,13 @@ export async function GET(request: Request) {
       ...row,
       products: {
         ...product,
-        topics: (product_tags ?? []).map((pt: any) => pt.tags.name),
+        tags: (product_tags ?? []).map((pt) => ({
+          id: pt.tag_id,
+          name: pt.name ?? pt.tags?.name ?? "",
+        })),
         isSaved: true,
         images: product_images?.map((pi) => ({
+          image_path: pi.image_path,
           url: supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(pi.image_path).data.publicUrl,
           width: pi.width,
           height: pi.height
@@ -130,7 +137,7 @@ export async function GET(request: Request) {
       ...row,
       jobs: {
         ...job,
-        // topics: (job_tags ?? []).map((pt: any) => pt.tags.name),
+        // topics: (job_tags ?? []).map((pt: any) => pt.topics.name),
         isSaved: true,
       },
     };

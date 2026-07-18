@@ -48,6 +48,7 @@ interface LSPublicationProps {
   onFeaturedClick?: () => void,
   featureBtnDisabled?: boolean,
   onSaveClick?: () => void,
+  onEditClick?: () => void
 } 
 
 export default function LSPublication(
@@ -59,6 +60,7 @@ export default function LSPublication(
     onFeaturedClick,
     featureBtnDisabled,
     onSaveClick,
+    onEditClick
   }: LSPublicationProps
 ) {
   const [confirmOpen, { open: openConfirm, close: closeConfirm }] = useDisclosure(false);
@@ -68,14 +70,14 @@ export default function LSPublication(
   const visibleAuthors = (pub?.authors ?? []).slice(0, 3);
   const authorOverflow = (pub?.authors ?? []).length - visibleAuthors.length;
 
-  const date = pub.date_published ? 
-  new Intl.DateTimeFormat("en-US", { 
-    year: "numeric", 
-    month: "long",  
-  }).format(new Date(pub.date_published))
+  pub.title === 'test' ? console.log(pub.date_published) : undefined;
+
+  const date = pub.date_published
+  ? new Intl.DateTimeFormat("en-US", { year: "numeric", month: "long", timeZone: "UTC" }).format(new Date(pub.date_published))
   : undefined;
 
   const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : null;
+
   return (
     <>
     {
@@ -319,12 +321,14 @@ export default function LSPublication(
 
           {/* Topics */}
           {
-            (pub?.topics && pub.topics.length > 0) ?
+            (pub?.tags && pub.tags.length > 0) ?
             <Group gap='xs'>
               {
-              pub.topics.map((topic) =>  
-                <Badge
-                  key={topic}
+              pub.tags.map((t, i) =>  {
+                console.log(t);
+                return (
+                  <Badge
+                  key={t.id ?? `${t.name}${i}`}
                   bd={pub.is_featured ? '1px solid indigo.2' : undefined}
                   bg={pub.is_featured ? 'indigo.0' : 'gray.2'}
                   c={pub.is_featured ? 'indigo.9' : 'var(--mantine-color-text)'}
@@ -332,8 +336,10 @@ export default function LSPublication(
                   tt='none'
                   fz='0.75rem'
                 >
-                  {topic}
+                  {t.name}
                 </Badge>
+                )
+              }
                 )
               }
             </Group>
@@ -397,7 +403,7 @@ export default function LSPublication(
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconEdit size='1rem' />}>
+                <Menu.Item leftSection={<IconEdit size='1rem' />} onClick={onEditClick}>
                   Edit
                 </Menu.Item>
                 <Menu.Divider />

@@ -70,9 +70,7 @@ export async function GET(request: Request) {
                 ...publications!,
                 ...updates,
                 is_featured,
-                topics: (publications?.publication_tags ?? [])
-                  .map((pt) => pt.tags?.name)
-                  .filter((name): name is string => Boolean(name)),
+                tags: null,
               }))
         }
     );

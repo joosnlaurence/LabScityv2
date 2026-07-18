@@ -18,12 +18,12 @@ export const createProductSchema = z.object({
         .string()
         .min(1, {
             message: "Title is required"})
-        .max(120, {
+        .max(300, {
             message: "Title must be less than 120 characters" }), 
     short_summary: z
         .string()
-        .min(1, {message: "Short summary is required" })
-        .max(MAX_PRODUCT_SUMMARY_LENGTH, {message: " "}),
+        .max(MAX_PRODUCT_SUMMARY_LENGTH, {message: " "})
+        .optional(),
     publication_id: z
         .number()
         .int()
@@ -63,10 +63,15 @@ export const createProductSchema = z.object({
         .enum(PRODUCT_TYPE_VALUES)
         .optional(),
 
-    tag_ids: z
-        .array(z.number().int().positive())
-        .max(3, { message: "Maximum of 3 tags allowed" }) // this number can change
-        .optional(),
+    tags: z
+      .array(
+        z.object({
+          id: z.number().int().positive().nullable(),
+          name: z.string().trim().min(2).max(60),
+        }),
+      )
+      .max(3, { message: "Maximum of 3 tags allowed" })
+      .optional(),
       
     is_featured: z
         .boolean()
