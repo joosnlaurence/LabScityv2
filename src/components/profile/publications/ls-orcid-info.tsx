@@ -23,11 +23,11 @@ export default function OrcidInfo({
         }}
       >
         <Text fz='xs'>
-          An <Text component='span' fz='xs' fw='600'>ORCID iD </Text> 
+          An <b>ORCID iD </b> 
           is a unique identifier researchers can use to link all of your 
           research with you. Linking your account with an ORCID iD will
           enable LabScity to automatically fetch data about your 
-          publications. 
+          work. 
         </Text>
         <Anchor c='navy.6' fz='xs' href='https://info.orcid.org/researchers/' target="_blank" rel="noopener noreferrer">
           Learn more at orcid.org

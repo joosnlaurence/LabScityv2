@@ -21,6 +21,9 @@ export const PRODUCT_TYPE_LABELS = {
   retraction: "Retraction",
   standard: "Standard",
   supplementary_materials: "Supplementary Materials",
+  erratum: "Erratum",
+  review_article: "Review Article",
+  data_paper: "Data Paper"
 } as const;
 
 export type ProductType = keyof typeof PRODUCT_TYPE_LABELS;

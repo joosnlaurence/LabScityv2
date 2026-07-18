@@ -201,15 +201,23 @@ export default function LSProduct(
         
         <Stack gap='6'>
           {/* Title */}
-          <Anchor 
-            fz='lg' 
-            fw='600' 
-            href={viewLink ?? ''}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {product.title}
-          </Anchor>
+          {
+            viewLink
+            ?
+            <Anchor 
+              fz='lg' 
+              fw='600' 
+              href={viewLink ?? undefined}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {product.title}
+            </Anchor>
+            :
+            <Text fz='lg' fw='600'>
+              {product.title}
+            </Text>
+          }
           {/* Contributors */}
           <Group fz='sm'>
             {
