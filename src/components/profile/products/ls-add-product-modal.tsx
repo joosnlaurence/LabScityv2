@@ -3,7 +3,7 @@ import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { useForm, isNotEmpty } from "@mantine/form";
 import { IconBox, IconPlus, IconTrash, IconUpload, IconX } from "@tabler/icons-react";
 import { createProductSchema, type CreateProductValues } from "@/lib/validations/product"; 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MAX_IMAGE_UPLOADS as MAX_PRODUCT_PREVIEWS, MAX_PRODUCT_SUMMARY_LENGTH, PRODUCT_TYPE_LABELS } from "@/lib/constants/product";
 import { useCreateProduct, useSearchTags } from "./use-products";
 import { UploadProductPreview } from "@/lib/types/data";
@@ -11,9 +11,25 @@ import { UploadProductPreview } from "@/lib/types/data";
 const ACCEPTED_FILE_TYPES = "image/jpeg,image/png,image/webp";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-export default function LSAddProductModal({ userId }: { userId: string }) {
+type LSAddProductModalProps = {
+  userId: string;
+  autoOpen?: boolean;
+};
+
+export default function LSAddProductModal({
+  userId,
+  autoOpen = false,
+}: LSAddProductModalProps) {
   const [modalOpened, {open: openModal, close: closeModal}] = useDisclosure(false);
+  const autoOpenedRef = useRef(false);
   const [images, setImages] = useState<UploadProductPreview[]>([]);
+
+  useEffect(() => {
+    if (autoOpen && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      openModal();
+    }
+  }, [autoOpen, openModal]);
 
   const [tagsSearch, setTagsSearch] = useState('');
   const [debouncedTagsSearch] = useDebouncedValue(tagsSearch, 300);
@@ -295,7 +311,7 @@ export default function LSAddProductModal({ userId }: { userId: string }) {
         onClick={openModal}
       >
         Add Product
-      </Button>  
+      </Button>
     </>
   )
 }

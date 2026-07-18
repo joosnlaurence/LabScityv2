@@ -29,24 +29,22 @@ export function formatWorkModeLabel(value: string | null | undefined) {
   );
 }
 
-export function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+export function getPlainTextFromHtml(value: string | null | undefined) {
+  return (value ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export function getJobPreviewHtml(
+export function getJobPreviewText(
   summary: string | null | undefined,
   description: string | null | undefined,
 ) {
-  const trimmedSummary = summary?.trim();
-
-  if (trimmedSummary) {
-    return `<p>${escapeHtml(trimmedSummary)}</p>`;
-  }
-
-  return description?.trim() || "<p></p>";
+  return summary?.trim() || getPlainTextFromHtml(description);
 }

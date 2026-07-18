@@ -16,7 +16,13 @@ import { PubFilters } from "@/lib/types/publication";
 import { useUserProfile } from "../use-profile";
 import { OPENALEX_WORK_TYPE_LABELS } from "@/lib/constants/openalex";
 
-export default function LSPublicationsList({userId}: {userId: string}) {  
+export default function LSPublicationsList({
+  userId,
+  autoOpenOrcid = false,
+}: {
+  userId: string;
+  autoOpenOrcid?: boolean;
+}) {  
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
 
@@ -194,7 +200,7 @@ export default function LSPublicationsList({userId}: {userId: string}) {
             </Button>
           </Group>
           <Group wrap='nowrap'>
-            <LSOrcidLinker userId={userId}/>
+            <LSOrcidLinker userId={userId} autoOpen={autoOpenOrcid}/>
             <OrcidInfo size='2rem' />
           </Group>
           </>

@@ -14,7 +14,13 @@ import { useUserProfile } from "../use-profile";
 import LSOrcidProductsModal from "./ls-orcid-products-modal";
 import OrcidInfo from "../publications/ls-orcid-info";
 
-export default function LSProductsList({ userId }: { userId: string }) {
+export default function LSProductsList({
+  userId,
+  autoOpenAddProduct = false,
+}: {
+  userId: string;
+  autoOpenAddProduct?: boolean;
+}) {
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
 
@@ -104,7 +110,10 @@ export default function LSProductsList({ userId }: { userId: string }) {
         {
           isOwner &&
           <Group>
-            <LSAddProductModal userId={userId} />
+            <LSAddProductModal
+              userId={userId}
+              autoOpen={autoOpenAddProduct}
+            />
             <LSOrcidProductsModal userId={userId}/>
             <OrcidInfo size='2rem' />
           </Group>

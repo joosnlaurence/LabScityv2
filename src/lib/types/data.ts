@@ -1,6 +1,6 @@
-import { FeedCommentItem, FeedPostItem, User } from '@/lib/types/feed'
-import { PublicationType } from './publication';
-import { OpenAlexWorkType } from './openalex';
+import type { FeedCommentItem } from "@/lib/types/feed";
+import type { OpenAlexWorkType } from "./openalex";
+import type { PublicationType } from "./publication";
 
 /** Core post type aligned with database schema */
 export interface Post {
@@ -28,23 +28,23 @@ export interface Group {
   conversation_id: number | null;
   topics: string[] | null;
   last_activity_at: string | null;
-  privacy: 'public' | 'private' | null;
+  privacy: "public" | "private" | null;
   avatar_url: string | null;
   cover_photo_url: string | null;
   rules: string | null;
 }
 
-export interface UploadProductPreview { 
-  file: File, 
-  url: string, 
-  width: number, 
-  height: number 
+export interface UploadProductPreview {
+  file: File;
+  url: string;
+  width: number;
+  height: number;
 }
 
 export interface ProductImageDraft {
-  file: File,
-  height: number,
-  width: number
+  file: File;
+  height: number;
+  width: number;
 }
 
 export interface ProductImage {
@@ -57,10 +57,10 @@ export interface Product {
   product_id: number;
   title: string;
   short_summary: string | null;
-  links: { 
-    kind: "website" | "github" | "other", 
-    url: string, 
-    label: string | null 
+  links: {
+    kind: "website" | "github" | "other";
+    url: string;
+    label: string | null;
   }[];
   publication_id: number | null;
   images: ProductImage[];
@@ -107,10 +107,10 @@ export interface TrendingJobTag {
 }
 
 export interface LocationResult {
-    place_id: number;
-    display_name: string;
-    lat: string;
-    lon: string;
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
 }
 
 export interface Job {
@@ -125,8 +125,9 @@ export interface Job {
   organization: string | null;
   work_mode: "on-site" | "remote" | "hybrid" | null;
   job_type: "full-time" | "part-time" | "internship" | "contract" | null;
-  academia_role: "postdoc" | "faculty" | "phd" | "grad_student"  | null;
+  academia_role: "postdoc" | "faculty" | "phd" | "grad_student" | null;
   application_link: string | null;
+  contact_email: string | null;
   isSaved: boolean;
 }
 
@@ -182,7 +183,7 @@ export interface GetFeedInput {
 export interface SearchInput {
   query: string;
   limit?: number;
-};
+}
 
 /** Input for fetching user-specific posts with pagination */
 export interface GetUserPostsInput {
@@ -208,11 +209,10 @@ export interface UserPostsResponse {
 // NOTE: This is extremely fragile. Will need to be updated if changes are made to search view on db
 /** Holds a single response from search function */
 export interface searchResult {
-  content_type: string,
-  content: string,
-  category: string,
-  id: string,
-  names: string,
-  tsv: string,
-};
-
+  content_type: string;
+  content: string;
+  category: string;
+  id: string;
+  names: string;
+  tsv: string;
+}

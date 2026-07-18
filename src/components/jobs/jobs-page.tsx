@@ -15,14 +15,13 @@ import {
   TextInput,
   ThemeIcon,
 } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
 import {
-  IconAdjustmentsHorizontal,
   IconBookmark,
   IconBriefcase,
   IconBuilding,
   IconChevronDown,
   IconChevronRight,
-  IconClock,
   IconExternalLink,
   IconMapPin,
   IconPlus,
@@ -32,15 +31,18 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
-import { getJobPreviewHtml, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from "./job-display";
-import { toJobViewModel, type JobViewModel } from "./job-view-model";
-import { useJobs, useMyJobs, useSetSavedJob } from "./use-jobs";
-import { useDebouncedValue } from "@mantine/hooks";
-import { JobType, WorkMode } from "@/lib/constants/job";
-import { JobFilters } from "@/lib/types/jobs";
+import type { JobType, WorkMode } from "@/lib/constants/job";
+import type { JobFilters } from "@/lib/types/jobs";
 import { useAuth } from "../auth/use-auth";
 import { useLocationSearch } from "../profile/use-profile-search";
+import {
+  getJobPreviewText,
+  JOB_TYPE_OPTIONS,
+  WORK_MODE_OPTIONS,
+} from "./job-display";
+import { copyJobLink } from "./job-share";
+import { type JobViewModel, toJobViewModel } from "./job-view-model";
+import { useJobs, useMyJobs, useSetSavedJob } from "./use-jobs";
 
 export function JobsPage() {
   const [search, setSearch] = useState("");
@@ -70,7 +72,7 @@ export function JobsPage() {
 
   const jobsQuery = useJobs(filters);
   const myJobsQuery = useMyJobs(!!currentUserId);
-  const setSavedJob = useSetSavedJob(currentUserId ?? '');
+  const setSavedJob = useSetSavedJob(currentUserId ?? "");
 
   const jobs = useMemo(
     () => (jobsQuery.data?.pages.flat() ?? []).map(toJobViewModel),
@@ -100,19 +102,31 @@ export function JobsPage() {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [jobsQuery.fetchNextPage, jobsQuery.hasNextPage, jobsQuery.isFetchingNextPage]);
+  }, [
+    jobsQuery.fetchNextPage,
+    jobsQuery.hasNextPage,
+    jobsQuery.isFetchingNextPage,
+  ]);
 
   return (
     <Box mih="calc(100vh - 56px)">
       <Box maw={1320} mx="auto" px={{ base: "sm", md: "xl" }} py="xl">
         <Group justify="space-between" align="flex-end" mb="lg">
           <Box>
-            <Text component="h1" fz={28} fw={800} c="gray.9" m={0}>Jobs</Text>
+            <Text component="h1" fz={28} fw={800} c="gray.9" m={0}>
+              Jobs
+            </Text>
             <Text size="sm" c="dimmed">
               Discover research, academic, and industry opportunities.
             </Text>
           </Box>
-          <Button component={Link} href="/jobs/new" leftSection={<IconPlus size={16} />} color="navy" radius="md">
+          <Button
+            component={Link}
+            href="/jobs/new"
+            leftSection={<IconPlus size={16} />}
+            color="navy"
+            radius="md"
+          >
             Post a Job
           </Button>
         </Group>
@@ -135,7 +149,9 @@ export function JobsPage() {
               clearable
               leftSection={<IconMapPin size={16} />}
               rightSection={
-                locationSearchQuery.isFetching ? <Loader size={14} /> : undefined
+                locationSearchQuery.isFetching ? (
+                  <Loader size={14} />
+                ) : undefined
               }
               radius="md"
               style={{ flex: "1 1 220px" }}
@@ -143,7 +159,10 @@ export function JobsPage() {
             <Select
               value={jobType}
               onChange={(v) => setJobType(v as JobType | null)}
-              data={JOB_TYPE_OPTIONS.map(option => ({ value: option.value, label: option.label }))}
+              data={JOB_TYPE_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
               placeholder="Job type"
               clearable
               leftSection={<IconBriefcase size={16} />}
@@ -153,60 +172,61 @@ export function JobsPage() {
             <Select
               value={workMode}
               onChange={(v) => setWorkMode(v as WorkMode | null)}
-              data={WORK_MODE_OPTIONS.map(option => ({ value: option.value, label: option.label }))}
+              data={WORK_MODE_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
               placeholder="Work mode"
               clearable
               w={180}
-              leftSection={<IconMapPin size={16}/>}
+              leftSection={<IconMapPin size={16} />}
               rightSection={<IconChevronDown size={16} />}
             />
-            <Button variant="outline" color="gray" leftSection={<IconAdjustmentsHorizontal size={16} />} ml="auto" disabled>
-              More filters
-            </Button>
           </Flex>
         </Card>
 
         <Flex gap="lg" align="flex-start">
           <Stack flex={1} gap="md" miw={0}>
             <Group justify="space-between">
-              <Text size="sm" c="dimmed">{jobs.length} loaded</Text>
-              <Button variant="subtle" color="gray" size="compact-sm" rightSection={<IconChevronDown size={14} />} disabled>
-                Sort: Relevance
-              </Button>
+              <Text size="sm" c="dimmed">
+                {jobs.length} loaded
+              </Text>
             </Group>
 
-            {
-              jobsQuery.isError ? (
-                <Card radius="md" shadow="xs" padding="lg" withBorder>
-                  <Text fw={700} c="red.7">
-                    {jobsQuery.error?.message ?? "Failed to load jobs"}
-                  </Text>
-                </Card>
-              ) : null
-            }
+            {jobsQuery.isError ? (
+              <Card radius="md" shadow="xs" padding="lg" withBorder>
+                <Text fw={700} c="red.7">
+                  {jobsQuery.error?.message ?? "Failed to load jobs"}
+                </Text>
+              </Card>
+            ) : null}
 
-            {
-              jobsQuery.isLoading ? (
-                <Group justify="center" py="xl"><Loader /></Group>
-              ) : null
-            }
+            {jobsQuery.isLoading ? (
+              <Group justify="center" py="xl">
+                <Loader />
+              </Group>
+            ) : null}
 
-            {
-              !jobsQuery.isLoading && !jobsQuery.isError && jobs.length === 0 ? (
-                <Card radius="md" shadow="xs" padding="lg" withBorder>
-                  <Text fw={700} c="gray.8">No jobs found</Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Be the first to post a listing for this area.
-                  </Text>
-                </Card>
-              ) : null
-            }
+            {!jobsQuery.isLoading && !jobsQuery.isError && jobs.length === 0 ? (
+              <Card radius="md" shadow="xs" padding="lg" withBorder>
+                <Text fw={700} c="gray.8">
+                  No jobs found
+                </Text>
+                <Text size="sm" c="dimmed" mt={4}>
+                  Be the first to post a listing for this area.
+                </Text>
+              </Card>
+            ) : null}
 
-            {
-              jobs.map((job) => (
-                <JobCard key={job.id} job={job} onSaveClick={() => setSavedJob.mutate({ jobId: job.id, isSaved: !job.isSaved })}/>
-              ))
-            }
+            {jobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                onSaveClick={() =>
+                  setSavedJob.mutate({ jobId: job.id, isSaved: !job.isSaved })
+                }
+              />
+            ))}
 
             {jobsQuery.hasNextPage ? <Box ref={loadMoreRef} h={1} /> : null}
             {jobsQuery.isFetchingNextPage ? (
@@ -217,27 +237,54 @@ export function JobsPage() {
           </Stack>
 
           <Stack w={300} gap="md" visibleFrom="lg">
-            <SidebarCard title="Recently Viewed" icon={<IconClock size={17} />}>
-              <Text size="sm" c="dimmed">Jobs you view will show up here.</Text>
-            </SidebarCard>
-
-            <SidebarCard title="Your Postings" icon={<IconBuilding size={17} />}>
+            <SidebarCard
+              title="Your Postings"
+              icon={<IconBuilding size={17} />}
+            >
               {myPostings.length > 0 ? (
-                myPostings.slice(0, 3).map((job) => (
-                  <SidebarRow key={job.id} title={job.title} subtitle={job.org} href={`/jobs/${job.id}`} />
-                ))
+                myPostings
+                  .slice(0, 3)
+                  .map((job) => (
+                    <SidebarRow
+                      key={job.id}
+                      title={job.title}
+                      subtitle={job.org}
+                      href={`/jobs/${job.id}`}
+                    />
+                  ))
               ) : (
-                <Text size="sm" c="dimmed">Post a job to see your listings here.</Text>
+                <Text size="sm" c="dimmed">
+                  Post a job to see your listings here.
+                </Text>
               )}
-              <Button component={Link} href="/jobs/new" mt="sm" fullWidth variant="outline" color="gray" leftSection={<IconPlus size={15} />}>
+              <Button
+                component={Link}
+                href="/jobs/new"
+                mt="sm"
+                fullWidth
+                variant="outline"
+                color="gray"
+                leftSection={<IconPlus size={15} />}
+              >
                 Post a new job
               </Button>
             </SidebarCard>
 
-            <SidebarCard title="Trending Fields" icon={<IconTrendingUp size={17} />}>
+            <SidebarCard
+              title="Trending Fields"
+              icon={<IconTrendingUp size={17} />}
+            >
               <Group gap={6}>
-                {["Deep Learning", "Holography", "Phase Imaging", "Computational Imaging", "Scientific Software"].map((tag) => (
-                  <Badge key={tag} variant="light" color="gray" radius="xl">{tag}</Badge>
+                {[
+                  "Deep Learning",
+                  "Holography",
+                  "Phase Imaging",
+                  "Computational Imaging",
+                  "Scientific Software",
+                ].map((tag) => (
+                  <Badge key={tag} variant="light" color="gray" radius="xl">
+                    {tag}
+                  </Badge>
                 ))}
               </Group>
             </SidebarCard>
@@ -248,12 +295,12 @@ export function JobsPage() {
   );
 }
 
-export function JobCard({ 
-  job, 
-  onSaveClick 
-}: { 
-  job: JobViewModel,
-  onSaveClick: () => void
+export function JobCard({
+  job,
+  onSaveClick,
+}: {
+  job: JobViewModel;
+  onSaveClick: () => void;
 }) {
   return (
     <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
@@ -305,12 +352,9 @@ export function JobCard({
             </Text>
           </Group>
 
-          <Box mb="sm">
-            <PostRichTextContent
-              html={getJobPreviewHtml(job.summary, job.description)}
-              maxHeight={52}
-            />
-          </Box>
+          <Text size="sm" c="gray.7" lineClamp={3} mb="sm">
+            {getJobPreviewText(job.summary, job.description)}
+          </Text>
 
           <Badge variant="light" color="gray" radius="xl" mb="md">
             {job.remote}
@@ -350,8 +394,7 @@ export function JobCard({
                 Apply
               </Button>
             )}
-            {
-              !!onSaveClick && 
+            {!!onSaveClick && (
               <Button
                 variant={job.isSaved ? "light" : "outline"}
                 color={job.isSaved ? "navy" : "gray"}
@@ -366,8 +409,16 @@ export function JobCard({
               >
                 {job.isSaved ? "Saved" : "Save"}
               </Button>
-            }
-            <Button ml="auto" variant="subtle" color="gray" px="xs" disabled>
+            )}
+            <Button
+              ml="auto"
+              variant="subtle"
+              color="gray"
+              px="xs"
+              aria-label="Copy job link"
+              title="Copy job link"
+              onClick={() => void copyJobLink(job.id)}
+            >
               <IconShare3 size={16} />
             </Button>
           </Group>
