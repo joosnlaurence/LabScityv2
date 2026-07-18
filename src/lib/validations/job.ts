@@ -1,44 +1,41 @@
 import { z } from "zod";
-import { WORK_MODE_VALUES, JOB_TYPE_VALUES, ACADEMIA_ROLE_VALUES  } from "../constants/job";
+import {
+  ACADEMIA_ROLE_VALUES,
+  JOB_TYPE_VALUES,
+  WORK_MODE_VALUES,
+} from "../constants/job";
 import { JOB_TYPES, WORK_MODES } from "../types/jobs";
 
-// id, title, description, summary, location, 
-// department, organization, work_mode, job_type, academia_role, application_link, 
+export const JOB_SUMMARY_MAX_LENGTH = 420;
+
+// id, title, description, summary, location,
+// department, organization, work_mode, job_type, academia_role, application_link, contact_email,
 export const createJobSchema = z.object({
-    title: z
-        .string()
-        .min(1, {
-            message: "Title is required" })
-        .max(120, {
-            message: "Title must not exceed 120 characters"}),
-    description: z
-        .string()
-        .min(1, {
-            message: "A description is required "}),
-    summary: z
-        .string()
-        .optional(),
-    location: z
-        .string()
-        .optional(),
-    department: z
-        .string()
-        .optional(),
-    organization: z
-        .string()
-        .optional(),
-    work_mode: z
-        .enum(WORK_MODE_VALUES)
-        .optional(),
-    job_type: z
-        .enum(JOB_TYPE_VALUES)
-        .optional(),
-    academia_role: z
-        .enum(ACADEMIA_ROLE_VALUES)
-        .optional(),
-    application_link: z
-        .string()
-        .optional(),
+  title: z
+    .string()
+    .min(1, {
+      message: "Title is required",
+    })
+    .max(120, {
+      message: "Title must not exceed 120 characters",
+    }),
+  description: z.string().min(1, {
+    message: "A description is required ",
+  }),
+  summary: z
+    .string()
+    .max(JOB_SUMMARY_MAX_LENGTH, {
+      message: `Summary must not exceed ${JOB_SUMMARY_MAX_LENGTH} characters`,
+    })
+    .optional(),
+  location: z.string().optional(),
+  department: z.string().optional(),
+  organization: z.string().optional(),
+  work_mode: z.enum(WORK_MODE_VALUES).optional(),
+  job_type: z.enum(JOB_TYPE_VALUES).optional(),
+  academia_role: z.enum(ACADEMIA_ROLE_VALUES).optional(),
+  application_link: z.string().optional(),
+  contact_email: z.email("Valid contact email required").optional(),
 });
 
 export const updateJobSchema = createJobSchema.partial();

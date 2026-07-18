@@ -14,6 +14,7 @@ export interface JobViewModel {
   description: string;
   summary: string | null;
   applyUrl: string | null;
+  contactEmail: string | null;
   isSaved: boolean;
 }
 
@@ -58,6 +59,7 @@ export function toJobViewModel(job: DbJob): JobViewModel {
     description: job.description,
     summary: job.summary,
     applyUrl: job.application_link,
-    isSaved: job.isSaved
+    contactEmail: job.contact_email,
+    isSaved: job.isSaved,
   };
 }

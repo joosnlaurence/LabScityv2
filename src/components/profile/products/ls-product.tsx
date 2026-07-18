@@ -322,9 +322,9 @@ export default function LSProduct(
             (product?.tags && product.tags.length > 0) ?
             <Group gap='xs' py='6'>
               {
-                product.tags.map((topic) =>  
+                product.tags.map((tag) =>  
                   <Badge
-                    key={topic.id}
+                    key={tag.id}
                     bd={product.is_featured ? '1px solid indigo.2' : undefined}
                     bg={product.is_featured ? 'indigo.0' : 'gray.2'}
                     c={product.is_featured ? 'indigo.9' : 'var(--mantine-color-text)'}
@@ -332,7 +332,7 @@ export default function LSProduct(
                     tt='none'
                     fz='0.75rem'
                   >
-                    {topic.name}
+                    {tag.name}
                   </Badge>
                   )
               }

@@ -32,6 +32,7 @@ export function LSGroupsPageShell({
     if (q === "discover") return "discover" as const;
     return "mine" as const;
   }, [searchParams]);
+  const autoOpenCreateGroup = searchParams.get("action") === "create";
 
   const setTabInUrl = useCallback(
     (next: "mine" | "discover") => {
@@ -79,7 +80,10 @@ export function LSGroupsPageShell({
         </Box>
 
         <Tabs.Panel value="mine" pt="md">
-          <LSGroupLayout {...layoutProps} />
+          <LSGroupLayout
+            {...layoutProps}
+            autoOpenCreateGroup={autoOpenCreateGroup}
+          />
         </Tabs.Panel>
 
         <Tabs.Panel value="discover" pt="md">

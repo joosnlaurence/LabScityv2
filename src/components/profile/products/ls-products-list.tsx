@@ -15,9 +15,14 @@ import LSOrcidProductsModal from "./ls-orcid-products-modal";
 import OrcidInfo from "../publications/ls-orcid-info";
 import { Product } from "@/lib/types/data";
 
-export default function LSProductsList({ userId }: { userId: string }) {
+export default function LSProductsList({
+  userId,
+  autoOpenAddProduct = false,
+}: {
+  userId: string;
+  autoOpenAddProduct?: boolean;
+}) {
   const [productModal, setProductModal] = useState<{ mode: 'add'} | { mode: 'edit', product: Product} | null>(null);
-  
   const { user, loading: userLoading } = useAuthContext();
   const isOwner = user?.id === userId;
 
@@ -80,6 +85,14 @@ export default function LSProductsList({ userId }: { userId: string }) {
 
   const setFeaturedProduct = useSetFeaturedProduct(userId);
   const featuredCount = products?.filter((p) => p.is_featured).length ?? 0;
+
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenAddProduct && !autoOpenedRef.current && isOwner) {
+      autoOpenedRef.current = true;
+      setProductModal({ mode: 'add' });
+    }
+  }, [autoOpenAddProduct, isOwner]);
 
   if (isLoadingUserProducts || isLoadingFacets || userLoading) {
     return (

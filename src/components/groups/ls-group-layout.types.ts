@@ -39,6 +39,7 @@ export type UpdatePostAction = typeof updatePost;
 
 export interface LSGroupLayoutProps {
   activeGroupId?: number;
+  autoOpenCreateGroup?: boolean;
   createGroupAvatarUploadUrlAction: CreateGroupAvatarUploadUrlAction;
   createGroupAction: CreateGroupAction;
   joinGroupAction: JoinGroupAction;

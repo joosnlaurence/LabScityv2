@@ -84,6 +84,8 @@ type CreateProfilePictureUploadUrlAction = typeof createProfilePictureUploadUrl;
 type UpdateOwnProfilePictureAction = typeof updateOwnProfilePicture;
 type CreateProfileHeaderUploadUrlAction = typeof createProfileHeaderUploadUrl;
 type UpdateOwnProfileHeaderAction = typeof updateOwnProfileHeader;
+type ProfileTab = "posts" | "publications" | "products" | "bookmarks";
+type ProfileAction = "add-publication" | "add-product";
 
 /**
  * Props for LSProfileView — passed from the profile page server component.
@@ -122,6 +124,8 @@ export interface LSProfileViewProps {
   likeCommentAction: LikeCommentAction;
   deletePostAction: DeletePostAction;
   updatePostAction: UpdatePostAction;
+  initialTab?: Exclude<ProfileTab, "posts">;
+  profileAction?: ProfileAction;
 }
 
 /** Props for mobile layout — single-column stack of hero, posts, friends, following. */
@@ -302,6 +306,8 @@ interface LSProfileDesktopLayoutProps {
   mediaUpload?: ProfileMediaUploadProps;
   onReportClick?: () => void;
   currentUserId: string | null;
+  initialTab?: Exclude<ProfileTab, "posts">;
+  profileAction?: ProfileAction;
 }
 
 const MAX_PROFILE_PAGE_WIDTH = 1660; // in pixels
@@ -325,8 +331,18 @@ const LSProfileDesktopLayout = ({
   followProfile,
   mediaUpload,
   onReportClick,
-  currentUserId
+  currentUserId,
+  initialTab,
+  profileAction,
 }: LSProfileDesktopLayoutProps) => {
+  const initialProfileTab =
+    initialTab ??
+    (profileAction === "add-publication"
+      ? "publications"
+      : profileAction === "add-product"
+        ? "products"
+        : "posts");
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialProfileTab);
   const profileQuery = useUserProfile(userId);
   const profile = profileQuery.data;
   const username = `${profile?.first_name} ${profile?.last_name}`;
@@ -406,7 +422,17 @@ const LSProfileDesktopLayout = ({
             <>No profile found for this user...</>
           }
           <Tabs
-            defaultValue="posts"
+            value={activeTab}
+            onChange={(value) => {
+              if (
+                value === "posts" ||
+                value === "publications" ||
+                value === "products" ||
+                value === "bookmarks"
+              ) {
+                setActiveTab(value);
+              }
+            }}
             activateTabWithKeyboard={false}
             styles={{
               panel: {
@@ -483,11 +509,17 @@ const LSProfileDesktopLayout = ({
             </Tabs.Panel>
 
             <Tabs.Panel value='publications'>
-              <LSPublicationsList userId={userId}/>
+              <LSPublicationsList
+                userId={userId}
+                autoOpenOrcid={isOwnProfile && profileAction === "add-publication"}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value='products'>
-              <LSProductsList userId={userId}/>
+              <LSProductsList
+                userId={userId}
+                autoOpenAddProduct={isOwnProfile && profileAction === "add-product"}
+              />
             </Tabs.Panel>
 
             <Tabs.Panel value='bookmarks'>
@@ -560,6 +592,8 @@ export function LSProfileView(props: LSProfileViewProps) {
           mediaUpload={mediaUpload}
           onReportClick={() => setReportOverlayOpen(true)}
           currentUserId={props.currentUserId}
+          initialTab={props.initialTab}
+          profileAction={props.profileAction}
         />
       )}
     </Box>

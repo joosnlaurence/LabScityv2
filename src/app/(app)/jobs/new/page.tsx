@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { JobComposerPage } from "@/components/jobs/job-composer-page";
-import { createJob } from "@/lib/actions/job";
+import { addJobSkill, addJobTag, createJob } from "@/lib/actions/job";
 
 export const metadata: Metadata = {
   title: "Post a Job | LabScity",
@@ -8,5 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default function NewJobRoutePage() {
-  return <JobComposerPage createJobAction={createJob} />;
+  return (
+    <JobComposerPage
+      createJobAction={createJob}
+      addJobTagAction={addJobTag}
+      addJobSkillAction={addJobSkill}
+    />
+  );
 }

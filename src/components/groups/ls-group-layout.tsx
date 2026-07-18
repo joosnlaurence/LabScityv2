@@ -24,7 +24,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
 import { useAuth } from "@/components/auth/use-auth";
 import LSMiniProfileList from "@/components/profile/ls-mini-profile-list";
@@ -46,6 +46,7 @@ import { useGroupLayout } from "./use-group-layout";
 export function LSGroupLayout(props: LSGroupLayoutProps) {
   const {
     activeGroupId,
+    autoOpenCreateGroup,
     createGroupAvatarUploadUrlAction,
     createGroupAction,
     joinGroupAction,
@@ -67,6 +68,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const { user } = useAuth();
+  const autoOpenedCreateRef = useRef(false);
   const [leaveConfirmOpened, setLeaveConfirmOpened] = useState(false);
   const [deleteConfirmOpened, setDeleteConfirmOpened] = useState(false);
   const {
@@ -108,6 +110,13 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
     (m) => m.user_id === user?.id,
   );
   const isAdmin = currentMember?.role === "Admin";
+
+  useEffect(() => {
+    if (autoOpenCreateGroup && !autoOpenedCreateRef.current) {
+      autoOpenedCreateRef.current = true;
+      openCreateModal();
+    }
+  }, [autoOpenCreateGroup, openCreateModal]);
 
   const handleNewGroupClick = () => {
     closeDrawer();

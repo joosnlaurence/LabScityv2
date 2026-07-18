@@ -21,7 +21,7 @@ import { useDisclosure } from "@mantine/hooks";
 import OrcidInfo from "./ls-orcid-info";
 import { useForm } from "@mantine/form";
 import { orcidSchema } from "@/lib/validations/publication";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ParsedOpenAlexWork, PublicationType } from "@/lib/types/publication";
 import { ApiResponse } from "@/lib/types/api";
 import { useQuery } from "@tanstack/react-query";
@@ -31,11 +31,27 @@ import { IconLink } from "@tabler/icons-react";
 import { OPENALEX_WORK_TYPE_LABELS } from "@/lib/constants/openalex";
 import { OpenAlexWorkType } from "@/lib/types/openalex";
 
-export default function LSOrcidLinker({ userId }: { userId: string }) {
+type LSOrcidLinkerProps = {
+  userId: string;
+  autoOpen?: boolean;
+};
+
+export default function LSOrcidLinker({
+  userId,
+  autoOpen = false,
+}: LSOrcidLinkerProps) {
   const [orcidInputOpened, { open: openOrcidInput, close: closeOrcidInput }] = useDisclosure(false);
+  const autoOpenedRef = useRef(false);
   const [orcid, setOrcid] = useState<string | null>(null);
   const [activePage, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (autoOpen && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      openOrcidInput();
+    }
+  }, [autoOpen, openOrcidInput]);
 
   const orcidForm = useForm({
     mode: 'uncontrolled',
