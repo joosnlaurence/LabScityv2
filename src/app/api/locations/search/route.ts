@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     );
 
     if (!response.ok) {
+        console.error('Nominatim error:', response.status, await response.text());
         return NextResponse.json<ApiResponse<null>>(
             { success: false, error: "Location search failed" },
             { status: 500 }
@@ -31,11 +32,14 @@ export async function GET(request: Request) {
     }
 
     const data: LocationResult[] = await response.json();
+    const deduplicated = data.filter(
+        (item, index, arr) => arr.findIndex(i => i.display_name === item.display_name) === index
+    );
 
     // frontend can use the display_name field to display the name of the location
     // lat and lon are also returned with the response if we want to use that
     return NextResponse.json<ApiResponse<LocationResult[]>>({
         success: true,
-        data
+        data: deduplicated
     });
 }
