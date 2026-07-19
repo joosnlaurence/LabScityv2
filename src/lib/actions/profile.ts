@@ -373,6 +373,8 @@ export async function updateProfileAction(
 
     const profilePayload = {
       user_id: userId,
+      first_name: validated.firstName,
+      last_name: validated.lastName,
       about: emptyToNull(validated.about),
       workplace: emptyToNull(validated.workplace),
       occupation: emptyToNull(validated.occupation),
@@ -388,15 +390,15 @@ export async function updateProfileAction(
       return { success: false, error: profileError.message };
     }
 
-    const { error: usersError } = await supabase
+    const { error: updateUsersError } = await supabase
       .from("users")
       .update({
         first_name: validated.firstName.trim(),
         last_name: validated.lastName.trim(),
       })
       .eq("user_id", userId);
-    if (usersError) {
-      return { success: false, error: usersError.message };
+    if (updateUsersError) {
+      return { success: false, error: updateUsersError.message };
     }
 
     return { success: true };

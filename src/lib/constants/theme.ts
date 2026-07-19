@@ -1,6 +1,7 @@
 "use client";
 
 import { 
+  Avatar,
   Card,
   createTheme, 
   CSSVariablesResolver,
@@ -47,6 +48,12 @@ export const theme = createTheme({
         bg: 'gray.0'
       }
     }), 
+    Avatar: Avatar.extend({
+      defaultProps: {
+        color: "navy.6",
+        bg: "navy.1"
+      }
+    }),
   },
 });
 

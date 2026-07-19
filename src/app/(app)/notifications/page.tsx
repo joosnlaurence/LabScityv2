@@ -21,142 +21,18 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
 import { LSGroupInviteNotificationCard } from "@/components/notifications/ls-group-invite-notification-card";
 import { useMarkNotificationAsRead } from "@/components/notifications/use-notifications";
 import { parseGroupIdFromNotificationLink } from "@/lib/utils/group-notification";
 import { useNotificationStore } from "@/store/notificationStore";
+import { LSNotificationCard } from "@/components/notifications/ls-notification-card";
 
 const LAST_VISITED_NOTIFICATIONS_KEY =
   "labscity:last-notifications-page-seen-at";
 const PENDING_VISIT_START_KEY =
   "labscity:pending-notifications-page-visit-start-at";
-
-function getNotificationIcon(type: string) {
-  switch (type) {
-    case "post_like":
-      return IconHeartFilled;
-    case "new_comment":
-      return IconMessageCircleFilled;
-    case "new_follow":
-      return IconUserFilled;
-    case "group_invite":
-      return IconUsers;
-    case "new_message":
-      return IconMessageFilled;
-    default:
-      return IconBell;
-  }
-}
-
-function getNotificationIconColor(type: string) {
-  return type === "post_like"
-    ? "var(--mantine-color-red-6)"
-    : "var(--mantine-color-navy-7)";
-}
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-function NotificationCard({
-  notification,
-  isNew,
-  onDismiss,
-}: {
-  notification: ReturnType<
-    typeof useNotificationStore.getState
-  >["notifications"][number];
-  isNew: boolean;
-  onDismiss: (id: string) => void;
-}) {
-  const Icon = getNotificationIcon(notification.type);
-  const iconColor = getNotificationIconColor(notification.type);
-
-  return (
-    <Paper
-      withBorder
-      radius="md"
-      p="md"
-      pr={64}
-      pos="relative"
-      bg="white"
-      style={
-        isNew
-          ? { borderColor: "var(--mantine-color-navy-7)", borderWidth: 1.5 }
-          : undefined
-      }
-    >
-      <ActionIcon
-        variant="subtle"
-        color="gray"
-        size="sm"
-        aria-label="Dismiss notification"
-        onClick={() => onDismiss(notification.id)}
-        pos="absolute"
-        top="50%"
-        right={10}
-        style={{ transform: "translateY(-50%)" }}
-      >
-        <IconX size={14} />
-      </ActionIcon>
-      <Group align="flex-start" wrap="nowrap">
-        <Icon size={24} color={iconColor} />
-        <Stack gap={2}>
-          <Text size="sm">
-            {notification.link ? (
-              <Link href={notification.link} style={{ textDecoration: "none" }}>
-                <Text span fw={600} c="navy.7" style={{ cursor: "pointer" }}>
-                  {notification.title}
-                  {notification.bundleCount && notification.bundleCount > 1 && (
-                    <Text span c="dimmed">
-                      {" "}
-                      (+{notification.bundleCount - 1} more)
-                    </Text>
-                  )}
-                </Text>
-              </Link>
-            ) : (
-              <Text span fw={600}>
-                {notification.title}
-                {notification.bundleCount && notification.bundleCount > 1 && (
-                  <Text span c="dimmed">
-                    {" "}
-                    (+{notification.bundleCount - 1} more)
-                  </Text>
-                )}
-              </Text>
-            )}{" "}
-            {notification.content}
-          </Text>
-          <Text size="xs" c="dimmed">
-            {formatRelativeTime(notification.created_at)}
-          </Text>
-          {isNew && (
-            <Group gap={4}>
-              <IconCircleFilled size={8} color="var(--mantine-color-navy-7)" />
-              <Text size="xs" c="navy.7" fw={600}>
-                New
-              </Text>
-            </Group>
-          )}
-        </Stack>
-      </Group>
-    </Paper>
-  );
-}
 
 function NotificationsHeader({ totalCount }: { totalCount: number }) {
   return (
@@ -205,7 +81,7 @@ const LSNotificationsMobileLayout = ({
           );
         }
         return (
-          <NotificationCard
+          <LSNotificationCard
             key={notification.id}
             notification={notification}
             isNew={isNotificationNew(notification.created_at)}
@@ -242,7 +118,7 @@ const LSNotificationsDesktopLayout = ({
         </Box>
       </Flex>
       <Divider my={20} color="navy.1" />
-      <Stack mt={20} px="20%" gap={12}>
+      <Stack mt={20} px="30%" gap={12}>
         {notifications.map((notification) => {
           const groupId =
             notification.type === "group_invite"
@@ -260,7 +136,7 @@ const LSNotificationsDesktopLayout = ({
             );
           }
           return (
-            <NotificationCard
+            <LSNotificationCard
               key={notification.id}
               notification={notification}
               isNew={isNotificationNew(notification.created_at)}

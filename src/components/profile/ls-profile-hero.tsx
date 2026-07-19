@@ -13,11 +13,10 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconPlus, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { LSEditProfileModal } from "./ls-edit-profile-modal";
 import { useDisclosure } from "@mantine/hooks";
 import { User } from "@/lib/types/feed";
-import { useGetPublicationFacets } from "./publications/use-publications";
 import LSProfileListModal from "./ls-profile-list-modal";
 import { useUserFollowers, useUserFollowing } from "./use-profile";
 import classes from './ls-profile-hero.module.css'
@@ -435,7 +434,7 @@ export default function LSProfileHero({
               <>
                 <Button 
                   variant='outline' 
-                  rightSection={<IconPlus size='1rem'/>}
+                  rightSection={<IconPencil size='1rem'/>}
                   onClick={openResearchAreasModal}
                   c='dimmed'
                   bd='1px dashed dimmed'
@@ -443,7 +442,7 @@ export default function LSProfileHero({
                   size='xs'
                   w='fit-content'
                 >
-                  Add Research Areas
+                  Edit Research Areas
                 </Button>
                 <LSAddTagsModal userId={profile.user_id} opened={researchAreasModalOpened} onClose={closeResearchAreasModal}/>
               </>
@@ -501,7 +500,7 @@ export default function LSProfileHero({
               <>
               <Button 
                 variant='outline' 
-                rightSection={<IconPlus size='1rem'/>}
+                rightSection={<IconPencil size='1rem'/>}
                 onClick={openSkillsModal}
                 c='dimmed'
                 bd='1px dashed dimmed'
@@ -509,7 +508,7 @@ export default function LSProfileHero({
                 size='xs'
                 w='fit-content'
               >
-                Add Skills
+                Edit Skills
               </Button>
               <LSAddSkillsModal opened={skillsModalOpened} onClose={closeSkillsModal} userId={profile.user_id} />
               </>
