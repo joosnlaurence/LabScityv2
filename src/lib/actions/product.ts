@@ -640,8 +640,6 @@ export async function bulkInsertProducts(
       };
     });
 
-    console.log(rows);
-
     const { data, error } = await supabase
       .rpc('bulk_import_user_products',
         { p_products: rows, p_user_id: authData.user.id }

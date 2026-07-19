@@ -42,12 +42,13 @@ export default function NotificationProvider({
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("notifications")
         .select(`*, actor:actor_id(${ACTOR_SELECT}), subject:subject_id(post_id, text)`)
         .eq("is_read", false)
         .order("created_at", { ascending: false });
 
+      if (error) console.error("notifications fetch failed:", error);
       if (data) setNotifications(data as unknown as NotificationRow[]);
 
       const enrichAndAdd = async(row: NotificationRow) => {

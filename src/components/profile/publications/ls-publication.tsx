@@ -325,7 +325,6 @@ export default function LSPublication(
             <Group gap='xs'>
               {
               pub.tags.map((t, i) =>  {
-                console.log(t);
                 return (
                   <Badge
                   key={t.id ?? `${t.name}${i}`}

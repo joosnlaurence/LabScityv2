@@ -81,8 +81,6 @@ export default function LSPublicationFormModal({
   const handleSubmit = form.onSubmit((values) => {
     if (!pub) return;
 
-    console.log(values.date_published)
-
     const payload = {
       title: values.title,
       type: values.type,

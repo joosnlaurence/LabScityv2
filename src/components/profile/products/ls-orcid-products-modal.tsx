@@ -66,8 +66,6 @@ export default function LSOrcidProductsModal({userId}: {userId: string}) {
         const json: ApiResponse<ParsedOpenAlexWork<ProductType>[]> = await res.json();
         if(!json.success) throw new Error(json.error);
 
-        console.log(json.data);
-
         return json.data;
       },
       enabled: !!orcid,
