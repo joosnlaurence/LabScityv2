@@ -1,6 +1,14 @@
 "use client";
 
+import { StringValidation } from "zod/v3";
 import { create } from "zustand";
+
+export interface NotificationActor {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_pic_path: string | null;
+}
 
 /**
  * Represents a notification received from the Supabase backend.
@@ -26,6 +34,8 @@ export interface Notification {
   bundleKey?: string;
   /** Number of bundled notifications (1 = not bundled, 4+ = bundled) */
   bundleCount?: number;
+  actor?: NotificationActor | null;
+  subject?: { post_id: number; text: string } | null;
 }
 
 /**
