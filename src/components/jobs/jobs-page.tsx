@@ -50,7 +50,15 @@ import {
   useMyJobs,
   useSetSavedJob,
   useTrendingJobTags,
+  useRecommendedJobs,
 } from "./use-jobs";
+
+type SortMode = "newest" | "relevance";
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "relevance", label: "Relevance" },
+];
 
 export function JobsPage() {
   const [search, setSearch] = useState("");
@@ -59,6 +67,8 @@ export function JobsPage() {
   const [debouncedLocation] = useDebouncedValue(location, 300);
   const [jobType, setJobType] = useState<JobType | null>(null);
   const [workMode, setWorkMode] = useState<WorkMode | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const isRelevance = sortMode === "relevance";
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const locationSearchQuery = useLocationSearch(debouncedLocation);
   const locationOptions = useMemo(
@@ -79,15 +89,21 @@ export function JobsPage() {
   const currentUserId = user?.id;
 
   const jobsQuery = useJobs(filters);
+  const recommendedQuery = useRecommendedJobs(filters, Boolean(currentUserId) && isRelevance);
   const myJobsQuery = useMyJobs(!!currentUserId);
   const trendingJobTagsQuery = useTrendingJobTags();
   const setSavedJob = useSetSavedJob(currentUserId ?? "");
   const deleteJobMutation = useDeleteJob();
 
-  const jobs = useMemo(
-    () => (jobsQuery.data?.pages.flat() ?? []).map(toJobViewModel),
-    [jobsQuery.data],
-  );
+  const jobs = useMemo(() => {
+    if (isRelevance) {
+      return (recommendedQuery.data ?? []).map(toJobViewModel);
+    }
+    return (jobsQuery.data?.pages.flat() ?? []).map(toJobViewModel);
+  }, [isRelevance, recommendedQuery.data, jobsQuery.data]);
+
+  const activeQuery =  isRelevance ? recommendedQuery : jobsQuery;
+
   const myPostings = useMemo(
     () => (myJobsQuery.data ?? []).map(toJobViewModel),
     [myJobsQuery.data],
@@ -203,21 +219,21 @@ export function JobsPage() {
               </Text>
             </Group>
 
-            {jobsQuery.isError ? (
+            {activeQuery.isError ? (
               <Card radius="md" shadow="xs" padding="lg" withBorder>
                 <Text fw={700} c="red.7">
-                  {jobsQuery.error?.message ?? "Failed to load jobs"}
+                  {activeQuery.error?.message ?? "Failed to load jobs"}
                 </Text>
               </Card>
             ) : null}
 
-            {jobsQuery.isLoading ? (
+            {activeQuery.isLoading ? (
               <Group justify="center" py="xl">
                 <Loader />
               </Group>
             ) : null}
 
-            {!jobsQuery.isLoading && !jobsQuery.isError && jobs.length === 0 ? (
+            {!activeQuery.isLoading && !activeQuery.isError && jobs.length === 0 ? (
               <Card radius="md" shadow="xs" padding="lg" withBorder>
                 <Text fw={700} c="gray.8">
                   No jobs found
@@ -255,8 +271,8 @@ export function JobsPage() {
               />
             ))}
 
-            {jobsQuery.hasNextPage ? <Box ref={loadMoreRef} h={1} /> : null}
-            {jobsQuery.isFetchingNextPage ? (
+            {!isRelevance && jobsQuery.hasNextPage ? <Box ref={loadMoreRef} h={1} /> : null}
+            {!isRelevance && jobsQuery.isFetchingNextPage ? (
               <Group justify="center" py="md">
                 <Loader size="sm" />
               </Group>
@@ -264,6 +280,16 @@ export function JobsPage() {
           </Stack>
 
           <Stack w={300} gap="md" visibleFrom="lg">
+            <SidebarCard title="Sort Jobs" icon={<IconChevronDown size={17} />}>
+              <Select
+                value={sortMode}
+                onChange={(v) => setSortMode((v as SortMode) ?? "newest")}
+                data={SORT_OPTIONS}
+                allowDeselect={false}
+                radius="md"
+              />
+            </SidebarCard>
+
             <SidebarCard
               title="Your Postings"
               icon={<IconBuilding size={17} />}

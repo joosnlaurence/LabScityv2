@@ -38,6 +38,26 @@ export function useJobs(filters: JobFilters = {}) {
   });
 }
 
+export function useRecommendedJobs(filters: JobFilters, enabled: boolean) {
+  return useQuery({
+    queryKey: jobKeys.recommended(filters),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.search) params.set("search", filters.search);
+      if (filters.location) params.set("location", filters.location);
+      if (filters.job_type) params.set("job_type", filters.job_type);
+      if (filters.work_mode) params.set("work_mode", filters.work_mode);
+      
+      const res = await fetch(`/api/jobs/recommendations?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch recommended jobs");
+      const apiResponse: ApiResponse<Job[]> = await res.json();
+      if (!apiResponse.success) throw new Error(apiResponse.error);
+      return apiResponse.data ?? [];
+    },
+    enabled,
+  });
+}
+
 export function useMyJobs(enabled: boolean) {
   return useQuery({
     queryKey: jobKeys.mine(),
