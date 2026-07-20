@@ -14,12 +14,13 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/use-auth";
-import { LSPostCard } from "@/components/feed/ls-post-card";
-import { PostFollowButton } from "@/components/feed/post-follow-button";
 import { usePostDetail } from "@/components/feed/use-post-detail";
 import { LSSpinner } from "@/components/ui/ls-spinner";
 import { searchUserContent } from "@/lib/actions/data";
 import type { searchResult } from "@/lib/types/data";
+import { FeedPostCard } from "@/components/feed/home-feed";
+import { useSetSavedPost } from "@/components/feed/use-feed";
+import { usePostActions } from "@/lib/actions/use-post-actions";
 
 const FULL_RESULTS_LIMIT = 50;
 type SearchFilter = "all" | "users" | "posts" | "groups";
@@ -44,12 +45,20 @@ function SearchSection({
 function SearchPostResult({
   postId,
   currentUserId,
+  onRemove,
 }: {
   postId: string;
   currentUserId: string | null;
+  onRemove: () => void
 }) {
   const router = useRouter();
   const { data, isLoading, isError } = usePostDetail(postId);
+  const actions = usePostActions(postId, { onDeleted: onRemove });
+  const setSavedPost = useSetSavedPost(currentUserId ?? '');
+
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
+    null,
+  );
 
   if (isLoading) {
     return (
@@ -67,31 +76,20 @@ function SearchPostResult({
         <Text c="red">Failed to load post.</Text>
       </Paper>
     );
-  }
-
-  const post = data.data;
+  } 
 
   return (
-    <LSPostCard
-      userId={post.userId}
-      userName={post.userName}
-      nameRightSection={
-        <PostFollowButton
-          currentUserId={currentUserId}
-          targetUserId={post.userId}
-        />
+    <FeedPostCard 
+      post={data.data} 
+      currentUserId={currentUserId} 
+      commentOpen={activeCommentPostId === postId}
+      onToggleComments={() =>
+        setActiveCommentPostId((c) => (c === postId ? null : postId))
       }
-      avatarUrl={post.avatarUrl ?? null}
-      field={post.scientificField}
-      timeAgo={post.timeAgo}
-      content={post.content}
-      mediaUrl={post.mediaUrl ?? null}
-      isLiked={post.isLiked ?? false}
-      likeCount={post.likeCount ?? 0}
-      commentCount={post.comments.length}
-      onPostClick={() => router.push(`/posts/${post.id}`)}
-      showActions={false}
-      showMenu={false}
+      onAddComment={async (postId, values) => await actions.addComment(values)}
+      onLike={() => actions.toggleLike()}
+      onDelete={() => actions.remove()}
+      onSetSaved={(postId, save) => setSavedPost.mutate({ postId, save })} 
     />
   );
 }
@@ -248,6 +246,7 @@ export default function SearchPage() {
                       key={`post-${result.id}`}
                       postId={result.id}
                       currentUserId={user?.id ?? null}
+                      onRemove={() => setResults((prev) => prev.filter((r) => r.id !== result.id))}
                     />
                   ))}
                 </SearchSection>

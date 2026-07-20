@@ -67,7 +67,7 @@ export const createProductSchema = z.object({
       .array(
         z.object({
           id: z.number().int().positive().nullable(),
-          name: z.string().trim().min(2).max(60),
+          name: z.string().trim().min(1),
         }),
       )
       .max(3, { message: "Maximum of 3 tags allowed" })

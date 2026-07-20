@@ -331,45 +331,6 @@ export function JobDetailsPage({
                 {saved ? "Saved" : "Save Job"}
               </Button>
             </Card>
-
-            <Card radius="md" shadow="xs" padding="md" withBorder>
-              <Text size="sm" fw={800} mb="sm">
-                Similar Jobs
-              </Text>
-              {/* {similarJobs.length > 0 ? (
-                similarJobs.map((similarJob) => (
-                  <Link
-                    key={similarJob.id}
-                    href={`/jobs/${similarJob.id}`}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <Group justify="space-between" wrap="nowrap" py={8}>
-                      <Box miw={0}>
-                        <Text size="sm" fw={700} c="gray.9" lineClamp={2}>
-                          {similarJob.title}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {similarJob.org} - {similarJob.type}
-                        </Text>
-                      </Box>
-                      <IconChevronRight
-                        size={14}
-                        color="var(--mantine-color-gray-5)"
-                      />
-                    </Group>
-                  </Link>
-                ))
-              ) : (
-                <Text size="sm" c="dimmed">
-                  More similar jobs will appear here as additional listings are
-                  posted.
-                </Text>
-              )} */}
-              <Text size="sm" c="dimmed">
-                Similar jobs will be displayed here once the frontend for them
-                is wired up
-              </Text>
-            </Card>
           </Stack>
         </Flex>
       </Box>
