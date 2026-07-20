@@ -22,16 +22,19 @@ import {
   IconFlag,
   IconMail,
   IconMapPin,
+  IconPencil,
   IconShare3,
+  IconTrash,
   IconUser,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/use-auth";
 import { PostRichTextContent } from "@/components/feed/post-rich-text-content";
 import { copyJobLink } from "./job-share";
 import type { JobViewModel } from "./job-view-model";
-import { useSetSavedJob } from "./use-jobs";
+import { useDeleteJob, useSetSavedJob } from "./use-jobs";
 
 interface JobDetailsPageProps {
   job: JobViewModel;
@@ -57,8 +60,11 @@ export function JobDetailsPage({
   poster,
 }: JobDetailsPageProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [saved, setSaved] = useState(job.isSaved);
   const setSavedJob = useSetSavedJob(user?.id ?? "");
+  const deleteJobMutation = useDeleteJob();
+  const isOwner = user?.id === job.posterId;
 
   const handleSaveClick = () => {
     const nextSaved = !saved;
@@ -69,6 +75,16 @@ export function JobDetailsPage({
         onError: () => setSaved(!nextSaved),
       },
     );
+  };
+
+  const handleDeleteClick = () => {
+    if (!window.confirm("Delete this job? This cannot be undone.")) {
+      return;
+    }
+
+    deleteJobMutation.mutate(job.id, {
+      onSuccess: () => router.push("/jobs"),
+    });
   };
 
   return (
@@ -289,9 +305,20 @@ export function JobDetailsPage({
 
             <PosterCard poster={poster} />
 
-            <Card radius="md" shadow="xs" padding="md" withBorder bg="blue.0">
+            <Card
+              radius="md"
+              shadow="xs"
+              padding="md"
+              withBorder
+              bg={isOwner ? "yellow.0" : "blue.0"}
+              style={
+                isOwner
+                  ? { borderColor: "var(--mantine-color-yellow-2)" }
+                  : undefined
+              }
+            >
               <Text size="sm" c="dimmed" mb="sm">
-                Ready to apply?
+                {isOwner ? "This is your job" : "Ready to apply?"}
               </Text>
               {job.applyUrl ? (
                 <Button
@@ -333,6 +360,32 @@ export function JobDetailsPage({
               >
                 {saved ? "Saved" : "Save Job"}
               </Button>
+              {isOwner ? (
+                <Button
+                  component={Link}
+                  href={`/jobs/${job.id}/edit`}
+                  fullWidth
+                  variant="outline"
+                  color="gray"
+                  mt="xs"
+                  leftSection={<IconPencil size={16} />}
+                >
+                  Edit Job
+                </Button>
+              ) : null}
+              {isOwner ? (
+                <Button
+                  fullWidth
+                  variant="outline"
+                  color="red"
+                  mt="xs"
+                  leftSection={<IconTrash size={16} />}
+                  loading={deleteJobMutation.isPending}
+                  onClick={handleDeleteClick}
+                >
+                  Delete Job
+                </Button>
+              ) : null}
             </Card>
           </Stack>
         </Flex>

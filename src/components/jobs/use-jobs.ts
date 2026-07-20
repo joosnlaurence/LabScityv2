@@ -1,4 +1,5 @@
 import { setSavedJob } from "@/lib/actions/bookmarks";
+import { deleteJob } from "@/lib/actions/job";
 import { DEFAULT_JOBS_PAGE_SIZE } from "@/lib/constants/job";
 import { bookmarkKeys, jobKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
@@ -60,6 +61,30 @@ export function useTrendingJobTags() {
       const apiResponse: ApiResponse<TrendingJobTag[]> = await res.json();
       if(!apiResponse.success) throw new Error(apiResponse.error);
       return apiResponse.data ?? [];
+    },
+  });
+}
+
+export function useDeleteJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (jobId: number) => {
+      const res = await deleteJob(jobId);
+      if(!res.success) throw new Error(res.error ?? "Failed to delete job");
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobKeys.all });
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
+      notifications.show({ color: "green", message: "Job deleted." });
+    },
+    onError: (error) => {
+      notifications.show({
+        color: "red",
+        title: "Error deleting job",
+        message: error.message,
+      });
     },
   });
 }

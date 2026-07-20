@@ -16,6 +16,18 @@ import {
 } from "@/lib/validations/job";
 import { createClient } from "@/supabase/server";
 
+export interface JobFitSelection {
+  id: number;
+  name: string;
+  is_required: boolean;
+}
+
+export interface JobEditData {
+  job: Job;
+  researchAreas: JobFitSelection[];
+  skills: JobFitSelection[];
+}
+
 export async function listJobs(): Promise<DataResponse<Job[]>> {
   try {
     const supabase = await createClient();
@@ -34,6 +46,101 @@ export async function listJobs(): Promise<DataResponse<Job[]>> {
     };
   } catch {
     return { success: false, error: "Failed to fetch jobs" };
+  }
+}
+
+export async function getEditableJobById(
+  id: number,
+): Promise<DataResponse<JobEditData>> {
+  try {
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+
+    if (!authData.user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return { success: false, error: "Invalid job id" };
+    }
+
+    const { data: job, error: jobError } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("id", id)
+      .eq("poster_id", authData.user.id)
+      .maybeSingle();
+
+    if (jobError) {
+      return { success: false, error: jobError.message };
+    }
+
+    if (!job) {
+      return { success: false, error: "Job not found or unauthorized" };
+    }
+
+    const [{ data: tagRows, error: tagError }, { data: skillRows, error: skillError }] =
+      await Promise.all([
+        supabase
+          .from("jobs_tags")
+          .select("tag_id,is_required")
+          .eq("job_id", id),
+        supabase
+          .from("jobs_skills")
+          .select("skill_id,is_required")
+          .eq("job_id", id),
+      ]);
+
+    if (tagError) {
+      return { success: false, error: tagError.message };
+    }
+    if (skillError) {
+      return { success: false, error: skillError.message };
+    }
+
+    const tagIds = (tagRows ?? []).map((row) => row.tag_id);
+    const skillIds = (skillRows ?? []).map((row) => row.skill_id);
+
+    const [{ data: tags, error: tagsError }, { data: skills, error: skillsError }] =
+      await Promise.all([
+        tagIds.length > 0
+          ? supabase.from("tags").select("id,name").in("id", tagIds)
+          : Promise.resolve({ data: [], error: null }),
+        skillIds.length > 0
+          ? supabase.from("skills").select("id,name").in("id", skillIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+    if (tagsError) {
+      return { success: false, error: tagsError.message };
+    }
+    if (skillsError) {
+      return { success: false, error: skillsError.message };
+    }
+
+    const tagNameById = new Map((tags ?? []).map((tag) => [tag.id, tag.name]));
+    const skillNameById = new Map(
+      (skills ?? []).map((skill) => [skill.id, skill.name]),
+    );
+
+    return {
+      success: true,
+      data: {
+        job: job as Job,
+        researchAreas: (tagRows ?? []).map((row) => ({
+          id: row.tag_id,
+          name: tagNameById.get(row.tag_id) ?? String(row.tag_id),
+          is_required: row.is_required,
+        })),
+        skills: (skillRows ?? []).map((row) => ({
+          id: row.skill_id,
+          name: skillNameById.get(row.skill_id) ?? String(row.skill_id),
+          is_required: row.is_required,
+        })),
+      },
+    };
+  } catch {
+    return { success: false, error: "Failed to load editable job" };
   }
 }
 

@@ -21,11 +21,13 @@ import { RichTextEditor } from "@mantine/tiptap";
 import {
   IconBriefcase,
   IconCalendar,
+  IconCheck,
   IconExternalLink,
   IconEye,
   IconMapPin,
   IconSend,
   IconTag,
+  IconX,
 } from "@tabler/icons-react";
 import { useEditor } from "@tiptap/react";
 import Link from "next/link";
@@ -36,7 +38,16 @@ import {
   useSkillSearch,
   useTagSearch,
 } from "@/components/profile/use-profile-search";
-import type { addJobSkill, addJobTag, createJob } from "@/lib/actions/job";
+import type {
+  addJobSkill,
+  addJobTag,
+  createJob,
+  JobFitSelection,
+  removeJobSkill,
+  removeJobTag,
+  updateJob,
+} from "@/lib/actions/job";
+import type { CreateJobValues, UpdateJobValues } from "@/lib/validations/job";
 import { JOB_SUMMARY_MAX_LENGTH } from "@/lib/validations/job";
 import {
   formatJobTypeLabel,
@@ -70,15 +81,57 @@ interface JobComposerPageProps {
   createJobAction: typeof createJob;
   addJobTagAction: typeof addJobTag;
   addJobSkillAction: typeof addJobSkill;
+  updateJobAction?: typeof updateJob;
+  removeJobTagAction?: typeof removeJobTag;
+  removeJobSkillAction?: typeof removeJobSkill;
+  mode?: "create" | "edit";
+  jobId?: number;
+  initialDraft?: JobDraft;
+  initialResearchAreas?: JobFitSelection[];
+  initialSkills?: JobFitSelection[];
 }
 
 export function JobComposerPage({
   createJobAction,
   addJobTagAction,
   addJobSkillAction,
+  updateJobAction,
+  removeJobTagAction,
+  removeJobSkillAction,
+  mode = "create",
+  jobId,
+  initialDraft,
+  initialResearchAreas = [],
+  initialSkills = [],
 }: JobComposerPageProps) {
   const [isPending, startTransition] = useTransition();
-  const [draft, setDraft] = useState<JobDraft>({
+  const isEditMode = mode === "edit";
+  const initialTagLabelsById = useMemo(
+    () => buildInitialLabelMap(initialResearchAreas),
+    [initialResearchAreas],
+  );
+  const initialSkillLabelsById = useMemo(
+    () => buildInitialLabelMap(initialSkills),
+    [initialSkills],
+  );
+  const initialRequiredAreaIds = useMemo(
+    () => getFitIds(initialResearchAreas, true),
+    [initialResearchAreas],
+  );
+  const initialRecommendedAreaIds = useMemo(
+    () => getFitIds(initialResearchAreas, false),
+    [initialResearchAreas],
+  );
+  const initialRequiredSkillIds = useMemo(
+    () => getFitIds(initialSkills, true),
+    [initialSkills],
+  );
+  const initialRecommendedSkillIds = useMemo(
+    () => getFitIds(initialSkills, false),
+    [initialSkills],
+  );
+  const [draft, setDraft] = useState<JobDraft>(
+    initialDraft ?? {
     title: "",
     organization: "",
     department: "",
@@ -89,19 +142,28 @@ export function JobComposerPage({
     applyUrl: "",
     summary: "",
     description: "",
-  });
+    },
+  );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [requiredAreaIds, setRequiredAreaIds] = useState<string[]>([]);
-  const [recommendedAreaIds, setRecommendedAreaIds] = useState<string[]>([]);
-  const [requiredSkillIds, setRequiredSkillIds] = useState<string[]>([]);
-  const [recommendedSkillIds, setRecommendedSkillIds] = useState<string[]>([]);
+  const [requiredAreaIds, setRequiredAreaIds] = useState<string[]>(
+    initialRequiredAreaIds,
+  );
+  const [recommendedAreaIds, setRecommendedAreaIds] = useState<string[]>(
+    initialRecommendedAreaIds,
+  );
+  const [requiredSkillIds, setRequiredSkillIds] = useState<string[]>(
+    initialRequiredSkillIds,
+  );
+  const [recommendedSkillIds, setRecommendedSkillIds] = useState<string[]>(
+    initialRecommendedSkillIds,
+  );
   const [tagLabelsById, setTagLabelsById] = useState<Record<string, string>>(
-    {},
+    initialTagLabelsById,
   );
   const [skillLabelsById, setSkillLabelsById] = useState<
     Record<string, string>
-  >({});
+  >(initialSkillLabelsById);
   const [requiredAreaSearch, setRequiredAreaSearch] = useState("");
   const [recommendedAreaSearch, setRecommendedAreaSearch] = useState("");
   const [requiredSkillSearch, setRequiredSkillSearch] = useState("");
@@ -225,7 +287,7 @@ export function JobComposerPage({
     extensions: createPostEditorExtensions(
       "Describe the research context, team, goals, responsibilities, and qualifications...",
     ),
-    content: "",
+    content: initialDraft?.description ?? "",
     onUpdate: ({ editor }) => {
       updateDraft("description", editor.getHTML());
     },
@@ -239,6 +301,48 @@ export function JobComposerPage({
 
     return plainText.length > 0;
   }, [draft.description]);
+
+  const postingTips = useMemo(() => {
+    const plainDescription = draft.description
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const sentenceCount =
+      plainDescription.match(/[^.!?]+[.!?]+(?:\s|$)/g)?.length ??
+      (plainDescription.length > 0 ? 1 : 0);
+
+    return [
+      {
+        label: "Use a clear, specific job title",
+        satisfied: draft.title.trim().length > 0,
+      },
+      {
+        label: "Include required skills or research areas",
+        satisfied: requiredAreaIds.length > 0 || requiredSkillIds.length > 0,
+      },
+      {
+        label: "Add an external application link",
+        satisfied: draft.applyUrl.trim().length > 0,
+      },
+      {
+        label: "Fill in the organization",
+        satisfied: draft.organization.trim().length > 0,
+      },
+      {
+        label: "Write 2-3 sentences of description",
+        satisfied: sentenceCount >= 2,
+      },
+    ];
+  }, [
+    draft.applyUrl,
+    draft.description,
+    draft.organization,
+    draft.title,
+    requiredAreaIds.length,
+    requiredSkillIds.length,
+  ]);
+  const allPostingTipsSatisfied = postingTips.every((tip) => tip.satisfied);
 
   const handlePublish = () => {
     setErrorMessage(null);
@@ -265,38 +369,94 @@ export function JobComposerPage({
             ? "hybrid"
             : "on-site";
 
-      const result = await createJobAction({
+      const jobPayload = {
         title: draft.title,
         description: draft.description,
         summary: draft.summary.trim() || undefined,
-        location: draft.location || undefined,
-        department: draft.department || undefined,
-        organization: draft.organization || undefined,
+        location: draft.location.trim() || undefined,
+        department: draft.department.trim() || undefined,
+        organization: draft.organization.trim() || undefined,
         work_mode: workMode,
         job_type: jobTypeValue,
         academia_role: roleValue,
-        application_link: draft.applyUrl || undefined,
+        application_link: draft.applyUrl.trim() || undefined,
         contact_email: draft.contactEmail.trim() || undefined,
-      });
+      } satisfies CreateJobValues;
+
+      if (isEditMode) {
+        if (
+          !jobId ||
+          !updateJobAction ||
+          !removeJobTagAction ||
+          !removeJobSkillAction
+        ) {
+          setErrorMessage("Edit mode is missing required job actions");
+          return;
+        }
+
+        const result = await updateJobAction(jobId, {
+          ...jobPayload,
+          summary: draft.summary.trim() || null,
+          location: draft.location.trim() || null,
+          department: draft.department.trim() || null,
+          organization: draft.organization.trim() || null,
+          application_link: draft.applyUrl.trim() || null,
+          contact_email: draft.contactEmail.trim() || null,
+        } satisfies UpdateJobValues);
+
+        if (!result.success || !result.data) {
+          setErrorMessage(result.error ?? "Failed to save job");
+          return;
+        }
+
+        const fitResults = await updateResearchFit({
+          jobId,
+          initialRequiredAreaIds,
+          initialRecommendedAreaIds,
+          initialRequiredSkillIds,
+          initialRecommendedSkillIds,
+          requiredAreaIds,
+          recommendedAreaIds,
+          requiredSkillIds,
+          recommendedSkillIds,
+          addJobTagAction,
+          removeJobTagAction,
+          addJobSkillAction,
+          removeJobSkillAction,
+        });
+        const fitError = fitResults.find((fitResult) => !fitResult.success);
+
+        if (fitError && !fitError.success) {
+          setErrorMessage(
+            `Job was saved, but research fit could not be saved: ${fitError.error}`,
+          );
+          return;
+        }
+
+        window.location.assign(`/jobs/${jobId}`);
+        return;
+      }
+
+      const result = await createJobAction(jobPayload);
 
       if (!result.success || !result.data) {
         setErrorMessage(result.error ?? "Failed to publish job");
         return;
       }
 
-      const jobId = result.data.id;
+      const createdJobId = result.data.id;
       const fitResults = await Promise.all([
         ...requiredAreaIds.map((id) =>
-          addJobTagAction(jobId, Number(id), true),
+          addJobTagAction(createdJobId, Number(id), true),
         ),
         ...recommendedAreaIds.map((id) =>
-          addJobTagAction(jobId, Number(id), false),
+          addJobTagAction(createdJobId, Number(id), false),
         ),
         ...requiredSkillIds.map((id) =>
-          addJobSkillAction(jobId, Number(id), true),
+          addJobSkillAction(createdJobId, Number(id), true),
         ),
         ...recommendedSkillIds.map((id) =>
-          addJobSkillAction(jobId, Number(id), false),
+          addJobSkillAction(createdJobId, Number(id), false),
         ),
       ]);
       const fitError = fitResults.find((fitResult) => !fitResult.success);
@@ -318,10 +478,12 @@ export function JobComposerPage({
         <Group justify="space-between" align="flex-end" mb="lg">
           <Box>
             <Text component="h1" fz={28} fw={800} c="gray.9" m={0}>
-              Post a Job
+              {isEditMode ? "Edit Job" : "Post a Job"}
             </Text>
             <Text size="sm" c="dimmed">
-              Share opportunities with researchers, students, and collaborators.
+              {isEditMode
+                ? "Update your opportunity details."
+                : "Share opportunities with researchers, students, and collaborators."}
             </Text>
           </Box>
           <Button component={Link} href="/jobs" variant="outline" color="gray">
@@ -332,7 +494,10 @@ export function JobComposerPage({
         <Flex gap="lg" align="flex-start">
           <Stack flex={1} miw={0}>
             {errorMessage ? (
-              <Alert color="red" title="Could not publish job">
+              <Alert
+                color="red"
+                title={isEditMode ? "Could not save job" : "Could not publish job"}
+              >
                 {errorMessage}
               </Alert>
             ) : null}
@@ -606,6 +771,54 @@ export function JobComposerPage({
               </Text>
             </Card>
 
+            <Card
+              radius="md"
+              shadow="xs"
+              padding="md"
+              withBorder
+              bg={allPostingTipsSatisfied ? "green.0" : "red.0"}
+              style={{
+                borderColor: allPostingTipsSatisfied
+                  ? "var(--mantine-color-green-2)"
+                  : "var(--mantine-color-red-2)",
+              }}
+            >
+              <Text
+                size="sm"
+                fw={800}
+                c={allPostingTipsSatisfied ? "green.8" : "red.8"}
+                mb="sm"
+              >
+                Posting Tips
+              </Text>
+              <Stack gap="xs">
+                {postingTips.map((tip) => {
+                  const TipIcon = tip.satisfied ? IconCheck : IconX;
+                  return (
+                    <Group
+                      key={tip.label}
+                      gap="xs"
+                      wrap="nowrap"
+                      align="flex-start"
+                    >
+                      <TipIcon
+                        size={14}
+                        color={
+                          tip.satisfied
+                            ? "var(--mantine-color-green-6)"
+                            : "var(--mantine-color-red-6)"
+                        }
+                        style={{ flexShrink: 0, marginTop: 2 }}
+                      />
+                      <Text size="xs" c={tip.satisfied ? "green.8" : "red.8"}>
+                        {tip.label}
+                      </Text>
+                    </Group>
+                  );
+                })}
+              </Stack>
+            </Card>
+
             <Card radius="md" shadow="xs" padding="md" withBorder>
               <Stack gap="xs">
                 <Button
@@ -618,7 +831,7 @@ export function JobComposerPage({
                     !hasPublishableDescription
                   }
                 >
-                  Publish Job
+                  {isEditMode ? "Save Changes" : "Publish Job"}
                 </Button>
               </Stack>
             </Card>
@@ -633,6 +846,108 @@ type SearchOption = {
   id: number | null;
   name: string;
 };
+
+function buildInitialLabelMap(items: JobFitSelection[]) {
+  return Object.fromEntries(items.map((item) => [String(item.id), item.name]));
+}
+
+function getFitIds(items: JobFitSelection[], isRequired: boolean) {
+  return items
+    .filter((item) => item.is_required === isRequired)
+    .map((item) => String(item.id));
+}
+
+async function updateResearchFit({
+  jobId,
+  initialRequiredAreaIds,
+  initialRecommendedAreaIds,
+  initialRequiredSkillIds,
+  initialRecommendedSkillIds,
+  requiredAreaIds,
+  recommendedAreaIds,
+  requiredSkillIds,
+  recommendedSkillIds,
+  addJobTagAction,
+  removeJobTagAction,
+  addJobSkillAction,
+  removeJobSkillAction,
+}: {
+  jobId: number;
+  initialRequiredAreaIds: string[];
+  initialRecommendedAreaIds: string[];
+  initialRequiredSkillIds: string[];
+  initialRecommendedSkillIds: string[];
+  requiredAreaIds: string[];
+  recommendedAreaIds: string[];
+  requiredSkillIds: string[];
+  recommendedSkillIds: string[];
+  addJobTagAction: typeof addJobTag;
+  removeJobTagAction: typeof removeJobTag;
+  addJobSkillAction: typeof addJobSkill;
+  removeJobSkillAction: typeof removeJobSkill;
+}) {
+  const initialAreas = buildRequiredMap(
+    initialRequiredAreaIds,
+    initialRecommendedAreaIds,
+  );
+  const nextAreas = buildRequiredMap(requiredAreaIds, recommendedAreaIds);
+  const initialSkills = buildRequiredMap(
+    initialRequiredSkillIds,
+    initialRecommendedSkillIds,
+  );
+  const nextSkills = buildRequiredMap(requiredSkillIds, recommendedSkillIds);
+  const areaDiff = buildFitDiff(initialAreas, nextAreas);
+  const skillDiff = buildFitDiff(initialSkills, nextSkills);
+
+  const removalResults = await Promise.all([
+    ...areaDiff.removals.map((id) =>
+      removeJobTagAction(jobId, Number(id)),
+    ),
+    ...skillDiff.removals.map((id) =>
+      removeJobSkillAction(jobId, Number(id)),
+    ),
+  ]);
+
+  const additionResults = await Promise.all([
+    ...areaDiff.additions.map(({ id, required }) =>
+      addJobTagAction(jobId, Number(id), required),
+    ),
+    ...skillDiff.additions.map(({ id, required }) =>
+      addJobSkillAction(jobId, Number(id), required),
+    ),
+  ]);
+
+  return [...removalResults, ...additionResults];
+}
+
+function buildRequiredMap(requiredIds: string[], recommendedIds: string[]) {
+  return new Map<string, boolean>([
+    ...requiredIds.map((id) => [id, true] as const),
+    ...recommendedIds.map((id) => [id, false] as const),
+  ]);
+}
+
+function buildFitDiff(
+  initial: Map<string, boolean>,
+  next: Map<string, boolean>,
+) {
+  const removals: string[] = [];
+  const additions: Array<{ id: string; required: boolean }> = [];
+
+  for (const [id, wasRequired] of initial) {
+    if (!next.has(id) || next.get(id) !== wasRequired) {
+      removals.push(id);
+    }
+  }
+
+  for (const [id, required] of next) {
+    if (!initial.has(id) || initial.get(id) !== required) {
+      additions.push({ id, required });
+    }
+  }
+
+  return { removals, additions };
+}
 
 function mergeLabels(current: Record<string, string>, results: SearchOption[]) {
   if (results.length === 0) {

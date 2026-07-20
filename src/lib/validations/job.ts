@@ -38,7 +38,20 @@ export const createJobSchema = z.object({
   contact_email: z.email("Valid contact email required").optional(),
 });
 
-export const updateJobSchema = createJobSchema.partial();
+export const updateJobSchema = createJobSchema.partial().extend({
+  summary: z
+    .string()
+    .max(JOB_SUMMARY_MAX_LENGTH, {
+      message: `Summary must not exceed ${JOB_SUMMARY_MAX_LENGTH} characters`,
+    })
+    .nullable()
+    .optional(),
+  location: z.string().nullable().optional(),
+  department: z.string().nullable().optional(),
+  organization: z.string().nullable().optional(),
+  application_link: z.string().nullable().optional(),
+  contact_email: z.email("Valid contact email required").nullable().optional(),
+});
 
 export const jobFiltersSchema = z.object({
   search: z.string().trim().min(1).optional(),

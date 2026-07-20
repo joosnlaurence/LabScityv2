@@ -24,9 +24,11 @@ import {
   IconChevronRight,
   IconExternalLink,
   IconMapPin,
+  IconPencil,
   IconPlus,
   IconSearch,
   IconShare3,
+  IconTrash,
   IconTrendingUp,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -43,6 +45,7 @@ import {
 import { copyJobLink } from "./job-share";
 import { type JobViewModel, toJobViewModel } from "./job-view-model";
 import {
+  useDeleteJob,
   useJobs,
   useMyJobs,
   useSetSavedJob,
@@ -79,6 +82,7 @@ export function JobsPage() {
   const myJobsQuery = useMyJobs(!!currentUserId);
   const trendingJobTagsQuery = useTrendingJobTags();
   const setSavedJob = useSetSavedJob(currentUserId ?? "");
+  const deleteJobMutation = useDeleteJob();
 
   const jobs = useMemo(
     () => (jobsQuery.data?.pages.flat() ?? []).map(toJobViewModel),
@@ -231,6 +235,23 @@ export function JobsPage() {
                 onSaveClick={() =>
                   setSavedJob.mutate({ jobId: job.id, isSaved: !job.isSaved })
                 }
+                onDeleteClick={
+                  currentUserId && job.posterId === currentUserId
+                    ? () => {
+                        if (
+                          window.confirm(
+                            "Delete this job? This cannot be undone.",
+                          )
+                        ) {
+                          deleteJobMutation.mutate(job.id);
+                        }
+                      }
+                    : undefined
+                }
+                isDeletePending={
+                  deleteJobMutation.isPending &&
+                  deleteJobMutation.variables === job.id
+                }
               />
             ))}
 
@@ -349,24 +370,42 @@ export function JobsPage() {
 export function JobCard({
   job,
   onSaveClick,
+  onDeleteClick,
+  isDeletePending = false,
 }: {
   job: JobViewModel;
   onSaveClick: () => void;
+  onDeleteClick?: () => void;
+  isDeletePending?: boolean;
 }) {
+  const isOwner = Boolean(onDeleteClick);
+
   return (
     <Card radius="md" shadow="xs" padding="lg" withBorder bg="white">
       <Group align="flex-start" justify="space-between" gap="md" wrap="nowrap">
         <Box flex={1} miw={0}>
-          <Text
-            component={Link}
-            href={`/jobs/${job.id}`}
-            fz="md"
-            fw={800}
-            c="gray.9"
-            style={{ textDecoration: "none" }}
-          >
-            {job.title}
-          </Text>
+          <Group gap="xs" align="center">
+            <Text
+              component={Link}
+              href={`/jobs/${job.id}`}
+              fz="md"
+              fw={800}
+              c="gray.9"
+              style={{ textDecoration: "none" }}
+            >
+              {job.title}
+            </Text>
+            {isOwner ? (
+              <Badge
+                variant="light"
+                color="yellow"
+                radius="xl"
+                c="yellow.9"
+              >
+                Your job
+              </Badge>
+            ) : null}
+          </Group>
 
           <Group gap={6} c="gray.7" fz="sm" mb={2} mt={4}>
             <IconBuilding size={15} color="var(--mantine-color-gray-5)" />
@@ -461,6 +500,30 @@ export function JobCard({
                 {job.isSaved ? "Saved" : "Save"}
               </Button>
             )}
+            {onDeleteClick ? (
+              <Button
+                variant="outline"
+                color="red"
+                radius="md"
+                leftSection={<IconTrash size={15} />}
+                loading={isDeletePending}
+                onClick={onDeleteClick}
+              >
+                Delete
+              </Button>
+            ) : null}
+            {isOwner ? (
+              <Button
+                component={Link}
+                href={`/jobs/${job.id}/edit`}
+                variant="outline"
+                color="gray"
+                radius="md"
+                leftSection={<IconPencil size={15} />}
+              >
+                Edit
+              </Button>
+            ) : null}
             <Button
               ml="auto"
               variant="subtle"
