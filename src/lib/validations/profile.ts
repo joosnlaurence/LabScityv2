@@ -119,7 +119,7 @@ export type Tag = z.infer<typeof tagValueSchema>;
 export const declaredTagSchema = z.object({
   // null means custom declared tag
   id: z.number().int().positive().nullable(),
-  name: z.string().trim().min(2).max(60)
+  name: z.string().trim().min(1)
 });
 
 export const updateDeclaredTagsSchema = z.object({

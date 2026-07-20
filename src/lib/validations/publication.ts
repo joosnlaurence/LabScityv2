@@ -80,7 +80,7 @@ export const parsedOpenAlexWorkSchema = z.object({
 
 const publicationTagSchema = z.object({
   id: z.number().int().positive().nullable(),
-  name: z.string().trim().min(2).max(60),
+  name: z.string().trim().min(1),
 });
 
 export const updatePublicationSchema = z.object({
