@@ -25,7 +25,8 @@ import {
   TextInput,
   ThemeIcon,
   Image,
-  Anchor
+  Anchor,
+  Collapse
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
@@ -46,6 +47,7 @@ import {
   IconTrash,
   IconUsers,
   IconHeartFilled,
+  IconPencil,
 } from "@tabler/icons-react";
 import StickyBox from "react-sticky-box";
 import { useQuery } from "@tanstack/react-query";
@@ -223,10 +225,7 @@ export function HomeFeed(props: HomeFeedProps) {
                 .filter(Boolean)
                 .join(" ") || "Your profile"
             }
-            activeFeedTags={activeFeedTags}
             isComposerOpen={isComposerOpen}
-            onAddFeedTag={addFeedTag}
-            onRemoveFeedTag={removeFeedTag}
             onToggleComposer={() => setIsComposerOpen((current) => !current)}
             onSubmit={handleSubmitPost}
             isPending={createPostMutation.isPending}
@@ -303,26 +302,18 @@ export function HomeFeed(props: HomeFeedProps) {
 function CreatePostCard({
   currentUserId,
   currentUserName,
-  activeFeedTags,
   isComposerOpen,
-  onAddFeedTag,
-  onRemoveFeedTag,
   onToggleComposer,
   onSubmit,
   isPending,
 }: {
   currentUserId: string | null;
   currentUserName: string;
-  activeFeedTags: string[];
   isComposerOpen: boolean;
-  onAddFeedTag: (tag: string) => void;
-  onRemoveFeedTag: (tag: string) => void;
   onToggleComposer: () => void;
   onSubmit: (values: CreatePostValues & { mediaFile?: File | null }) => void;
   isPending: boolean;
 }) {
-  const [composerMode, setComposerMode] =
-    useState<StructuredPostKind>("normal");
   const [draftTitle, setDraftTitle] = useState("");
   const [draftTags, setDraftTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -335,8 +326,6 @@ function CreatePostCard({
   const [activeFontSize, setActiveFontSize] = useState(
     DEFAULT_EDITOR_FONT_SIZE,
   );
-  const [feedTagInput, setFeedTagInput] = useState("");
-  const [isFeedTagInputOpen, setIsFeedTagInputOpen] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
@@ -350,6 +339,7 @@ function CreatePostCard({
   const [selectedPublicationId, setSelectedPublicationId] = useState<
     string | null
   >(null);
+  const [importType, setImportType] = useState<string | null>(null);
 
   const productsQuery = useQuery({
     queryKey: ["home", "composer", "products", currentUserId],
@@ -362,7 +352,7 @@ function CreatePostCard({
       return payload.data ?? [];
     },
     enabled:
-      isComposerOpen && composerMode === "product" && Boolean(currentUserId),
+      isComposerOpen && importType === "product" && Boolean(currentUserId),
   });
 
   const publicationsQuery = useQuery({
@@ -377,7 +367,7 @@ function CreatePostCard({
     },
     enabled:
       isComposerOpen &&
-      composerMode === "publication" &&
+      importType === "publication" &&
       Boolean(currentUserId),
   });
 
@@ -420,8 +410,8 @@ function CreatePostCard({
         String(publication.publication_id) === selectedPublicationId,
     ) ?? null;
 
+
   const canPublishNormalPost =
-    composerMode === "normal" &&
     draftTitle.trim().length > 0 &&
     draftBodyText.trim().length > 0;
 
@@ -442,7 +432,7 @@ function CreatePostCard({
       return;
     }
 
-    setComposerMode("normal");
+    setImportType(null);
     setDraftTitle("");
     setDraftTags([]);
     setTagInput("");
@@ -468,7 +458,7 @@ function CreatePostCard({
   }, [editor, isComposerOpen]);
 
   useEffect(() => {
-    if (!editor || composerMode !== "product" || !selectedProduct) {
+    if (!editor || importType !== "product" || !selectedProduct) {
       return;
     }
 
@@ -486,10 +476,10 @@ function CreatePostCard({
     editor.chain().setColor(DEFAULT_EDITOR_TEXT_COLOR).run();
     editor.chain().setFontSize(DEFAULT_EDITOR_FONT_SIZE).run();
     syncEditorControls(editor);
-  }, [composerMode, editor, selectedProduct]);
+  }, [importType, editor, selectedProduct]);
 
   useEffect(() => {
-    if (!editor || composerMode !== "publication" || !selectedPublication) {
+    if (!editor || importType !== "publication" || !selectedPublication) {
       return;
     }
 
@@ -517,7 +507,7 @@ function CreatePostCard({
     editor.chain().setColor(DEFAULT_EDITOR_TEXT_COLOR).run();
     editor.chain().setFontSize(DEFAULT_EDITOR_FONT_SIZE).run();
     syncEditorControls(editor);
-  }, [composerMode, editor, selectedPublication]);
+  }, [importType, editor, selectedPublication]);
 
   useEffect(() => {
     return () => {
@@ -592,18 +582,6 @@ function CreatePostCard({
       mediaFile,
     });
     resetComposer();
-  };
-
-  const handleAddFeedTag = () => {
-    const nextTag = feedTagInput.trim();
-
-    if (!nextTag) {
-      return;
-    }
-
-    onAddFeedTag(nextTag);
-    setFeedTagInput("");
-    setIsFeedTagInputOpen(false);
   };
 
   const handleFileSelected = (event: ChangeEvent<HTMLInputElement>) => {
@@ -716,440 +694,403 @@ function CreatePostCard({
         bd='1px solid gray.3'
         shadow='xs'
       >
-        <Stack gap="md">
-        <Group justify="space-between" align="center">
-          <Group gap="sm">
-            <Avatar radius="xl" color="navy.7" size={36} src={profile?.avatar_url}>
-              {initials(currentUserName)}
-            </Avatar>
-            <Box>
-              <Text size="sm" fw={800} c="#374151">
-                What are you working on?
-              </Text>
-              <Text size="xs" c="#64748B">
-                Share a paper, product, result, or collaboration note.
-              </Text>
-            </Box>
-          </Group>
-          <Button
-            leftSection={<IconPlus size={15} />}
-            radius="md"
-            c="white"
-            fw={700}
-            bg="#1F3A5F"
-            onClick={onToggleComposer}
-          >
-            {isComposerOpen ? "Cancel" : "New Post"}
-          </Button>
-        </Group>
-
-        <Group
-          justify="space-between"
-          align="center"
-          wrap="wrap"
-          pt="sm"
-          style={{ borderTop: "1px solid #F3F4F6" }}
-        >
-          <Group gap="xs" wrap="wrap">
-            <Text size="xs" fw={800} c="#94A3B8" tt="uppercase">
-              Show
-            </Text>
-            {activeFeedTags.map((tag) => (
-              <Pill key={`feed-filter-${tag}`} withRemoveButton onRemove={() => onRemoveFeedTag(tag)}>
-                {tag}
-              </Pill>
-            ))}
-            {isFeedTagInputOpen ? (
-              <TextInput
-                value={feedTagInput}
-                onChange={(event) => setFeedTagInput(event.currentTarget.value)}
-                placeholder="Add tag"
-                size="xs"
-                w={132}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === ",") {
-                    event.preventDefault();
-                    handleAddFeedTag();
-                  }
-
-                  if (
-                    event.key === "Backspace" &&
-                    event.currentTarget.value.length === 0
-                  ) {
-                    event.preventDefault();
-                  }
-
-                  if (event.key === "Escape") {
-                    setIsFeedTagInputOpen(false);
-                    setFeedTagInput("");
-                  }
-                }}
-              />
-            ) : null}
-            <Button
-              variant="light"
-              radius="xl"
-              size="compact-sm"
-              onClick={() => setIsFeedTagInputOpen((current) => !current)}
-            >
-              Add Tags
-            </Button>
-          </Group>
-        </Group>
-
-        {isComposerOpen ? (
-          <Stack gap="sm" pt="md">
-            <SegmentedControl
-              value={composerMode}
-              onChange={(value) => setComposerMode(value as StructuredPostKind)}
-              data={[
-                { label: "Normal Post", value: "normal" },
-                { label: "My Product", value: "product" },
-                { label: "My Publication", value: "publication" },
-              ]}
-              radius="xl"
-              size="sm"
-            />
-
-            {composerMode === "product" ? (
-              <Select
-                label="Choose one of your products"
-                placeholder="Select a product"
-                value={selectedProductId}
-                onChange={setSelectedProductId}
-                data={(productsQuery.data ?? []).map((product) => ({
-                  value: String(product.product_id),
-                  label: product.title,
-                }))}
-                rightSection={
-                  productsQuery.isLoading ? <Loader size={16} /> : null
-                }
-              />
-            ) : null}
-
-            {composerMode === "publication" ? (
-              <Select
-                label="Choose one of your publications"
-                placeholder="Select a publication"
-                value={selectedPublicationId}
-                onChange={setSelectedPublicationId}
-                data={(publicationsQuery.data ?? []).map((publication) => ({
-                  value: String(publication.publication_id),
-                  label: publication.title,
-                }))}
-                rightSection={
-                  publicationsQuery.isLoading ? <Loader size={16} /> : null
-                }
-                searchable
-              />
-            ) : null}
-
-            <TextInput
-              label="Post title"
-              value={draftTitle}
-              onChange={(event) => setDraftTitle(event.currentTarget.value)}
-              placeholder="Give your post a clear title"
-              styles={{
-                input: {
-                  borderRadius: 14,
-                  borderColor: "#E5E7EB",
-                  fontSize: 14,
-                },
-              }}
-            />
-
-            <Stack gap={6}>
-              <Text size="sm" fw={600} c="#334155">
-                Tags
-              </Text>
-              <PillsInput
-                radius="md"
-                styles={{
-                  input: {
-                    borderColor: "#E5E7EB",
-                  },
-                }}
+        <Stack>
+          <Group justify="space-between" align="center">
+            <Group gap="sm">
+              <Avatar radius="xl" color="navy.7" size={36} src={profile?.avatar_url}>
+                {initials(currentUserName)}
+              </Avatar>
+              <Box>
+                <Text size="sm" fw={800} c="#374151">
+                  What are you working on?
+                </Text>
+                <Text size="xs" c="#64748B">
+                  Share a paper, product, result, or collaboration note.
+                </Text>
+              </Box>
+            </Group>
+            <Group gap='xs'>
+              <Button
+                leftSection={isComposerOpen ? undefined : <IconPlus size={15} />}
+                variant={isComposerOpen ? 'outline' : 'filled'}
+                onClick={onToggleComposer}
               >
-                <Pill.Group>
-                  {draftTags.map((tag) => (
-                    <Pill
-                      key={tag}
-                      withRemoveButton
-                      onRemove={() =>
-                        setDraftTags((current) =>
-                          current.filter((currentTag) => currentTag !== tag),
-                        )
-                      }
-                    >
-                      {tag}
-                    </Pill>
-                  ))}
-                  <PillsInput.Field
-                    value={tagInput}
-                    onChange={(event) => setTagInput(event.currentTarget.value)}
-                    placeholder={
-                      draftTags.length === 0
-                        ? "Add tags and press Enter"
-                        : "Add another tag"
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === ",") {
-                        event.preventDefault();
-                        addTag();
-                      }
-
-                      if (
-                        event.key === "Backspace" &&
-                        event.currentTarget.value.length === 0
-                      ) {
-                        event.preventDefault();
-                      }
-                    }}
-                  />
-                </Pill.Group>
-              </PillsInput>
-              <Group gap="xs">
+                {isComposerOpen ? "Cancel" : "New Post"}
+              </Button>
+              {
+                isComposerOpen && 
                 <Button
-                  variant="light"
-                  radius="xl"
-                  size="compact-sm"
-                  onClick={addTag}
-                  disabled={tagInput.trim().length === 0}
+                  loading={isPending}
+                  disabled={!canPublishNormalPost}
+                  onClick={handlePublish}
+                  w='fit-content'
                 >
-                  Add tag
+                  Publish Post
                 </Button>
-                <Text size="xs" c="dimmed">
-                  Tags are optional for regular posts.
-                </Text>
-              </Group>
-            </Stack>
+              }
+            </Group>
+            
+          </Group>
 
-            <Stack gap={6}>
-              <Group justify="space-between" wrap="wrap" gap="xs">
-                <Text size="sm" fw={600} c="#334155">
-                  Body
-                </Text>
-                <Group gap="xs">
+          {/* TODO (For future team): Redesign filter posts by tag, placing it somewhere outside of post composer  */}
+          {/* <Group
+            justify="space-between"
+            align="center"
+            wrap="wrap"
+            pt="sm"
+            style={{ borderTop: "1px solid #F3F4F6" }}
+          >
+            <Group gap="xs" wrap="wrap">
+              <Text size="xs" fw={800} c="#94A3B8" tt="uppercase">
+                Show
+              </Text>
+              {activeFeedTags.map((tag) => (
+                <Pill key={`feed-filter-${tag}`} withRemoveButton onRemove={() => onRemoveFeedTag(tag)}>
+                  {tag}
+                </Pill>
+              ))}
+              {isFeedTagInputOpen ? (
+                <TextInput
+                  value={feedTagInput}
+                  onChange={(event) => setFeedTagInput(event.currentTarget.value)}
+                  placeholder="Add tag"
+                  size="xs"
+                  w={132}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === ",") {
+                      event.preventDefault();
+                      handleAddFeedTag();
+                    }
+
+                    if (
+                      event.key === "Backspace" &&
+                      event.currentTarget.value.length === 0
+                    ) {
+                      event.preventDefault();
+                    }
+
+                    if (event.key === "Escape") {
+                      setIsFeedTagInputOpen(false);
+                      setFeedTagInput("");
+                    }
+                  }}
+                />
+              ) : null}
+              <Button
+                variant="light"
+                radius="xl"
+                size="compact-sm"
+                onClick={() => setIsFeedTagInputOpen((current) => !current)}
+              >
+                Add Tags
+              </Button>
+            </Group>
+          </Group> */}
+
+          {isComposerOpen ? (
+          <>
+            <Group>
+              <Select 
+                label='Post about a...'
+                placeholder="Publication or Product"
+                data={[
+                  { value: "publication", label: "Publication" },
+                  { value: "product", label: "Product" },
+                ]}
+                value={importType}
+                onChange={setImportType}
+                w='22ch'
+                clearable
+              />
+              <Collapse in={importType !== null} flex='1'>
+                {importType === "publication" ? (
                   <Select
-                    aria-label="Font size"
-                    data={EDITOR_FONT_SIZE_OPTIONS.map((option) => ({
-                      label: option.label,
-                      value: option.value,
+                    label="Choose one of your publications"
+                    placeholder="Select a publication"
+                    value={selectedPublicationId}
+                    onChange={setSelectedPublicationId}
+                    data={(publicationsQuery.data ?? []).map((publication) => ({
+                      value: String(publication.publication_id),
+                      label: publication.title,
                     }))}
-                    value={activeFontSize}
-                    onChange={(value) => {
-                      if (!value || !editor) {
-                        return;
-                      }
-
-                      editor.chain().focus().setFontSize(value).run();
-                      setActiveFontSize(value);
-                    }}
-                    size="xs"
-                    w={110}
+                    rightSection={
+                      publicationsQuery.isLoading ? <Loader size={16} /> : null
+                    }
+                    searchable
                   />
-                  <Menu withinPortal position="bottom-end">
-                    <Menu.Target>
-                      <Button
-                        variant="default"
-                        size="xs"
-                        w={138}
-                        justify="space-between"
-                        title={activeColorOption.label.toLowerCase()}
-                        leftSection={
-                          <Box
-                            w={12}
-                            h={12}
-                            style={{
-                              borderRadius: 999,
-                              backgroundColor: activeColorOption.value,
-                              border: "1px solid #CBD5E1",
-                            }}
-                          />
+                ) : importType === "product" ? (
+                  <Select
+                    label="Choose one of your products"
+                    placeholder="Select a product"
+                    value={selectedProductId}
+                    onChange={setSelectedProductId}
+                    data={(productsQuery.data ?? []).map((product) => ({
+                      value: String(product.product_id),
+                      label: product.title,
+                    }))}
+                    rightSection={
+                      productsQuery.isLoading ? <Loader size={16} /> : null
+                    }
+                  />
+                ) : null}
+              </Collapse>
+            </Group>
+
+            <Stack gap="sm">
+
+              <TextInput
+                value={draftTitle}
+                onChange={(event) => setDraftTitle(event.currentTarget.value)}
+                label="Post Title"
+                placeholder="Give your post a clear title"
+                withAsterisk
+              />
+
+              <Stack gap={6}>
+                <Text size="sm" fw={600} c="#334155">
+                  Tags
+                </Text>
+                <PillsInput
+                  radius="md"
+                  styles={{
+                    input: {
+                      borderColor: "#E5E7EB",
+                    },
+                  }}
+                >
+                  <Pill.Group>
+                    {draftTags.map((tag) => (
+                      <Pill
+                        key={tag}
+                        withRemoveButton
+                        onRemove={() =>
+                          setDraftTags((current) =>
+                            current.filter((currentTag) => currentTag !== tag),
+                          )
                         }
                       >
-                        {activeColorOption.label}
-                      </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      {EDITOR_COLOR_OPTIONS.map((option) => (
-                        <Menu.Item
-                          key={option.value}
-                          onClick={() => {
-                            setActiveTextColor(option.value);
-                            editor?.chain().focus().setColor(option.value).run();
-                          }}
+                        {tag}
+                      </Pill>
+                    ))}
+                    <PillsInput.Field
+                      value={tagInput}
+                      onChange={(event) => setTagInput(event.currentTarget.value)}
+                      placeholder={
+                        draftTags.length === 0
+                          ? "Add tags and press Enter"
+                          : "Add another tag"
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === ",") {
+                          event.preventDefault();
+                          addTag();
+                        }
+
+                        if (
+                          event.key === "Backspace" &&
+                          event.currentTarget.value.length === 0
+                        ) {
+                          event.preventDefault();
+                        }
+                      }}
+                    />
+                  </Pill.Group>
+                </PillsInput>
+                <Group gap="xs">
+                  <Button
+                    variant="light"
+                    radius="xl"
+                    size="compact-sm"
+                    onClick={addTag}
+                    disabled={tagInput.trim().length === 0}
+                  >
+                    Add tag
+                  </Button>
+                  <Text size="xs" c="dimmed">
+                    Tags are optional for regular posts.
+                  </Text>
+                </Group>
+              </Stack>
+
+              <Stack gap={6}>
+                <Group justify="space-between" wrap="wrap" gap="xs">
+                  <Text component='label' size="sm" fw={600} c="#334155">
+                    Body <Text component='span' size='sm' c='red'>*</Text>
+                  </Text>
+                  <Group gap="xs">
+                    <Select
+                      aria-label="Font size"
+                      data={EDITOR_FONT_SIZE_OPTIONS.map((option) => ({
+                        label: option.label,
+                        value: option.value,
+                      }))}
+                      value={activeFontSize}
+                      onChange={(value) => {
+                        if (!value || !editor) {
+                          return;
+                        }
+
+                        editor.chain().focus().setFontSize(value).run();
+                        setActiveFontSize(value);
+                      }}
+                      size="xs"
+                      w={110}
+                    />
+                    <Menu withinPortal position="bottom-end">
+                      <Menu.Target>
+                        <Button
+                          variant="default"
+                          size="xs"
+                          w={138}
+                          justify="space-between"
+                          title={activeColorOption.label.toLowerCase()}
                           leftSection={
                             <Box
                               w={12}
                               h={12}
                               style={{
                                 borderRadius: 999,
-                                backgroundColor: option.value,
+                                backgroundColor: activeColorOption.value,
                                 border: "1px solid #CBD5E1",
                               }}
                             />
                           }
                         >
-                          {option.label}
-                        </Menu.Item>
-                      ))}
-                    </Menu.Dropdown>
-                  </Menu>
+                          {activeColorOption.label}
+                        </Button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {EDITOR_COLOR_OPTIONS.map((option) => (
+                          <Menu.Item
+                            key={option.value}
+                            onClick={() => {
+                              setActiveTextColor(option.value);
+                              editor?.chain().focus().setColor(option.value).run();
+                            }}
+                            leftSection={
+                              <Box
+                                w={12}
+                                h={12}
+                                style={{
+                                  borderRadius: 999,
+                                  backgroundColor: option.value,
+                                  border: "1px solid #CBD5E1",
+                                }}
+                              />
+                            }
+                          >
+                            {option.label}
+                          </Menu.Item>
+                        ))}
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Group>
                 </Group>
-              </Group>
 
-              <RichTextEditor
-                editor={editor}
-                styles={{
-                  root: {
-                    borderColor: "#E5E7EB",
-                    borderRadius: 16,
-                    overflow: "hidden",
-                  },
-                  toolbar: {
-                    borderColor: "#E5E7EB",
-                  },
-                  content: {
-                    minHeight: 180,
-                    borderColor: "#E5E7EB",
-                    backgroundColor: "#FFFFFF",
-                    color: DEFAULT_EDITOR_TEXT_COLOR,
-                    "& .ProseMirror": {
-                      color: DEFAULT_EDITOR_TEXT_COLOR,
-                      fontSize: DEFAULT_EDITOR_FONT_SIZE,
+                <RichTextEditor
+                  editor={editor}
+                  styles={{
+                    root: {
+                      borderColor: "#E5E7EB",
+                      borderRadius: 16,
+                      overflow: "hidden",
                     },
-                  },
-                }}
-              >
-                <RichTextEditor.Toolbar sticky={false}>
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Bold />
-                    <RichTextEditor.Italic />
-                    <RichTextEditor.Strikethrough />
-                    <RichTextEditor.ClearFormatting />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.BulletList />
-                    <RichTextEditor.OrderedList />
-                    <RichTextEditor.Blockquote />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.AlignLeft />
-                    <RichTextEditor.AlignCenter />
-                    <RichTextEditor.AlignRight />
-                  </RichTextEditor.ControlsGroup>
-                </RichTextEditor.Toolbar>
-
-                <RichTextEditor.Content />
-              </RichTextEditor>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                hidden
-                onChange={handleFileSelected}
-              />
-              <Group justify="space-between" wrap="wrap">
-                <Button
-                  variant="light"
-                  radius="xl"
-                  leftSection={<IconPhoto size={16} />}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Add image
-                </Button>
-                {mediaPreviewUrl ? (
-                  <Button
-                    variant="subtle"
-                    color="red"
-                    onClick={() => {
-                      if (mediaPreviewUrl) {
-                        URL.revokeObjectURL(mediaPreviewUrl);
-                      }
-                      setMediaPreviewUrl(null);
-                      setMediaFile(null);
-                    }}
-                  >
-                    Remove image
-                  </Button>
-                ) : null}
-              </Group>
-              {mediaPreviewUrl ? (
-                <Box
-                  style={{
-                    borderRadius: 16,
-                    overflow: "hidden",
-                    border: "1px solid #E5E7EB",
-                    aspectRatio: "16 / 9",
-                    position: "relative",
+                    toolbar: {
+                      borderColor: "#E5E7EB",
+                    },
+                    content: {
+                      minHeight: 180,
+                      borderColor: "#E5E7EB",
+                      backgroundColor: "#FFFFFF",
+                      color: DEFAULT_EDITOR_TEXT_COLOR,
+                      "& .ProseMirror": {
+                        color: DEFAULT_EDITOR_TEXT_COLOR,
+                        fontSize: DEFAULT_EDITOR_FONT_SIZE,
+                      },
+                    },
                   }}
                 >
-                  <Image
-                    component={NextImage}
-                    src={mediaPreviewUrl}
-                    alt="Selected post image"
-                    fill
-                    style={{ objectFit: "cover" }}
-                  />
-                </Box>
-              ) : null}
-            </Stack>
+                  <RichTextEditor.Toolbar sticky={false}>
+                    <RichTextEditor.ControlsGroup>
+                      <RichTextEditor.Bold />
+                      <RichTextEditor.Italic />
+                      <RichTextEditor.Strikethrough />
+                      <RichTextEditor.ClearFormatting />
+                    </RichTextEditor.ControlsGroup>
 
-            {composerMode !== "normal" ? (
-              <Alert
-                radius="lg"
-                color="gray"
-                variant="light"
-                icon={<IconAlertCircle size={16} />}
-              >
-                Linked product and publication posts are designed here, but
-                publishing them is disabled until the app has a dedicated
-                endpoint for creating those linked post types.
-              </Alert>
-            ) : null}
+                    <RichTextEditor.ControlsGroup>
+                      <RichTextEditor.BulletList />
+                      <RichTextEditor.OrderedList />
+                      <RichTextEditor.Blockquote />
+                    </RichTextEditor.ControlsGroup>
 
-            <Group justify="space-between" wrap="wrap">
-              <Group gap="xs" wrap="wrap">
-                {composerMode === "product" &&
-                productsQuery.error instanceof Error ? (
-                  <Badge color="red" variant="light" radius="xl">
-                    {productsQuery.error.message}
-                  </Badge>
-                ) : null}
-                {composerMode === "publication" &&
-                publicationsQuery.error instanceof Error ? (
-                  <Badge color="red" variant="light" radius="xl">
-                    {publicationsQuery.error.message}
-                  </Badge>
-                ) : null}
-                {draftTags.map((tag) => (
-                  <Badge
-                    key={`composer-badge-${tag}`}
-                    variant="light"
+                    <RichTextEditor.ControlsGroup>
+                      <RichTextEditor.AlignLeft />
+                      <RichTextEditor.AlignCenter />
+                      <RichTextEditor.AlignRight />
+                    </RichTextEditor.ControlsGroup>
+                  </RichTextEditor.Toolbar>
+
+                  <RichTextEditor.Content />
+                </RichTextEditor>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  hidden
+                  onChange={handleFileSelected}
+                />
+                <Group justify="space-between" wrap="wrap">
+                  <Button
                     radius="xl"
-                    color="blue"
-                    style={{ background: "#EFF6FF", color: "#1D4ED8" }}
+                    leftSection={mediaPreviewUrl ? <IconPencil size='1rem' /> : <IconPhoto size='1rem' />}
+                    onClick={() => fileInputRef.current?.click()}
+                    variant='outline'
+                    bd={mediaPreviewUrl ? '1px solid' : '1px dashed'}
+                    c={mediaPreviewUrl ? 'navy' : 'dimmed'}
                   >
-                    {tag}
-                  </Badge>
-                ))}
-              </Group>
-              <Button
-                color="navy"
-                radius="md"
-                loading={isPending}
-                disabled={!canPublishNormalPost}
-                onClick={handlePublish}
-              >
-                Publish Post
-              </Button>
-            </Group>
-          </Stack>
-        ) : null}
+                    {mediaPreviewUrl ? 'Change' : 'Add'} image
+                  </Button>
+                  {mediaPreviewUrl ? (
+                    <Button
+                      variant="subtle"
+                      color="red"
+                      onClick={() => {
+                        if (mediaPreviewUrl) {
+                          URL.revokeObjectURL(mediaPreviewUrl);
+                        }
+                        setMediaPreviewUrl(null);
+                        setMediaFile(null);
+                      }}
+                    >
+                      Remove image
+                    </Button>
+                  ) : null}
+                </Group>
+                {mediaPreviewUrl ? (
+                  <Box
+                    style={{
+                      borderRadius: 16,
+                      overflow: "hidden",
+                      border: "1px solid #E5E7EB",
+                      aspectRatio: "16 / 9",
+                      position: "relative",
+                    }}
+                  >
+                    <Image
+                      component={NextImage}
+                      src={mediaPreviewUrl}
+                      alt="Selected post image"
+                      fill
+                      style={{ objectFit: "cover" }}
+                    />
+                  </Box>
+                ) : null}
+              </Stack>
+            </Stack>
+          </>
+          ) : null}
         </Stack>
       </Card>
     </>
@@ -1818,19 +1759,6 @@ function initials(name: string) {
     .join("")
     .toUpperCase();
 }
-
-// function deriveDescription(content: string) {
-//   const trimmed = content.trim();
-//   if (!trimmed) {
-//     return "No description available.";
-//   }
-
-//   if (trimmed.length <= 180) {
-//     return trimmed;
-//   }
-
-//   return `${trimmed.slice(0, 177).trim()}...`;
-// }
 
 function escapeHtml(value: string) {
   return value
