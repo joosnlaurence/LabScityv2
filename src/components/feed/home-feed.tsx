@@ -838,12 +838,14 @@ function CreatePostCard({
 
             <Stack gap="sm">
 
-              <TextInput
+              <Textarea
                 value={draftTitle}
                 onChange={(event) => setDraftTitle(event.currentTarget.value)}
                 label="Post Title"
                 placeholder="Give your post a clear title"
                 withAsterisk
+                autosize
+                minRows={1}
               />
 
               <Stack gap={6}>
