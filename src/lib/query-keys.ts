@@ -91,6 +91,7 @@ export const jobKeys = {
   lists: () => [...jobKeys.all, "list"] as const,
   list: (filters: JobFilters) => [...jobKeys.lists(), filters] as const,
   mine: () => [...jobKeys.all, "mine"] as const,
+  trending: () => [...jobKeys.all, "trending"] as const,
   details: () => [...jobKeys.all, "detail"] as const,
   detail: (id: number) => [...jobKeys.details(), id] as const,
   // TODO: Think about using this for some sort of dedicated saved jobs page or card

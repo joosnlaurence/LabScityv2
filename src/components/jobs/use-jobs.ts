@@ -2,7 +2,7 @@ import { setSavedJob } from "@/lib/actions/bookmarks";
 import { DEFAULT_JOBS_PAGE_SIZE } from "@/lib/constants/job";
 import { bookmarkKeys, jobKeys } from "@/lib/query-keys";
 import { ApiResponse } from "@/lib/types/api";
-import { Job } from "@/lib/types/data";
+import { Job, TrendingJobTag } from "@/lib/types/data";
 import { JobFilters } from "@/lib/types/jobs";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
@@ -49,6 +49,19 @@ export function useMyJobs(enabled: boolean) {
     },
     enabled
   })
+}
+
+export function useTrendingJobTags() {
+  return useQuery({
+    queryKey: jobKeys.trending(),
+    queryFn: async () => {
+      const res = await fetch("/api/jobs/trending");
+      if(!res.ok) throw new Error("Failed to fetch trending job fields");
+      const apiResponse: ApiResponse<TrendingJobTag[]> = await res.json();
+      if(!apiResponse.success) throw new Error(apiResponse.error);
+      return apiResponse.data ?? [];
+    },
+  });
 }
 
 export function useSetSavedJob(userId: string) {

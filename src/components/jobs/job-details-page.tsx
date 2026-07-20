@@ -18,7 +18,6 @@ import {
   IconBriefcase,
   IconBuilding,
   IconCalendar,
-  IconChevronRight,
   IconExternalLink,
   IconFlag,
   IconMail,
@@ -216,6 +215,8 @@ export function JobDetailsPage({
                 <PostRichTextContent html={job.description} />
               </JobSection>
 
+              <ResearchFitSection job={job} />
+
               <JobSection title="How to Apply">
                 <Text size="sm" c="gray.7" lh={1.7} mb="md">
                   {job.applyUrl
@@ -326,7 +327,9 @@ export function JobDetailsPage({
                 fullWidth
                 variant={saved ? "light" : "outline"}
                 color={saved ? "navy" : "gray"}
-                onClick={() => setSaved((current) => !current)}
+                disabled={!user}
+                loading={setSavedJob.isPending}
+                onClick={handleSaveClick}
               >
                 {saved ? "Saved" : "Save Job"}
               </Button>
@@ -335,6 +338,62 @@ export function JobDetailsPage({
         </Flex>
       </Box>
     </Box>
+  );
+}
+
+function ResearchFitSection({ job }: { job: JobViewModel }) {
+  const groups = [
+    {
+      title: "Required Research Areas",
+      items: job.requiredResearchAreas,
+      color: "navy",
+    },
+    {
+      title: "Recommended Research Areas",
+      items: job.recommendedResearchAreas,
+      color: "blue",
+    },
+    {
+      title: "Required Skills",
+      items: job.requiredSkills,
+      color: "navy",
+    },
+    {
+      title: "Recommended Skills",
+      items: job.recommendedSkills,
+      color: "blue",
+    },
+  ];
+  const visibleGroups = groups.filter((group) => group.items.length > 0);
+
+  if (visibleGroups.length === 0) {
+    return null;
+  }
+
+  return (
+    <JobSection title="Research Fit">
+      <Stack gap="md">
+        {visibleGroups.map((group) => (
+          <Stack key={group.title} gap={6}>
+            <Text size="sm" fw={800} c="gray.8">
+              {group.title}
+            </Text>
+            <Group gap={6}>
+              {group.items.map((item) => (
+                <Badge
+                  key={`${group.title}-${item}`}
+                  variant="light"
+                  color={group.color}
+                  radius="xl"
+                >
+                  {item}
+                </Badge>
+              ))}
+            </Group>
+          </Stack>
+        ))}
+      </Stack>
+    </JobSection>
   );
 }
 

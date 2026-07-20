@@ -106,6 +106,13 @@ export interface JobSkill {
   is_required: boolean;
 }
 
+export interface JobResearchFit {
+  required_research_areas: string[];
+  recommended_research_areas: string[];
+  required_skills: string[];
+  recommended_skills: string[];
+}
+
 export interface TrendingJobTag {
   tag_id: number;
   name: string;
@@ -135,6 +142,10 @@ export interface Job {
   application_link: string | null;
   contact_email: string | null;
   isSaved: boolean;
+  required_research_areas?: string[];
+  recommended_research_areas?: string[];
+  required_skills?: string[];
+  recommended_skills?: string[];
 }
 
 /** Extended post with optional author information */

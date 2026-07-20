@@ -42,7 +42,12 @@ import {
 } from "./job-display";
 import { copyJobLink } from "./job-share";
 import { type JobViewModel, toJobViewModel } from "./job-view-model";
-import { useJobs, useMyJobs, useSetSavedJob } from "./use-jobs";
+import {
+  useJobs,
+  useMyJobs,
+  useSetSavedJob,
+  useTrendingJobTags,
+} from "./use-jobs";
 
 export function JobsPage() {
   const [search, setSearch] = useState("");
@@ -72,6 +77,7 @@ export function JobsPage() {
 
   const jobsQuery = useJobs(filters);
   const myJobsQuery = useMyJobs(!!currentUserId);
+  const trendingJobTagsQuery = useTrendingJobTags();
   const setSavedJob = useSetSavedJob(currentUserId ?? "");
 
   const jobs = useMemo(
@@ -274,19 +280,64 @@ export function JobsPage() {
               title="Trending Fields"
               icon={<IconTrendingUp size={17} />}
             >
-              <Group gap={6}>
-                {[
-                  "Deep Learning",
-                  "Holography",
-                  "Phase Imaging",
-                  "Computational Imaging",
-                  "Scientific Software",
-                ].map((tag) => (
-                  <Badge key={tag} variant="light" color="gray" radius="xl">
-                    {tag}
-                  </Badge>
-                ))}
-              </Group>
+              {trendingJobTagsQuery.isLoading ? (
+                <Group justify="center" py="xs">
+                  <Loader size="sm" />
+                </Group>
+              ) : null}
+
+              {trendingJobTagsQuery.isError ? (
+                <Text size="sm" c="dimmed">
+                  Trending fields are unavailable right now.
+                </Text>
+              ) : null}
+
+              {!trendingJobTagsQuery.isLoading &&
+              !trendingJobTagsQuery.isError ? (
+                (trendingJobTagsQuery.data?.length ?? 0) > 0 ? (
+                  <Stack gap={6} align="flex-start">
+                    {trendingJobTagsQuery.data?.map((tag) => (
+                      <Box
+                        key={tag.tag_id}
+                        title={`${tag.job_count} job${
+                          tag.job_count === 1 ? "" : "s"
+                        }`}
+                        px={10}
+                        py={3}
+                        style={{
+                          maxWidth: "100%",
+                          borderRadius: 999,
+                          background: "var(--mantine-color-gray-1)",
+                          border: "1px solid var(--mantine-color-gray-2)",
+                        }}
+                      >
+                        <Text
+                          component="span"
+                          fz={11}
+                          fw={800}
+                          tt="uppercase"
+                          c="gray.7"
+                          lh={1.25}
+                          style={{
+                            display: "-webkit-box",
+                            overflow: "hidden",
+                            whiteSpace: "normal",
+                            overflowWrap: "anywhere",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 2,
+                          }}
+                        >
+                          {tag.name}
+                        </Text>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    Trending fields will appear after jobs are tagged.
+                  </Text>
+                )
+              ) : null}
             </SidebarCard>
           </Stack>
         </Flex>

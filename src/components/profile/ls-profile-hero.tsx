@@ -12,11 +12,11 @@ import {
   Loader,
   UnstyledButton,
 } from "@mantine/core";
-import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconPlus, IconSchool, IconTrash, IconUserPlus } from "@tabler/icons-react";
+import { IconBuildings, IconCamera, IconClock, IconMapPin, IconMessageCircle, IconPencil, IconPlus, IconSchool, IconUserPlus } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import { LSEditProfileModal } from "./ls-edit-profile-modal";
 import { useDisclosure } from "@mantine/hooks";
-import { User } from "@/lib/types/feed";
+import type { User } from "@/lib/types/feed";
 import LSProfileListModal from "./ls-profile-list-modal";
 import { useUserFollowers, useUserFollowing } from "./use-profile";
 import classes from './ls-profile-hero.module.css'
@@ -51,6 +51,8 @@ const PROFILE_BANNER_HEIGHT = 150;
  * @param isFollowing - When viewing others: current follow state.
  * @param onToggleFollow - When viewing others: follow/unfollow action.
  * @param isTogglePending - When viewing others: follow mutation pending state.
+ * @param onMessageClick - When viewing others: starts or opens a direct message.
+ * @param isMessagePending - When viewing others: direct-message creation pending state.
  * @param onReportClick - When viewing others: called when user clicks Report button.
  */
 export interface LSProfileHeroProps {
@@ -63,6 +65,8 @@ export interface LSProfileHeroProps {
   isFollowing?: boolean;
   onToggleFollow?: () => void;
   isTogglePending?: boolean;
+  onMessageClick?: () => void;
+  isMessagePending?: boolean;
   onReportClick?: () => void;
 }
 
@@ -91,6 +95,8 @@ export default function LSProfileHero({
   isFollowing = false,
   onToggleFollow,
   isTogglePending = false,
+  onMessageClick,
+  isMessagePending = false,
   onReportClick,
 }: LSProfileHeroProps) {
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
@@ -306,18 +312,16 @@ export default function LSProfileHero({
                     {isFollowing ? "Unfollow" : "Follow"}
                   </Button>
                 )}
-                {/* TODO: Wire up this DM button */}
-                {
-                  // onDMClick && (
-                  true && (
-                    <Button 
-                      variant='outline' 
-                      leftSection={<IconMessageCircle size='1rem'/>}
-                    >
-                      Message
-                    </Button>
-                  )
-                }
+                {onMessageClick && (
+                  <Button
+                    variant='outline'
+                    leftSection={<IconMessageCircle size='1rem'/>}
+                    onClick={onMessageClick}
+                    loading={isMessagePending}
+                  >
+                    Message
+                  </Button>
+                )}
                 {onReportClick && (
                   <Button
                     variant="outline"

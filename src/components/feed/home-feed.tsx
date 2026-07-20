@@ -25,7 +25,6 @@ import {
   TextInput,
   ThemeIcon,
   Image,
-  Spoiler,
   Anchor
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
@@ -56,10 +55,7 @@ import NextImage from "next/image";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/app/use-is-mobile";
-import {
-  PostRichTextContent,
-  createPostEditorExtensions,
-} from "@/components/feed/post-rich-text-content";
+import { createPostEditorExtensions } from "@/components/feed/post-rich-text-content";
 import { LSPopularGroupsHomeStrip } from "@/components/groups/ls-popular-groups-home-strip";
 import type { ApiResponse } from "@/lib/types/api";
 import type { GetCollaboratorsResult } from "@/lib/types/collab";
@@ -1199,7 +1195,6 @@ export function FeedPostCard({
   const isCitable =
     parsedContent.kind === "publication" || inferredTags.includes("Article");
 
-  const spoilerControlRef = useRef<HTMLButtonElement>(null);
   return (
     <Card
       radius="md"
@@ -1286,34 +1281,19 @@ export function FeedPostCard({
               {title}
             </Anchor>
           </Box>
-          {parsedContent.bodyHtml ? (
-            <Box c="#475569">
-              <PostRichTextContent
-                html={parsedContent.bodyHtml}
-                maxHeight={160}
-              />
-            </Box>
-          ) : (
-            <Spoiler
-              controlRef={spoilerControlRef}
-              fz="sm"
-              c="#475569"
-              lh={1.6}
-              maxHeight={176} // Enough for about 8 lines worth of content
-              showLabel='Show more'
-              hideLabel='Hide'
-              style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
-              styles={{
-                control: {
-                  color: 'var(--mantine-color-blue-7)',
-                  fontSize: 'var(--mantine-font-size-sm)',
-                  fontWeight: 600
-                }
-              }}
-            >
-              {description}
-            </Spoiler>
-          )}
+          <Text
+            size="sm"
+            c="#475569"
+            lh={1.6}
+            lineClamp={3}
+            style={{
+              wordBreak: "break-word",
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {description}
+          </Text>
         </Stack>
 
         <Group justify="space-between" align="center" wrap="wrap" gap="sm">

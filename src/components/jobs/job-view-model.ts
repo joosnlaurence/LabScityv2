@@ -16,6 +16,10 @@ export interface JobViewModel {
   applyUrl: string | null;
   contactEmail: string | null;
   isSaved: boolean;
+  requiredResearchAreas: string[];
+  recommendedResearchAreas: string[];
+  requiredSkills: string[];
+  recommendedSkills: string[];
 }
 
 function formatTimeAgo(value: string) {
@@ -61,5 +65,9 @@ export function toJobViewModel(job: DbJob): JobViewModel {
     applyUrl: job.application_link,
     contactEmail: job.contact_email,
     isSaved: job.isSaved,
+    requiredResearchAreas: job.required_research_areas ?? [],
+    recommendedResearchAreas: job.recommended_research_areas ?? [],
+    requiredSkills: job.required_skills ?? [],
+    recommendedSkills: job.recommended_skills ?? [],
   };
 }

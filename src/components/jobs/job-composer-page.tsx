@@ -21,10 +21,8 @@ import { RichTextEditor } from "@mantine/tiptap";
 import {
   IconBriefcase,
   IconCalendar,
-  IconCheck,
   IconExternalLink,
   IconEye,
-  IconInfoCircle,
   IconMapPin,
   IconSend,
   IconTag,
@@ -232,29 +230,6 @@ export function JobComposerPage({
       updateDraft("description", editor.getHTML());
     },
   });
-
-  const tips = useMemo(
-    () => [
-      { text: "Use a clear, specific job title", done: draft.title.length > 0 },
-      {
-        text: "Include required skills or research areas",
-        done: requiredAreaIds.length > 0 || requiredSkillIds.length > 0,
-      },
-      {
-        text: "Add an external application link",
-        done: draft.applyUrl.length > 0,
-      },
-      {
-        text: "Specify remote / on-site status",
-        done: draft.remote.length > 0,
-      },
-      {
-        text: "Write 2-3 sentences of description",
-        done: draft.description.length > 80,
-      },
-    ],
-    [draft, requiredAreaIds.length, requiredSkillIds.length],
-  );
 
   const hasPublishableDescription = useMemo(() => {
     const plainText = draft.description
@@ -630,44 +605,6 @@ export function JobComposerPage({
                 Updates as you type.
               </Text>
             </Card>
-
-            <Card radius="md" padding="md" withBorder bg="yellow.0">
-              <Text size="sm" fw={800} c="yellow.9" mb="sm">
-                Posting Tips
-              </Text>
-              <Stack gap="xs">
-                {tips.map((tip) => (
-                  <Group
-                    key={tip.text}
-                    gap="xs"
-                    align="flex-start"
-                    wrap="nowrap"
-                  >
-                    <IconCheck
-                      size={16}
-                      color={
-                        tip.done
-                          ? "var(--mantine-color-green-7)"
-                          : "var(--mantine-color-gray-4)"
-                      }
-                    />
-                    <Text size="xs" c={tip.done ? "green.8" : "yellow.9"}>
-                      {tip.text}
-                    </Text>
-                  </Group>
-                ))}
-              </Stack>
-            </Card>
-
-            <Alert
-              color="blue"
-              icon={<IconInfoCircle size={16} />}
-              title="What gets saved"
-            >
-              Title, summary, description, organization, location, department,
-              job type, work mode, application link, research areas, and skills
-              are stored on publish.
-            </Alert>
 
             <Card radius="md" shadow="xs" padding="md" withBorder>
               <Stack gap="xs">

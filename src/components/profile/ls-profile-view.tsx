@@ -3,7 +3,6 @@
 import { 
   Box, 
   Button, 
-  Card, 
   Divider, 
   Flex, 
   Stack, 
@@ -11,7 +10,9 @@ import {
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { notifications } from "@mantine/notifications";
 import { useIsMobile } from "@/app/use-is-mobile";
+import { useCreateChat } from "@/components/chat/use-chat";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSPostCard } from "@/components/feed/ls-post-card";
 import { LSPostCommentCard } from "@/components/feed/ls-post-comment-card";
@@ -135,6 +136,8 @@ interface LSProfileMobileLayoutProps {
   actions: ProfilePostActionsResult;
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
+  onMessageClick?: () => void;
+  isMessagePending?: boolean;
   onReportClick?: () => void;
 }
 
@@ -154,6 +157,8 @@ const LSProfileMobileLayout = ({
   actions,
   followProfile,
   mediaUpload,
+  onMessageClick,
+  isMessagePending,
   onReportClick,
 }: LSProfileMobileLayoutProps) => {
   const router = useRouter();
@@ -258,6 +263,8 @@ const LSProfileMobileLayout = ({
         isFollowing={followProfile?.isFollowing}
         onToggleFollow={followProfile?.onToggleFollow}
         isTogglePending={followProfile?.isTogglePending}
+        onMessageClick={onMessageClick}
+        isMessagePending={isMessagePending}
         onReportClick={onReportClick}
       />
       <LSMiniProfileList
@@ -304,6 +311,8 @@ interface LSProfileDesktopLayoutProps {
   actions: ProfilePostActionsResult;
   followProfile?: FollowProfileHeroProps;
   mediaUpload?: ProfileMediaUploadProps;
+  onMessageClick?: () => void;
+  isMessagePending?: boolean;
   onReportClick?: () => void;
   currentUserId: string | null;
   initialTab?: Exclude<ProfileTab, "posts">;
@@ -330,6 +339,8 @@ const LSProfileDesktopLayout = ({
   actions,
   followProfile,
   mediaUpload,
+  onMessageClick,
+  isMessagePending,
   onReportClick,
   currentUserId,
   initialTab,
@@ -416,6 +427,8 @@ const LSProfileDesktopLayout = ({
               isFollowing={followProfile?.isFollowing}
               onToggleFollow={followProfile?.onToggleFollow}
               isTogglePending={followProfile?.isTogglePending}
+              onMessageClick={onMessageClick}
+              isMessagePending={isMessagePending}
               onReportClick={onReportClick}
             /> 
             : 
@@ -553,6 +566,8 @@ const LSProfileDesktopLayout = ({
  */
 export function LSProfileView(props: LSProfileViewProps) {
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const createChatMutation = useCreateChat();
   const { actions, followProfile, mediaUpload } =
     useLSProfileView(props);
 
@@ -563,6 +578,42 @@ export function LSProfileView(props: LSProfileViewProps) {
   const profileName = profile
     ? `${profile.first_name} ${profile.last_name}`
     : "Unknown User";
+  const handleMessageClick = props.isOwnProfile
+    ? undefined
+    : () => {
+        if (!props.currentUserId) {
+          notifications.show({
+            title: "Sign in required",
+            message: "Please sign in to send a message.",
+            color: "red",
+          });
+          return;
+        }
+
+        createChatMutation.mutate([props.userId], {
+          onSuccess: (result) => {
+            const conversationId = result.data?.conversation_id;
+            if (result.success && conversationId) {
+              router.push(`/chat/${conversationId}`);
+              return;
+            }
+
+            notifications.show({
+              title: "Could not open chat",
+              message: result.error ?? "Please try again.",
+              color: "red",
+            });
+          },
+          onError: (error: unknown) => {
+            notifications.show({
+              title: "Could not open chat",
+              message:
+                error instanceof Error ? error.message : "Please try again.",
+              color: "red",
+            });
+          },
+        });
+      };
 
   return (
     <Box mih="calc(100vh - 56px)">
@@ -581,6 +632,8 @@ export function LSProfileView(props: LSProfileViewProps) {
           actions={actions}
           followProfile={followProfile}
           mediaUpload={mediaUpload}
+          onMessageClick={handleMessageClick}
+          isMessagePending={createChatMutation.isPending}
           onReportClick={() => setReportOverlayOpen(true)}
         />
       ) : (
@@ -590,6 +643,8 @@ export function LSProfileView(props: LSProfileViewProps) {
           actions={actions}
           followProfile={followProfile}
           mediaUpload={mediaUpload}
+          onMessageClick={handleMessageClick}
+          isMessagePending={createChatMutation.isPending}
           onReportClick={() => setReportOverlayOpen(true)}
           currentUserId={props.currentUserId}
           initialTab={props.initialTab}

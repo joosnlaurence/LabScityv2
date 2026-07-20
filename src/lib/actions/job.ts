@@ -1,7 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import type { DataResponse, Job, JobSkill, JobTag } from "@/lib/types/data";
+import type {
+  DataResponse,
+  Job,
+  JobResearchFit,
+  JobSkill,
+  JobTag,
+} from "@/lib/types/data";
 import {
   type CreateJobValues,
   createJobSchema,
@@ -59,12 +65,81 @@ export async function getJobById(
             isSaved: authData.user
               ? await isJobSaved(supabase, jobId, authData.user.id)
               : false,
+            ...(await getJobResearchFit(supabase, jobId)),
           } as Job)
         : null,
     };
   } catch {
     return { success: false, error: "Failed to fetch job" };
   }
+}
+
+async function getJobResearchFit(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  jobId: number,
+): Promise<JobResearchFit> {
+  const emptyFit: JobResearchFit = {
+    required_research_areas: [],
+    recommended_research_areas: [],
+    required_skills: [],
+    recommended_skills: [],
+  };
+
+  const [
+    { data: tagRows, error: tagRowsError },
+    { data: skillRows, error: skillRowsError },
+  ] = await Promise.all([
+    supabase
+      .from("jobs_tags")
+      .select("tag_id, is_required")
+      .eq("job_id", jobId),
+    supabase
+      .from("jobs_skills")
+      .select("skill_id, is_required")
+      .eq("job_id", jobId),
+  ]);
+
+  if (tagRowsError || skillRowsError) {
+    return emptyFit;
+  }
+
+  const tagIds = [...new Set((tagRows ?? []).map((row) => row.tag_id))];
+  const skillIds = [...new Set((skillRows ?? []).map((row) => row.skill_id))];
+
+  const [{ data: tags }, { data: skills }] = await Promise.all([
+    tagIds.length > 0
+      ? supabase.from("tags").select("id, name").in("id", tagIds)
+      : Promise.resolve({ data: [] }),
+    skillIds.length > 0
+      ? supabase.from("skills").select("id, name").in("id", skillIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const tagNames = new Map(
+    (tags ?? []).map((tag) => [Number(tag.id), tag.name]),
+  );
+  const skillNames = new Map(
+    (skills ?? []).map((skill) => [Number(skill.id), skill.name]),
+  );
+
+  return {
+    required_research_areas: (tagRows ?? [])
+      .filter((row) => row.is_required)
+      .map((row) => tagNames.get(Number(row.tag_id)))
+      .filter((name): name is string => Boolean(name)),
+    recommended_research_areas: (tagRows ?? [])
+      .filter((row) => !row.is_required)
+      .map((row) => tagNames.get(Number(row.tag_id)))
+      .filter((name): name is string => Boolean(name)),
+    required_skills: (skillRows ?? [])
+      .filter((row) => row.is_required)
+      .map((row) => skillNames.get(Number(row.skill_id)))
+      .filter((name): name is string => Boolean(name)),
+    recommended_skills: (skillRows ?? [])
+      .filter((row) => !row.is_required)
+      .map((row) => skillNames.get(Number(row.skill_id)))
+      .filter((name): name is string => Boolean(name)),
+  };
 }
 
 async function isJobSaved(
