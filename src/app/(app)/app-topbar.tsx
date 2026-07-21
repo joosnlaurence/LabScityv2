@@ -49,6 +49,7 @@ import { useIsMobile } from "../use-is-mobile";
 import { useGetUser } from "@/components/data/use-data";
 import classes from './app-topbar.module.css';
 import { initials } from "@/components/feed/post-detail-card.utils";
+import { parsePostContent } from "@/lib/utils/post-content";
 
 type NotificationType =
   | "post_like"
@@ -646,38 +647,43 @@ function ResultGroup({
   rows: searchResult[];
   getHref: (row: searchResult) => string;
   onSelect: (href: string) => void;
-}) {
+}) {  
   return (
     <Stack gap={2}>
       <Text size="xs" fw={700} c="gray.5" tt="uppercase" px={6}>
         {title}
       </Text>
-      {rows.map((row) => (
-        <UnstyledButton
-          key={`${title}-${row.id}`}
-          w="100%"
-          px="xs"
-          py={6}
-          style={{ borderRadius: 6 }}
-          onClick={() => onSelect(getHref(row))}
-        >
-          <Group gap="sm" wrap="nowrap">
-            <Avatar size="sm" radius="xl" color="navy.7">
-              {(row.names || row.content || title).slice(0, 1)}
-            </Avatar>
-            <Box miw={0}>
-              <Text size="sm" fw={500} c="navy.7" truncate>
-                {row.names || row.content}
-              </Text>
-              {row.content && row.names && (
-                <Text size="xs" c="dimmed" truncate>
-                  {row.content}
-                </Text>
-              )}
-            </Box>
-          </Group>
-        </UnstyledButton>
-      ))}
+      {
+        rows.map((row) => { 
+          const postTitle = parsePostContent(row.content).title;
+          return (
+            <UnstyledButton
+              key={`${title}-${row.id}`}
+              w="100%"
+              px="xs"
+              py={6}
+              style={{ borderRadius: 6 }}
+              onClick={() => onSelect(getHref(row))}
+            >
+              <Group gap="sm" wrap="nowrap">
+                <Avatar size="sm" radius="xl" color="navy.7">
+                  {(row.names || postTitle|| title).slice(0, 1)}
+                </Avatar>
+                <Box miw={0}>
+                  <Text size="sm" fw={500} c="navy.7" truncate>
+                    {row.names || postTitle}
+                  </Text>
+                  {postTitle && row.names && (
+                    <Text size="xs" c="dimmed" truncate>
+                      {postTitle}
+                    </Text>
+                  )}
+                </Box>
+              </Group>
+            </UnstyledButton>
+          )
+        })
+      }
     </Stack>
   );
 }
