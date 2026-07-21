@@ -23,7 +23,8 @@ import {
   ThemeIcon,
   Image,
   Anchor,
-  Collapse
+  Collapse,
+  Center
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
@@ -229,7 +230,9 @@ export function HomeFeed(props: HomeFeedProps) {
           />
 
           {isFeedLoading && posts.length === 0 ? (
-            <Text c="dimmed">Loading feed...</Text>
+            <Stack align="center" justify='center'>
+              <Loader />
+            </Stack>
           ) : null}
 
           {isFeedError ? (
@@ -1590,17 +1593,18 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
           )
         })
         : 
-        <Stack align='center' justify='center'>
-          <IconUserSearch size='3rem' color='var(--mantine-color-dimmed)' stroke={1.25}/>
-          <Text ta='center' c='dimmed' fz='xs'>
-            Fill your profile with your research areas, skills, or works to begin getting recommendations.
-          </Text>
-        </Stack>
+        !collaboratorsQuery.isLoading && 
+          <Stack align='center' justify='center'>
+            <IconUserSearch size='3rem' color='var(--mantine-color-dimmed)' stroke={1.25}/>
+            <Text ta='center' c='dimmed' fz='xs'>
+              Fill your profile with your research areas, skills, or works to begin getting recommendations.
+            </Text>
+          </Stack>
         }
         {collaboratorsQuery.isLoading ? (
-          <Text size="sm" c="dimmed">
-            Loading collaborators...
-          </Text>
+          <Center>
+            <Loader />
+          </Center>
         ) : null}
       </Stack>
     </SectionCard>
