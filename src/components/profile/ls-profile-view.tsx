@@ -520,6 +520,7 @@ const LSProfileDesktopLayout = ({
                     Load more posts
                   </Button>
                 ) : 
+                feedPosts.length === 0 && 
                 <Stack justify='center' align='center'>
                   <IconMessageCircleOff color='var(--mantine-color-dimmed)' size={64} stroke={1}/>
                   <Text ta='center' c='dimmed'>
