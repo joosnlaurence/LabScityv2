@@ -8,6 +8,7 @@ import { groupsPath } from "@/lib/utils/groups-url";
 import { LSDiscoverGroupsPanel } from "./ls-discover-groups-panel";
 import { LSGroupLayout } from "./ls-group-layout";
 import type { LSGroupLayoutProps } from "./ls-group-layout.types";
+import classes from './ls-tabs.module.css';
 
 export interface LSGroupsPageShellProps extends LSGroupLayoutProps {
   searchPublicGroupsAction: typeof searchPublicGroups;
@@ -63,30 +64,35 @@ export function LSGroupsPageShell({
         color="navy"
         radius="xl"
       >
-        <Box maw={1320} mx="auto" px={{ base: "md", md: "lg" }} pt="md">
+        <Box 
+          w='100%' 
+          mx="auto" 
+          px={{ base: "md", md: "lg" }} 
+          py='md'
+          style={{
+            borderBottom: '1px solid var(--mantine-color-gray-3)'
+          }}
+        >
           <Tabs.List
-            grow
-            style={{
-              background: "#FFFFFF",
-              border: "1px solid #E5E7EB",
-              borderRadius: 20,
-              padding: 6,
-              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-            }}
+            w='fit-content'
+            mx='auto'
+            px='md'
+            bdrs='md'
+            classNames={classes}
           >
-            <Tabs.Tab value="mine">My groups</Tabs.Tab>
-            <Tabs.Tab value="discover">Discover</Tabs.Tab>
+            <Tabs.Tab px='xl' fz='md' py='md' value="mine">My Groups</Tabs.Tab>
+            <Tabs.Tab px='xl' fz='md' py='md' value="discover">Discover</Tabs.Tab>
           </Tabs.List>
         </Box>
 
-        <Tabs.Panel value="mine" pt="md">
+        <Tabs.Panel value="mine">
           <LSGroupLayout
             {...layoutProps}
             autoOpenCreateGroup={autoOpenCreateGroup}
           />
         </Tabs.Panel>
 
-        <Tabs.Panel value="discover" pt="md">
+        <Tabs.Panel value="discover">
           <LSDiscoverGroupsPanel
             searchPublicGroupsAction={searchPublicGroupsAction}
             joinGroupAction={layoutProps.joinGroupAction}

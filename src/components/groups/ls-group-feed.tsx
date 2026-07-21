@@ -1,7 +1,6 @@
 "use client";
 
-import { Button, Divider, Stack, Text } from "@mantine/core";
-import { IconPlus } from "@tabler/icons-react";
+import { Divider, Stack, Text } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { LSCommentComposer } from "@/components/feed/ls-comment-composer";
 import { LSPostCard } from "@/components/feed/ls-post-card";
@@ -10,6 +9,14 @@ import { LSPostComposer } from "@/components/feed/ls-post-composer";
 import type { LSGroupFeedProps } from "@/components/groups/ls-group-layout.types";
 import { useGroupFeed } from "@/components/groups/use-group-feed";
 import { ReportOverlay } from "@/components/report/report-overlay";
+import { CreatePostCard, FeedPostCard } from "../feed/home-feed";
+import { useAuth } from "../auth/use-auth";
+import { useUserProfile } from "../profile/use-profile";
+import { usePostActions } from "@/lib/actions/use-post-actions";
+import { useSetSavedPost } from "../feed/use-feed";
+import { useState } from "react";
+import { FeedPostItem } from "@/lib/types/feed";
+import { PostFollowButton } from "../feed/post-follow-button";
 
 /**
  * Group-scoped feed: identical UI to HomeFeed but backed by useGroupFeed,
@@ -40,8 +47,13 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
     currentUserId,
   } = useGroupFeed(props);
 
+  const profile = useUserProfile(currentUserId ?? '').data;
+  const currentUserName = profile ? `${profile?.first_name} ${profile?.last_name}` : 'Current User'
+  
+  
+
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" maw='700' mx='auto'>
       <ReportOverlay
         open={reportTarget !== null}
         title={reportTarget?.type === "post" ? "Report post" : "Report comment"}
@@ -82,26 +94,15 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
         onSubmit={onSubmitReport}
       />
 
-      <Button
-        leftSection={<IconPlus size={14} />}
-        radius="xl"
-        variant="filled"
-        size="sm"
-        c="gray.0"
-        fw={700}
-        bg="navy.8"
-        onClick={() => setIsComposerOpen((open) => !open)}
-      >
-        New Post
-      </Button>
-
-      {isComposerOpen ? (
-        <LSPostComposer
-          key="open"
-          onSubmit={handleSubmitPost}
-          isPending={createPostMutation.isPending}
-        />
-      ) : null}
+      <CreatePostCard
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        isComposerOpen={isComposerOpen}
+        onToggleComposer={() => setIsComposerOpen(!isComposerOpen)}
+        onSubmit={handleSubmitPost}
+        isPending={createPostMutation.isPending}
+        type='group'
+      />
 
       {isFeedLoading ? (
         <Text size="sm" c="dimmed">
@@ -117,72 +118,43 @@ export function LSGroupFeed(props: LSGroupFeedProps) {
 
       <Stack gap="lg" w="100%">
         {posts.map((post) => (
-          <LSPostCard
+          <GroupFeedPostCard
             key={post.id}
-            userId={post.userId}
-            userName={post.userName}
-            avatarUrl={post.avatarUrl ?? null}
-            field={post.scientificField}
-            timeAgo={post.timeAgo}
-            content={post.content}
-            mediaUrl={post.mediaUrl ?? null}
-            mediaLabel={post.mediaLabel ?? null}
-            onCommentClick={() =>
-              setActiveCommentPostId((current) =>
-                current === post.id ? null : post.id,
-              )
-            }
-            onLikeClick={() => handleTogglePostLike(post.id)}
-            isLiked={post.isLiked ?? false}
-            onEditSubmit={
-              post.userId === currentUserId
-                ? (values) => handleEditPost(post.id, values)
-                : undefined
-            }
-            isEditPending={updatePostMutation.isPending}
-            onReportClick={() =>
-              setReportTarget({ type: "post", postId: post.id })
-            }
-            onPostClick={() => router.push(`/posts/${post.id}`)}
-            audienceLabel={post.audienceLabel ?? null}
-            menuId={`group-post-menu-${post.id}`}
-          >
-            {activeCommentPostId === post.id || post.comments.length > 0 ? (
-              <Stack gap="md" w="100%">
-                {activeCommentPostId === post.id ? (
-                  <LSCommentComposer
-                    postId={post.id}
-                    onAddComment={handleAddComment}
-                    isSubmitting={createCommentMutation.isPending}
-                  />
-                ) : null}
-
-                <Divider />
-
-                {post.comments
-                  .filter((comment) => !comment.parentCommentId)
-                  .map((comment) => (
-                  <LSPostCommentCard
-                    key={comment.id}
-                    comment={comment}
-                    onLikeClick={ () =>
-                      handleToggleCommentLike(post.id, comment.id)
-                    }
-                    onReportClick={() =>
-                      setReportTarget({
-                        type: "comment",
-                        postId: post.id,
-                        commentId: comment.id,
-                      })
-                    }
-                    menuId={`group-comment-menu-${comment.id}`}
-                  />
-                ))}
-              </Stack>
-            ) : null}
-          </LSPostCard>
+            post={post}
+            currentUserId={currentUserId}
+          />
         ))}
       </Stack>
     </Stack>
   );
+}
+
+// TODO: The actions in this card don't update the correct caches for the group feed, so things like liking
+//  saving, commenting, etc. will not propagate to the group feed until refresh.  
+function GroupFeedPostCard({
+  post,
+  currentUserId,
+}: {
+  post: FeedPostItem;
+  currentUserId: string | null;
+}) {
+  const actions = usePostActions(post.id);
+  const setSavedPost = useSetSavedPost(currentUserId ?? '');
+
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(
+    null,
+  );
+
+  return (
+    <FeedPostCard 
+      post={post}
+      currentUserId={currentUserId}
+      commentOpen={activeCommentPostId === post.id}
+      onToggleComments={() => setActiveCommentPostId((c) => (c === post.id ? null : post.id))}
+      onAddComment={async (postId, values) => await actions.addComment(values)}
+      onLike={() => actions.toggleLike()}
+      onDelete={() => actions.remove()}
+      onSetSaved={(postId, save) => setSavedPost.mutate({ postId, save })} 
+    />
+  )
 }

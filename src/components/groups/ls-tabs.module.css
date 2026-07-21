@@ -1,0 +1,15 @@
+.list::before {
+    border: none; 
+}
+.list {
+    background: var(--mantine-color-white);
+}
+.tab:hover {
+    background: var(--mantine-color-gray-2);
+}
+.tab:not([data-active]):hover {
+    border-bottom: 2px solid var(--mantine-color-gray-2);
+}
+.tab {
+    border-radius: 0px;
+}

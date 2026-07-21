@@ -33,6 +33,7 @@ import {
   IconSettingsFilled,
   IconUser,
   IconUsers,
+  IconUsersGroup,
   IconX,
 } from "@tabler/icons-react";
 import Image from "next/image";
@@ -82,7 +83,7 @@ interface LSAppTopBarProps {
 const baseNavigation = [
   { href: "/home", icon: IconFlaskFilled, label: "Home" },
   { href: "/jobs", icon: IconBriefcase, label: "Jobs" },
-  { href: "/groups", icon: IconUsers, label: "Groups" },
+  { href: "/groups", icon: IconUsersGroup, label: "Groups" },
   { href: "/chat", icon: IconMessageCircle, label: "Messages" },
 ];
 

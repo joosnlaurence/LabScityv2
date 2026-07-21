@@ -33,7 +33,7 @@ export default async function AuthenticatedLayout({
 
   // 4. if auth OK, render layout; pass userid to clientside components so they can request the data they need based on it (e.g. profiles)
   return (
-    <Box style={{ minHeight: "100vh" }}>
+    <Box style={{ minHeight: "100vh" }} h='100%'>
       <NotificationProvider>
         {/* lots of interactivity with app layout so we offload this to clientside */}
         <LSAppLayout userId={user.id} isModerator={isModerator} children={children} />

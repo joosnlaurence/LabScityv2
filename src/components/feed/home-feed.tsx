@@ -43,6 +43,8 @@ import {
   IconUsers,
   IconHeartFilled,
   IconPencil,
+  IconBulb,
+  IconUserSearch,
 } from "@tabler/icons-react";
 import StickyBox from "react-sticky-box";
 import { useQuery } from "@tanstack/react-query";
@@ -294,13 +296,14 @@ export function HomeFeed(props: HomeFeedProps) {
   );
 }
 
-function CreatePostCard({
+export function CreatePostCard({
   currentUserId,
   currentUserName,
   isComposerOpen,
   onToggleComposer,
   onSubmit,
   isPending,
+  type='home',
 }: {
   currentUserId: string | null;
   currentUserName: string;
@@ -308,6 +311,7 @@ function CreatePostCard({
   onToggleComposer: () => void;
   onSubmit: (values: CreatePostValues & { mediaFile?: File | null }) => void;
   isPending: boolean;
+  type?: string
 }) {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftTags, setDraftTags] = useState<string[]>([]);
@@ -696,11 +700,15 @@ function CreatePostCard({
                 {initials(currentUserName)}
               </Avatar>
               <Box>
-                <Text size="sm" fw={800} c="#374151">
-                  What are you working on?
+                <Text size="sm" fw={800} c="navy.7">
+                  {
+                    type === 'home' ? "What are you working on" :
+                    type === 'group' ? "Share an update with the group" :
+                    'Make a post'
+                  }
                 </Text>
-                <Text size="xs" c="#64748B">
-                  Share a paper, product, result, or collaboration note.
+                <Text size="xs" c="dimmed">
+                  Ask a question, share progress, or start a discussion
                 </Text>
               </Box>
             </Group>
@@ -1367,23 +1375,11 @@ export function FeedPostCard({
               component={Link}
               href={`/posts/${post.id}`}
               radius="md"
-              color="blue"
               rightSection={<IconChevronRight size={14} />}
-              style={{ background: "#2563EB" }}
+              bg='navy.7'
             >
               View
             </Button>
-            {isCitable ? (
-              <Button
-                variant="outline"
-                radius="md"
-                color="gray"
-                leftSection={<IconQuote size={15} />}
-                disabled
-              >
-                Cite
-              </Button>
-            ) : null}
           </Group>
         </Group>
 
@@ -1550,7 +1546,9 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
       icon={<IconUsers size={18} />}
     >
       <Stack gap={0}>
-        {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => {
+        {(collaboratorsQuery.data ?? []).length > 0 
+        ? 
+        (collaboratorsQuery.data ?? []).slice(0, 3).map((person) => {
           const { data } = supabase.storage
             .from("profile_pictures")
             .getPublicUrl(person?.profile_pic_path ?? '');
@@ -1590,7 +1588,15 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
               />
             </Group>
           )
-        })}
+        })
+        : 
+        <Stack align='center' justify='center'>
+          <IconUserSearch size='3rem' color='var(--mantine-color-dimmed)' stroke={1.25}/>
+          <Text ta='center' c='dimmed' fz='xs'>
+            Fill your profile with your research areas, skills, or works to begin getting recommendations.
+          </Text>
+        </Stack>
+        }
         {collaboratorsQuery.isLoading ? (
           <Text size="sm" c="dimmed">
             Loading collaborators...

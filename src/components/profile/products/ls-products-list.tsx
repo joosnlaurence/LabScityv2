@@ -228,11 +228,11 @@ export default function LSProductsList({
           </Stack>
           : 
           <Stack justify='center' align='center'>
-              <IconBoxOff color='var(--mantine-color-dimmed)' size={64} stroke={1}/>
-              <Text ta='center' c='dimmed'>
-                No Research Products Found...
-              </Text>
-            </Stack>
+            <IconBoxOff color='var(--mantine-color-dimmed)' size={64} stroke={1}/>
+            <Text ta='center' c='dimmed'>
+              No Research Products Found...
+            </Text>
+          </Stack>
         }
       </Stack>
 
