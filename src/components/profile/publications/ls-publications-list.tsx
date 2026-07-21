@@ -172,7 +172,7 @@ export default function LSPublicationsList({
             >
               <Modal.Overlay />
               <Modal.Content>
-                <Modal.Header>
+                <Modal.Header style={{ borderBottom: '1px solid var(--mantine-color-gray-4)' }}>
                   <Group align='flex-start' justify='space-between' w='100%'>
                     <Modal.Title>
                       <Group>
@@ -190,30 +190,30 @@ export default function LSPublicationsList({
                 </Modal.Header>
                 <Modal.Body>
                   <form onSubmit={handleDoiSubmit}>
-                  <Stack gap="md">
-                    <Group>
-                      <TextInput
-                        flex='1'
-                        placeholder="doi.org/..."
-                        bdrs="md"
-                        disabled={addPubByDoi.isPending}
-                        data-autofocus
-                        key={doiForm.key("doi")}
-                        {...doiForm.getInputProps("doi")}
-                      />
-                      <Button type="submit" loading={addPubByDoi.isPending}
-                        leftSection={<IconSearch size='1rem'/>}
-                      >
-                        Fetch
-                      </Button>
-                    </Group>
-                    <Group justify="flex-end">
-                      <Button variant="outline" onClick={closeDoiModal} disabled={addPubByDoi.isPending}>
-                        Cancel
-                      </Button>
-                    </Group>
-                  </Stack>
-                </form>
+                    <Stack gap="md" pt='md'>
+                      <Group>
+                        <TextInput
+                          flex='1'
+                          placeholder="doi.org/..."
+                          bdrs="md"
+                          disabled={addPubByDoi.isPending}
+                          data-autofocus
+                          key={doiForm.key("doi")}
+                          {...doiForm.getInputProps("doi")}
+                        />
+                      </Group>
+                      <Group justify="flex-end">
+                        <Button variant="outline" onClick={closeDoiModal} disabled={addPubByDoi.isPending}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" loading={addPubByDoi.isPending}
+                          leftSection={<IconSearch size='1rem'/>}
+                        >
+                          Fetch
+                        </Button>
+                      </Group>
+                    </Stack>
+                  </form>
                 </Modal.Body>
                 
               </Modal.Content>

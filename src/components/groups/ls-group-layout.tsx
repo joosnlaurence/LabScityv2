@@ -13,6 +13,7 @@ import {
   Paper,
   Stack,
   Text,
+  ThemeIcon,
 } from "@mantine/core";
 import {
   IconEdit,
@@ -22,6 +23,7 @@ import {
   IconSettings,
   IconTrash,
   IconUsers,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -168,15 +170,10 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
           <Box flex={5}>
             <Paper
               p="xl"
-              radius="xl"
+              radius="md"
               withBorder
               bg="white"
-              style={{
-                borderColor: "#E5E7EB",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-                background:
-                  "linear-gradient(180deg, rgba(239,246,255,0.95) 0%, #FFFFFF 100%)",
-              }}
+              shadow='xs'
             >
               <Group gap="md" align="flex-start">
                 <Avatar
@@ -228,32 +225,28 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                 widgetTitle={`Members - ${groupDetails.memberCount}`}
                 profiles={memberProfiles}
               />
-              {groupDetails.conversation_id && (
-                <Button
-                  variant="light"
-                  leftSection={<IconMessageCircle size={16} />}
-                  fullWidth
-                  radius="xl"
-                  style={{ background: "#EFF6FF", color: "#1D4ED8" }}
-                  onClick={() =>
-                    router.push(`/chat/${groupDetails.conversation_id}`)
-                  }
-                >
-                  Group Chat
-                </Button>
-              )}
-              {currentMember && (
-                <Group gap="xs" wrap="wrap">
-                  {isAdmin ? (
+              <Group>
+                {groupDetails.conversation_id && (
+                  <Button
+                    flex='1'
+                    variant="outline"
+                    leftSection={<IconMessageCircle size={16} />}
+                    onClick={() =>
+                      router.push(`/chat/${groupDetails.conversation_id}`)
+                    }
+                  >
+                    Group Chat
+                  </Button>
+                )}
+                {currentMember && (
+                  isAdmin ? (
                     <Menu shadow="md" width={260} position="bottom-end">
                       <Menu.Target>
                         <Button
-                          variant="light"
-                          radius="xl"
-                          fullWidth
+                          flex='1'
+                          variant="outline"
                           leftSection={<IconSettings size={16} />}
                           aria-label="Group settings"
-                          style={{ background: "#EFF6FF", color: "#1D4ED8" }}
                         >
                           Settings
                         </Button>
@@ -284,6 +277,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                     </Menu>
                   ) : (
                     <Button
+                      flex='1'
                       variant="light"
                       color="red"
                       fullWidth
@@ -294,9 +288,9 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
                     >
                       Leave
                     </Button>
-                  )}
-                </Group>
-              )}
+                  )
+                )}
+              </Group>
             </Stack>
           </Box>
         </Flex>
@@ -343,19 +337,27 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
         </Paper>
       </Center>
     ) : (
-      <Center h="100%">
+      <Center h="50%">
         <Paper
-          radius="xl"
           p="xl"
+          radius='0'
           withBorder
-          bg="white"
-          style={{ borderColor: "#E5E7EB", maxWidth: 420 }}
+          bg="navy.3"
+          maw='420'
         >
           <Stack align="center" gap="sm">
-            <Text c="#123257" size="xl" fw={700}>
+            <ThemeIcon
+              size={64}
+              radius="xl"
+              variant="outline"
+              color='navy.7'
+            >
+              <IconUsersGroup size={30} />
+            </ThemeIcon>
+            <Text c="navy.7" size="xl" fw={700}>
               Select a group
             </Text>
-            <Text c="#64748B" size="sm" ta="center">
+            <Text c="gray.7" size="sm" ta="center">
               Open one of your active groups from the sidebar to jump into its
               posts, members, and chat.
             </Text>
@@ -473,7 +475,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
             padding={0}
             size="xs"
             title=""
-            withCloseButton
+            withCloseButton={false}
           >
             {sidebarNode}
           </Drawer>
@@ -481,11 +483,6 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
           <Stack
             gap={0}
             h="calc(100vh - 60px)"
-            bg="gray.0"
-            style={{
-              background:
-                "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
-            }}
           >
             <Box p="xs">
               <Button
@@ -507,20 +504,15 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
       ) : (
         <Flex
           h="calc(100vh - 60px)"
-          bg="gray.0"
-          style={{
-            background:
-              "linear-gradient(180deg, #F8FAFC 0%, #EEF3F9 100%)",
-          }}
         >
           <Paper
             w={320}
             miw={320}
             radius={0}
-            bg="#F8FAFC"
             style={{
-              borderRight: "1px solid #E2E8F0",
+              borderRight: '1px solid var(--mantine-color-gray-3)'
             }}
+            bg='navy.0'
           >
             {sidebarNode}
           </Paper>
@@ -530,6 +522,7 @@ export function LSGroupLayout(props: LSGroupLayoutProps) {
             py={24}
             px={{ base: "md", md: "xl", lg: 80 }}
             style={{ overflow: "auto" }}
+            bg='white'
           >
             {contentNode}
           </Box>

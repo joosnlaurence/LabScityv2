@@ -42,14 +42,8 @@ export function LSGroupSidebar({
   return (
     <Stack gap="md" h="100%" p="md">
       <Card
-        radius="xl"
         p="lg"
         withBorder
-        bg="white"
-        style={{
-          borderColor: "#E5E7EB",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-        }}
       >
         <Stack gap="md">
           <Box>
@@ -62,7 +56,6 @@ export function LSGroupSidebar({
             </Text>
           </Box>
           <Button
-            radius="xl"
             leftSection={<IconPlus size={14} />}
             onClick={onNewGroupClick}
             style={{ background: "#1F3A5F" }}
@@ -104,14 +97,14 @@ export function LSGroupSidebar({
                   href={href}
                   active={active}
                   p="md"
+                  bdrs='md'
                   style={{
                     border: active
                       ? "1px solid #BFDBFE"
                       : "1px solid #E5E7EB",
                     background: active ? "#EFF6FF" : "#FFFFFF",
-                    borderRadius: 20,
                     boxShadow: active
-                      ? "0 10px 24px rgba(37,99,235,0.12)"
+                      ? "3px 3px 10px rgba(37,99,235,0.12)"
                       : "0 1px 4px rgba(0,0,0,0.04)",
                   }}
                   styles={{
@@ -132,8 +125,6 @@ export function LSGroupSidebar({
                   }
                   leftSection={
                     <Avatar
-                      color="blue"
-                      bg={group.avatar_url ? undefined : "#1F3A5F"}
                       radius="xl"
                       src={group.avatar_url ?? undefined}
                     >

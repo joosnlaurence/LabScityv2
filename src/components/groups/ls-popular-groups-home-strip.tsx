@@ -8,6 +8,7 @@ import {
   Card,
   Center,
   Group,
+  Loader,
   Stack,
   Text,
 } from "@mantine/core";
@@ -116,7 +117,7 @@ export function LSPopularGroupsHomeStrip({
     return (
       <Card withBorder shadow="sm" radius="md" p="md" bg="white">
         <Center py="sm">
-          <LSSpinner />
+          <Loader />
         </Center>
       </Card>
     );

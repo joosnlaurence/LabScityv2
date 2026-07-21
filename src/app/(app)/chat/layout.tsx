@@ -89,16 +89,11 @@ export default function ChatLayout({
   }, [isMobile, activeChatId]);
 
   const sidebarContent = (
-    <Stack gap="md" h="100dvh" p="md">
+    <Stack gap="md" p="md">
       <Card
-        radius="xl"
+        radius="md"
         p="lg"
         withBorder
-        bg="white"
-        style={{
-          borderColor: "#E5E7EB",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-        }}
       >
         <Stack gap="md">
           <Box>
@@ -106,17 +101,16 @@ export default function ChatLayout({
               Chats
             </Title>
             <Text size="sm" c="#64748B">
-              Your active conversations across collaborators and groups.
+              Your active conversations across researchers and groups.
             </Text>
           </Box>
           <Button
-            radius="xl"
+            radius="md"
             leftSection={<IconPlus size={14} />}
             onClick={() => {
               setNewChatModalOpen(true);
               setDrawerOpened(false);
             }}
-            style={{ background: "#1F3A5F" }}
           >
             New Chat
           </Button>
@@ -148,12 +142,6 @@ export default function ChatLayout({
                 component={Link}
                 href={`/chat/${chat.conversation_id}`}
                 active={chat.conversation_id + "" === activeChatId}
-                styles={{
-                  root: {
-                    "--nav-active-bg": "transparent",
-                  },
-                }}
-                c="#123257"
                 p="md"
                 style={{
                   border:
@@ -164,10 +152,10 @@ export default function ChatLayout({
                     chat.conversation_id + "" === activeChatId
                       ? "#EFF6FF"
                       : "#FFFFFF",
-                  borderRadius: 20,
+                  borderRadius: 'var(--mantine-radius-md)',
                   boxShadow:
                     chat.conversation_id + "" === activeChatId
-                      ? "0 10px 24px rgba(37,99,235,0.12)"
+                      ? "3px 3px 10px rgba(37,99,235,0.12)"
                       : "0 1px 4px rgba(0,0,0,0.04)",
                 }}
                 label={
@@ -184,8 +172,6 @@ export default function ChatLayout({
                   <Avatar
                     radius="xl"
                     size="md"
-                    color="blue"
-                    bg="#1F3A5F"
                     src={chat.profile_pic_url}
                   />
                 }
@@ -218,7 +204,6 @@ export default function ChatLayout({
             padding={0}
             size="100%"
             title=""
-            withCloseButton={false}
             transitionProps={{ duration: 0 }}
           >
             {sidebarContent}

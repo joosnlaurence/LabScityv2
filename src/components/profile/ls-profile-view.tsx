@@ -6,7 +6,8 @@ import {
   Divider, 
   Flex, 
   Stack, 
-  Tabs, 
+  Tabs,
+  Text 
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -78,6 +79,7 @@ import { FeedPostCard, RecommendedCollabsCard } from "../feed/home-feed";
 import StickyBox from "react-sticky-box";
 import { LSBookmarksTab } from "./bookmarks/ls-bookmarks-tab";
 import { useSetSavedPost } from "../feed/use-feed";
+import { IconBoxOff, IconMessageCircleOff } from "@tabler/icons-react";
 
 type UpdateProfileAction = typeof updateProfileAction;
 type ToggleFollowAction = typeof toggleFollowAction;
@@ -517,7 +519,14 @@ const LSProfileDesktopLayout = ({
                   >
                     Load more posts
                   </Button>
-                ) : null}
+                ) : 
+                <Stack justify='center' align='center'>
+                  <IconMessageCircleOff color='var(--mantine-color-dimmed)' size={64} stroke={1}/>
+                  <Text ta='center' c='dimmed'>
+                    No Posts Found...
+                  </Text>
+                </Stack>
+              }
               </Stack>
             </Tabs.Panel>
 

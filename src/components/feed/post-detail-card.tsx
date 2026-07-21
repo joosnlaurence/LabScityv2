@@ -430,17 +430,6 @@ export function PostDetailCard({
                 Share
               </Button>
             </Group>
-            {isCitable ? (
-              <Button
-                variant="outline"
-                radius="md"
-                color="gray"
-                leftSection={<IconQuote size={15} />}
-                disabled
-              >
-                Cite
-              </Button>
-            ) : null}
           </Group>
 
           {children}
