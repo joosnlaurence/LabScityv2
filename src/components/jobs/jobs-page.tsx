@@ -213,11 +213,6 @@ export function JobsPage() {
 
         <Flex gap="lg" align="flex-start">
           <Stack flex={1} gap="md" miw={0}>
-            <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                {jobs.length} loaded
-              </Text>
-            </Group>
 
             {activeQuery.isError ? (
               <Card radius="md" shadow="xs" padding="lg" withBorder>
