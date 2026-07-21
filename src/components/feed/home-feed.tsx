@@ -2,7 +2,6 @@
 
 import {
   ActionIcon,
-  Alert,
   Avatar,
   Badge,
   Box,
@@ -17,12 +16,10 @@ import {
   Pill,
   PillsInput,
   Select,
-  SegmentedControl,
   Slider,
   Stack,
   Text,
   Textarea,
-  TextInput,
   ThemeIcon,
   Image,
   Anchor,
@@ -30,7 +27,6 @@ import {
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import {
-  IconAlertCircle,
   IconBookmark,
   IconBriefcase,
   IconChevronRight,
@@ -43,7 +39,6 @@ import {
   IconPlus,
   IconQuote,
   IconShare3,
-  IconStarFilled,
   IconTrash,
   IconUsers,
   IconHeartFilled,
@@ -1553,7 +1548,6 @@ export function RecommendedCollabsCard({ currentUserId }: { currentUserId: strin
     <SectionCard
       title="Recommended Collaborators"
       icon={<IconUsers size={18} />}
-      actionLabel="See all"
     >
       <Stack gap={0}>
         {(collaboratorsQuery.data ?? []).slice(0, 3).map((person) => {
